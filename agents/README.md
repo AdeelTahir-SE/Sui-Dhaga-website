@@ -427,7 +427,8 @@ Contents:
 
 ```txt
 agents/ui-designs/
-├── home.png
+├── home1.png
+├── home2.png (rest of designs who did not completely appear in home1.png)
 ├── auth-pages.png
 ├── tailor-marketplace.png
 ├── customer-pages.png
