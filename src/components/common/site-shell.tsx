@@ -55,6 +55,7 @@ function FooterColumn({ title, links }: { title: string; links: string[] }) {
 export function PublicShell({ children, footer = true }: { children: React.ReactNode; footer?: boolean }) {
   return (
     <div className="brand-page">
+      <div className="ambient-layer" aria-hidden="true" />
       <PublicNav />
       <main>{children}</main>
       {footer ? <PublicFooter /> : null}
@@ -82,6 +83,7 @@ export function DashboardShell({
 
   return (
     <div className={isAdmin ? "admin-page" : "app-page"}>
+      <div className="ambient-layer" aria-hidden="true" />
       {isAdmin ? null : <PublicNav />}
       <div className="dashboard-grid">
         <aside className={isAdmin ? "admin-sidebar" : "side-nav"}>
@@ -119,6 +121,9 @@ function AdminTopbar() {
 export function DecorativeFrame({ children }: { children: React.ReactNode }) {
   return (
     <section className="decor-frame">
+      <span className="motif motif-stitches" />
+      <span className="motif motif-diamond" />
+      <span className="motif motif-wave" />
       <span className="blob blob-yellow" />
       <span className="blob blob-teal" />
       <span className="blob blob-coral" />
@@ -157,7 +162,7 @@ export function PageHero({
   return (
     <DecorativeFrame>
       <div className="hero-grid">
-        <div>
+        <div className="hero-copy">
           {eyebrow ? <p className="eyebrow">{eyebrow}</p> : null}
           <h1>{title} {accent ? <span>{accent}</span> : null}</h1>
           <p>{copy}</p>
@@ -165,8 +170,16 @@ export function PageHero({
             <Link className="btn primary" href="/tailors">Find a Tailor</Link>
             <Link className="btn secondary" href="/design-studio">Start AI Designing</Link>
           </div>
+          <div className="hero-metrics" aria-label="Platform highlights">
+            <strong>2K+ Tailors</strong>
+            <strong>4.8 Avg Rating</strong>
+            <strong>AI Designs</strong>
+          </div>
         </div>
-        <FigureCard label={visual} tone="yellow" />
+        <div className="hero-visual">
+          <FigureCard label={visual} tone="yellow" />
+          <div className="floating-note">Custom fit, crafted beautifully</div>
+        </div>
       </div>
     </DecorativeFrame>
   );
