@@ -255,23 +255,93 @@ export function AuthPage({ mode }: { mode: "login" | "register" | "forgot" | "re
 
   return (
     <PublicShell footer={false}>
-      <DecorativeFrame>
+      <div className="auth-page-container">
+        <div className="auth-bg-blob-left"></div>
+        <div className="auth-bg-blob-right"></div>
+        
+        {/* Full-page floating tailoring elements */}
+        {mode === "login" && (
+          <>
+             <span className="bg-icon float-button">
+               <svg viewBox="0 0 24 24" fill="none" stroke="var(--coral)" strokeWidth="2"><circle cx="12" cy="12" r="10"/><circle cx="9" cy="9" r="1.5" fill="var(--coral)"/><circle cx="15" cy="9" r="1.5" fill="var(--coral)"/><circle cx="9" cy="15" r="1.5" fill="var(--coral)"/><circle cx="15" cy="15" r="1.5" fill="var(--coral)"/></svg>
+             </span>
+             <span className="bg-icon float-scissors">
+               <svg viewBox="0 0 24 24" fill="none" stroke="var(--teal)" strokeWidth="2"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>
+             </span>
+          </>
+        )}
+        
+        {mode === "register" && (
+          <>
+            <span className="dot-pattern vertical-column top-left-vert"></span>
+            <span className="dot-pattern vertical-column bottom-right-vert"></span>
+            <span className="dot-pattern vertical-column flow-right"></span>
+            <span className="thread-flow thread-1">
+               <svg viewBox="0 0 100 100" fill="none" stroke="var(--ink)" strokeWidth="1.5" strokeDasharray="4 4">
+                 <path d="M90,10 C 70,40 50,50 30,40 C 10,30 10,10 30,10 C 50,10 60,30 40,60 C 20,80 50,90 90,90" />
+               </svg>
+            </span>
+            <span className="thread-flow thread-2">
+               <svg viewBox="0 0 100 100" fill="none" stroke="var(--ink)" strokeWidth="1.5" strokeDasharray="4 4">
+                 <path d="M10,10 C 30,40 50,50 70,40 C 90,30 90,10 70,10 C 50,10 40,30 60,60 C 80,80 50,90 10,90" />
+               </svg>
+            </span>
+          </>
+        )}
+
         <section className="auth-grid">
-          <div>
+          <div className="auth-hero">
             <p className="eyebrow">{copy[0]}</p>
             <h1>{copy[1]}</h1>
             <p>{copy[2]}</p>
-            <FigureCard label={mode === "forgot" ? "Secure reset" : "Atelier welcome"} tone="yellow" />
+            {(mode === "register" || mode === "login") ? (
+               <div className="auth-illustration">
+                  <div className="bg-elements">
+                     {mode === "login" ? (
+                       <>
+                         <span className="dot-pattern top-right"></span>
+                         <span className="dot-pattern bottom-right"></span>
+                         <span className="red-cube">
+                           <svg viewBox="0 0 24 24" fill="#FF5B52" stroke="#111" strokeWidth="1.5">
+                             <polygon points="12 2 2 7 12 12 22 7" />
+                             <polygon points="2 7 2 17 12 22 12 12" />
+                             <polygon points="22 7 22 17 12 22 12 12" />
+                           </svg>
+                         </span>
+                         <span className="yellow-diamond">
+                            <svg viewBox="0 0 24 24" fill="#F7B915" stroke="#111" strokeWidth="1.5">
+                              <polygon points="12 2 22 12 12 22 2 12" />
+                              <line x1="2" y1="12" x2="22" y2="12" />
+                              <line x1="12" y1="2" x2="12" y2="22" />
+                            </svg>
+                         </span>
+                       </>
+                     ) : (
+                       <>
+                         <span className="dot-pattern top-right"></span>
+                         <span className="dot-pattern bottom-right"></span>
+                         <span className="paper-plane">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="#FF5B52" strokeWidth="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+                         </span>
+                         <span className="yellow-triangle"></span>
+                       </>
+                     )}
+                  </div>
+                  <img src={mode === "login" ? "/images/auth/login_illustration.png" : "/images/auth/signup_illustration.png"} alt={mode === "login" ? "Login illustration" : "Tailor illustration"} />
+               </div>
+            ) : (
+               <FigureCard label={mode === "forgot" ? "Secure reset" : "Atelier welcome"} tone="yellow" />
+            )}
           </div>
           <FormCard
             title={copy[3]}
-            intro={mode === "register" ? "First, tell us who you are." : "Please enter your details."}
+            intro={mode === "register" ? "First, tell us who you are." : mode === "login" ? "Welcome back! Please enter your details." : "Please enter your details."}
             fields={mode === "login" ? ["Email Address", "Password"] : mode === "forgot" ? ["Email Address"] : mode === "reset" ? ["New Password", "Confirm Password"] : ["Full Name", "Email Address", "Password", "Confirm Password"]}
             button={copy[4]}
-            roleChoice={mode === "register"}
+            mode={mode}
           />
         </section>
-      </DecorativeFrame>
+      </div>
     </PublicShell>
   );
 }
@@ -654,14 +724,93 @@ function TailorMini({ tailor }: { tailor: (typeof tailors)[number] }) {
   return <div className="tailor-mini"><FigureCard label={tailor.name} /><div><strong>{tailor.name}</strong><p>{tailor.rating} ({tailor.reviews}) · {tailor.distance}</p></div></div>;
 }
 
-function FormCard({ title, intro, fields, button, roleChoice = false }: { title: string; intro?: string; fields: string[]; button: string; roleChoice?: boolean }) {
+function FormCard({ title, intro, fields, button, mode }: { title: string; intro?: string; fields: string[]; button: string; mode?: string }) {
+  const roleChoice = mode === "register";
+
   return (
     <form className="form-card">
       <h2>{title}</h2>
-      {intro ? <p>{intro}</p> : null}
-      {roleChoice ? <div className="role-choice"><button type="button">I'm a Customer</button><button type="button">I'm a Tailor</button></div> : null}
-      {fields.map((field) => <label key={field}>{field}<input placeholder={`Enter ${field.toLowerCase()}`} /></label>)}
-      <button type="button">{button}</button>
+      {intro ? <p className="form-intro">{intro}</p> : null}
+      
+      {roleChoice ? (
+        <div className="role-choice">
+          <button type="button" className="role-btn active">
+            <div className="role-icon customer-icon">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+            </div>
+            <div className="role-text">
+              <strong>I'm a Customer</strong>
+              <span>I want to order custom outfits</span>
+            </div>
+          </button>
+          <button type="button" className="role-btn">
+             <div className="role-icon tailor-icon">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9.46 3.14l-3.32 3.32C5.46 7.15 5 8.08 5 9.05V21h14V9.05c0-.97-.46-1.9-1.14-2.59l-3.32-3.32c-.39-.39-1.02-.39-1.41 0L12 4.24l-1.14-1.14c-.38-.38-1.02-.38-1.4 0.04zM12 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>
+             </div>
+             <div className="role-text">
+              <strong>I'm a Tailor</strong>
+              <span>I want to offer my tailoring services</span>
+            </div>
+          </button>
+        </div>
+      ) : null}
+
+      <div className="form-fields">
+        {fields.map((field) => (
+          <label key={field}>
+            <span className="field-label">{field}</span>
+            <div className="input-wrap">
+               <input 
+                 type={field.toLowerCase().includes("password") ? "password" : field.toLowerCase().includes("email") ? "email" : "text"} 
+                 placeholder={field.toLowerCase().includes("password") ? (field.includes("Confirm") ? "Confirm your password" : "Create a password") : field.toLowerCase().includes("email") ? `Enter your email` : `Enter your full name`} 
+               />
+               {field.toLowerCase().includes("password") && (
+                 <span className="eye-icon">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+                 </span>
+               )}
+            </div>
+          </label>
+        ))}
+      </div>
+      
+      {roleChoice && (
+        <label className="terms-checkbox">
+           <input type="checkbox" />
+           <span>I agree to the <Link href="/terms-and-conditions">Terms & Conditions</Link> and <Link href="/privacy-policy">Privacy Policy</Link></span>
+        </label>
+      )}
+
+      {mode === "login" && (
+        <div className="login-options" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '16px 0', fontSize: '14px' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: 'var(--muted)' }}>
+             <input type="checkbox" style={{ width: '16px', height: '16px', borderRadius: '4px', border: '1px solid var(--line)' }} />
+             Remember me
+          </label>
+          <Link href="/auth/forgot-password" style={{ color: 'var(--teal)', fontWeight: '600' }}>Forgot Password?</Link>
+        </div>
+      )}
+
+      <button type="button" className="btn primary submit-btn">{button}</button>
+      
+      {roleChoice && (
+         <p className="auth-footer-link">Already have an account? <Link href="/auth/login">Login</Link></p>
+      )}
+
+      {mode === "login" && (
+        <div className="social-login-section" style={{ marginTop: '24px', textAlign: 'center' }}>
+          <div className="divider" style={{ display: 'flex', alignItems: 'center', gap: '16px', color: 'var(--muted)', fontSize: '12px', margin: '24px 0' }}>
+            <span style={{ flex: 1, height: '1px', background: 'var(--line)' }}></span>
+            or continue with
+            <span style={{ flex: 1, height: '1px', background: 'var(--line)' }}></span>
+          </div>
+          <button type="button" className="google-btn" style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--line)', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', fontWeight: '600', cursor: 'pointer', color: 'var(--ink)' }}>
+             <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+             Continue with Google
+          </button>
+          <p className="auth-footer-link" style={{ marginTop: '32px' }}>Don't have an account? <Link href="/auth/register" style={{ color: 'var(--teal)', fontWeight: '600' }}>Register now</Link></p>
+        </div>
+      )}
     </form>
   );
 }

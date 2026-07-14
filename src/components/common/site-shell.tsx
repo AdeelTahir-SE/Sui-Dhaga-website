@@ -1,19 +1,55 @@
+"use client"
+
 import Link from "next/link";
 import { navItems } from "./data";
+import { AnimeNavBar, AnimeMascot } from "@/components/ui/anime-navbar";
+import { Scissors, Wand2, Users, HelpCircle, CreditCard } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { useState } from "react";
+
+const animeNavItems = [
+  { name: "Find a Tailor", url: "/tailors", icon: Scissors },
+  { name: "AI Design Studio", url: "/design-studio", icon: Wand2 },
+  { name: "Community", url: "/community", icon: Users },
+  { name: "How It Works", url: "/faqs", icon: HelpCircle },
+  { name: "Pricing", url: "/checkout", icon: CreditCard },
+];
 
 export function PublicNav() {
+  const pathname = usePathname();
+  const [hoveredAuth, setHoveredAuth] = useState<string | null>(null);
+
   return (
-    <header className="site-nav">
+    <header className="site-nav" style={{ position: 'relative', zIndex: 10000 }}>
       <Link href="/" className="brand">Sui Dhaga</Link>
-      <nav aria-label="Primary navigation">
-        {navItems.map((item) => (
-          <Link key={item.href} href={item.href}>{item.label}</Link>
-        ))}
-      </nav>
-      <div className="nav-icons" aria-label="Quick actions">
-        <span>Search</span>
-        <span>Alerts</span>
-        <Link href="/auth/login">Account</Link>
+      <AnimeNavBar items={animeNavItems} defaultActive="Find a Tailor" />
+      <div style={{ display: 'flex', alignItems: 'center' }}>
+        <div className="nav-icons" aria-label="Quick actions">
+          <span>Search</span>
+          <span>Alerts</span>
+        </div>
+        <div className="nav-auth-buttons" style={{ display: 'flex', gap: '12px', marginLeft: '12px' }}>
+          <Link 
+            href="/auth/login" 
+            className="btn secondary" 
+            style={{ position: 'relative', height: '36px', padding: '0 16px', display: 'inline-flex', alignItems: 'center', fontSize: '14px', borderRadius: '8px' }}
+            onMouseEnter={() => setHoveredAuth('login')}
+            onMouseLeave={() => setHoveredAuth(null)}
+          >
+            {pathname === '/auth/login' && <AnimeMascot hovered={hoveredAuth === 'login'} />}
+            Login
+          </Link>
+          <Link 
+            href="/auth/register" 
+            className="btn primary" 
+            style={{ position: 'relative', height: '36px', padding: '0 16px', display: 'inline-flex', alignItems: 'center', fontSize: '14px', borderRadius: '8px' }}
+            onMouseEnter={() => setHoveredAuth('register')}
+            onMouseLeave={() => setHoveredAuth(null)}
+          >
+            {pathname === '/auth/register' && <AnimeMascot hovered={hoveredAuth === 'register'} />}
+            Sign Up
+          </Link>
+        </div>
       </div>
     </header>
   );
