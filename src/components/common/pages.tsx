@@ -3,57 +3,133 @@ import { adminUsers, appointments, designs, orders, tailors } from "./data";
 import { DashboardShell, DecorativeFrame, FigureCard, PageHero, PublicShell, StatusPill } from "./site-shell";
 
 export function HomePage() {
+  const trustCards = [
+    ["Trusted Tailors", "Verified experts"],
+    ["Ratings & Reviews", "Real customer feedback"],
+    ["Secure Booking", "Safe and easy"],
+    ["Perfect Fit", "Made for you"],
+  ];
+  const communityCards = [
+    ["@neharatnavat", "Bridal Lehenga", "128"],
+    ["@ankit.atyle", "Indo Western", "96"],
+    ["@the_stitch.story", "Anarkali Suit", "88"],
+    ["@modern.threads", "Kurta Set", "76"],
+  ];
+  const steps = [
+    ["Discover", "Find the right tailor or design your own."],
+    ["Customize", "Share details, choose fabrics and fit."],
+    ["Create", "Tailor your piece or generate your outfit."],
+    ["Receive", "Try on and enjoy your perfect fit."],
+  ];
+
   return (
     <PublicShell>
-      <PageHero
-        eyebrow="Home > Sui Dhaga"
-        title="Your style."
-        accent="Our craft."
-        copy="Discover expert tailors near you or create custom outfits with AI. Perfect fit, made easy."
-        visual="Fashion atelier"
-      />
-      <section className="feature-strip">
-        {["Trusted Tailors", "Ratings & Reviews", "Secure Booking", "Perfect Fit"].map((item) => (
-          <article className="info-card" key={item}>
-            <div className="round-icon" />
-            <h3>{item}</h3>
-            <p>{item === "Perfect Fit" ? "Made for you" : "Verified, reviewed, and easy."}</p>
+      <section className="home-hero">
+        <span className="home-corner home-corner-yellow" />
+        <span className="home-corner home-corner-teal" />
+        <span className="home-corner home-corner-coral" />
+        <span className="home-doodle home-doodle-wave" />
+        <span className="home-doodle home-doodle-stitches" />
+        <div className="home-hero-copy">
+          <p className="home-breadcrumb">Home &gt; Sui Dhaga</p>
+          <h1>Your style.<span>Our craft.</span></h1>
+          <p>
+            Discover expert tailors near you or create custom outfits with AI.
+            Perfect fit, made easy.
+          </p>
+          <div className="button-row">
+            <Link className="btn primary" href="/tailors">Find a Tailor</Link>
+            <Link className="btn secondary" href="/design-studio">Start AI Designing</Link>
+          </div>
+        </div>
+        <div className="home-hero-art" aria-label="Customer and tailor beside a dress form">
+          <img
+            className="home-hero-image"
+            src="/images/home/hero-tailors.png"
+            alt="A customer and tailor standing beside a dress form"
+          />
+        </div>
+      </section>
+
+      <section className="home-trust-strip">
+        {trustCards.map(([title, copy], index) => (
+          <article className="home-trust-card" key={title}>
+            <span className={`trust-icon trust-icon-${index + 1}`} />
+            <h3>{title}</h3>
+            <p>{copy}</p>
           </article>
         ))}
       </section>
-      <section className="teal-band">
+
+      <section className="home-create-band">
         <h2>Two powerful ways to create</h2>
-        <div className="two-cards">
-          <article>
-            <h3>Hire a Tailor</h3>
-            <p>Your perfect solution for custom profiles, local experts, and secure booking.</p>
-            <Link href="/tailors">Explore</Link>
+        <div className="home-create-grid">
+          <article className="home-create-card">
+            <div>
+              <h3>Hire a Tailor</h3>
+              <p>Your perfect solution, custom profiles, and local expert work.</p>
+              <Link href="/tailors" aria-label="Explore tailors">&gt;</Link>
+            </div>
+            <span className="mini-tailor-art" />
           </article>
-          <article>
-            <h3>AI Design Studio</h3>
-            <p>Bring your ideas to life with AI-powered design tools.</p>
-            <Link href="/design-studio">Create</Link>
+          <article className="home-create-card">
+            <div>
+              <h3>AI Design Studio</h3>
+              <p>Bring your ideas to life with AI-powered design tools.</p>
+              <Link href="/design-studio" aria-label="Open AI Design Studio">&gt;</Link>
+            </div>
+            <span className="mini-studio-art" />
           </article>
         </div>
       </section>
-      <GallerySection title="Community Inspiration" subtitle="See what others are creating" />
-      <section className="steps-section">
+
+      <section className="home-community">
+        <div className="section-head">
+          <div>
+            <h2>Community Inspiration</h2>
+            <p>See what others are creating</p>
+          </div>
+          <Link href="/community">View all</Link>
+        </div>
+        <div className="home-community-grid">
+          {communityCards.map(([handle, title, likes], index) => (
+            <article className="home-community-card" key={handle}>
+              <div className={`outfit-card outfit-card-${index + 1}`} />
+              <strong>{handle}</strong>
+              <span>{likes}</span>
+              <p>{title}</p>
+            </article>
+          ))}
+          <button className="home-next" aria-label="Next community designs">&gt;</button>
+        </div>
+      </section>
+
+      <section className="home-process">
         <div>
           <h2>How It Works</h2>
           <p>Simple steps to your perfect fit.</p>
-          <div className="steps-row">
-            {["Discover", "Customize", "Create", "Receive"].map((step, index) => (
-              <article key={step}>
-                <strong>{index + 1}. {step}</strong>
-                <p>{["Find the right tailor.", "Share details and fabrics.", "Approve your outfit.", "Try on and enjoy."][index]}</p>
+          <div className="home-step-row">
+            {steps.map(([title, copy], index) => (
+              <article key={title}>
+                <span>{index + 1}</span>
+                <strong>{title}</strong>
+                <p>{copy}</p>
               </article>
             ))}
           </div>
         </div>
-        <div className="phone-preview">
-          <h3>Sui Dhaga</h3>
-          <p>Your style. Our craft.</p>
-          <button>Find a Tailor</button>
+        <div className="home-phone-block">
+          <div>
+            <h2>Mobile Experience</h2>
+            <p>Seamless on the go.</p>
+          </div>
+          <div className="home-phone">
+            <span>9:00</span>
+            <h3>Sui Dhaga</h3>
+            <strong>Your style.<br />Our craft.</strong>
+            <button>Find a Tailor</button>
+            <button>Start Designing</button>
+          </div>
         </div>
       </section>
     </PublicShell>
