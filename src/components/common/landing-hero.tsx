@@ -91,13 +91,13 @@ export function LandingHero() {
     let currentY = 0;
 
     const render = () => {
-      currentX += (targetX - currentX) * 0.055;
-      currentY += (targetY - currentY) * 0.055;
+      currentX += (targetX - currentX) * 0.095;
+      currentY += (targetY - currentY) * 0.095;
 
       floatingRefs.current.forEach((element, index) => {
         if (!element) return;
         const item = floatingImages[index];
-        const strength = item.depth * 5;
+        const strength = item.depth * 10;
         const x = currentX * strength;
         const y = currentY * strength;
         element.style.transform = `translate3d(${x}px, ${y}px, 0) ${item.baseTransform}`;

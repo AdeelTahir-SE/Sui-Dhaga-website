@@ -4365,9 +4365,12 @@ body,
   border: 1px solid rgba(229, 231, 235, 0.78);
   border-radius: 16px;
   box-shadow: 0 26px 76px rgba(26, 29, 31, 0.2);
+  box-sizing: content-box;
+  height: auto;
   object-fit: contain;
-  padding: 6px;
+  padding: 4px;
   position: absolute;
+  width: auto;
   will-change: transform;
 }
 
@@ -4377,21 +4380,18 @@ body,
   left: 6%;
   object-fit: contain;
   top: auto;
-  width: clamp(260px, 32vw, 460px);
 }
 
 .hero-float-kurta {
   height: clamp(120px, 13vw, 190px);
   left: 6%;
   top: 28%;
-  width: clamp(150px, 17vw, 240px);
 }
 
 .hero-float-lehenga {
   height: clamp(180px, 19vw, 300px);
   left: 13%;
   top: 8%;
-  width: clamp(220px, 23vw, 350px);
 }
 
 .hero-float-tailor {
@@ -4399,7 +4399,6 @@ body,
   object-fit: contain;
   right: 7%;
   top: 8%;
-  width: clamp(180px, 20vw, 300px);
 }
 
 .hero-float-look-one {
@@ -4408,7 +4407,6 @@ body,
   object-fit: contain;
   right: 5%;
   top: auto;
-  width: clamp(210px, 24vw, 360px);
 }
 
 .hero-float-look-two {
@@ -4416,7 +4414,6 @@ body,
   height: clamp(112px, 13vw, 190px);
   left: 28%;
   top: auto;
-  width: clamp(150px, 16vw, 240px);
 }
 
 .home-hero-copy {
@@ -4528,7 +4525,7 @@ body,
 
   .hero-float-main {
     bottom: 5%;
-    left: calc(50% - min(24vw, 150px));
+    left: calc(50% - clamp(79px, 9vw, 135px));
     top: auto;
   }
 
@@ -4562,9 +4559,8 @@ body,
   .hero-float-main {
     bottom: 5%;
     height: 210px;
-    left: calc(50% - min(43vw, 170px));
+    left: calc(50% - 79px);
     top: auto;
-    width: min(86vw, 340px);
   }
 }
 
