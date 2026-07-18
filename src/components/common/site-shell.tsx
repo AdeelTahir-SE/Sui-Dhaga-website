@@ -58,20 +58,26 @@ export function PublicNav() {
 export function PublicFooter() {
   return (
     <footer className="site-footer">
-      <div>
-        <h3>Sui Dhaga</h3>
+      <div className="footer-brand-block">
+        <Link href="/" className="footer-logo">Sui Dhaga</Link>
         <p>Tailored for you. Made by experts.</p>
         <div className="social-row">
           <span>f</span><span>in</span><span>p</span><span>yt</span>
         </div>
       </div>
-      <FooterColumn title="Explore" links={["Find a Tailor", "AI Design Studio", "How It Works", "Pricing", "Blog"]} />
-      <FooterColumn title="Company" links={["About Us", "Contact Us", "Careers"]} />
-      <FooterColumn title="Support" links={["FAQs", "Privacy Policy", "Terms & Conditions", "Refund Policy"]} />
-      <div>
+      <div className="footer-links-grid">
+        <FooterColumn title="Explore" links={["Find a Tailor", "AI Design Studio", "How It Works", "Pricing", "Blog"]} />
+        <FooterColumn title="Company" links={["About Us", "Contact Us", "Careers"]} />
+        <FooterColumn title="Support" links={["FAQs", "Privacy Policy", "Terms & Conditions", "Refund Policy"]} />
+      </div>
+      <div className="footer-app-block">
         <h4>Download App</h4>
-        <div className="store-badge">Google Play</div>
-        <div className="store-badge">App Store</div>
+        <div className="store-badge"><span>Get it on</span>Google Play</div>
+        <div className="store-badge"><span>Download on the</span>App Store</div>
+      </div>
+      <div className="footer-bottom">
+        <span>2026 Sui Dhaga. All rights reserved.</span>
+        <span>Custom fashion, crafted beautifully.</span>
       </div>
     </footer>
   );
@@ -79,7 +85,7 @@ export function PublicFooter() {
 
 function FooterColumn({ title, links }: { title: string; links: string[] }) {
   return (
-    <div>
+    <div className="footer-column">
       <h4>{title}</h4>
       {links.map((link) => (
         <Link key={link} href="#">{link}</Link>

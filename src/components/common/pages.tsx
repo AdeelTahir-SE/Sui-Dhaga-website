@@ -1,19 +1,33 @@
 import Link from "next/link";
 import { adminUsers, appointments, designs, orders, tailors } from "./data";
+import { HowItWorksDeck } from "./how-it-works-deck";
+import { LandingHero } from "./landing-hero";
 import { DashboardShell, DecorativeFrame, FigureCard, PageHero, PublicShell, StatusPill } from "./site-shell";
 
 export function HomePage() {
   const trustCards = [
-    ["Trusted Tailors", "Verified experts"],
-    ["Ratings & Reviews", "Real customer feedback"],
-    ["Secure Booking", "Safe and easy"],
-    ["Perfect Fit", "Made for you"],
+    ["2K+", "Trusted Tailors", "Verified experts"],
+    ["4.8", "Ratings & Reviews", "Real customer feedback"],
+    ["Safe", "Secure Booking", "Protected and easy"],
+    ["98%", "Perfect Fit", "Made for you"],
   ];
   const communityCards = [
-    ["@neharatnavat", "Bridal Lehenga", "128"],
-    ["@ankit.atyle", "Indo Western", "96"],
-    ["@the_stitch.story", "Anarkali Suit", "88"],
-    ["@modern.threads", "Kurta Set", "76"],
+    ["@neharatnavat", "Bridal Lehenga", "128", "/images/home/recent-look-1.png"],
+    ["@ankit.atyle", "Indo Western", "96", "/images/home/recent-look-2.png"],
+    ["@the_stitch.story", "Anarkali Suit", "88", "/images/home/recent-look-3.png"],
+    ["@modern.threads", "Kurta Set", "76", "/images/home/recent-look-4.png"],
+  ];
+  const quickActions = [
+    ["Book Appointment", "/book/rekha-tailors", "calendar"],
+    ["AI Design Studio", "/design-studio", "wand"],
+    ["My Orders", "/customer/orders", "bag"],
+    ["Style Assistant", "/design-studio/chat", "sparkles"],
+  ];
+  const categories = [
+    ["Kurtas & Suits", "/images/home/category-kurtas-suits.png", "mint"],
+    ["Lehengas", "/images/home/category-lehengas.png", "coral"],
+    ["Sarees", "/images/home/category-sarees.png", "gold"],
+    ["Shirts", "/images/home/category-shirts.png", "blue"],
   ];
   const steps = [
     ["Discover", "Find the right tailor or design your own."],
@@ -24,71 +38,125 @@ export function HomePage() {
 
   return (
     <PublicShell>
-      <section className="home-hero">
-        <span className="home-corner home-corner-yellow" />
-        <span className="home-corner home-corner-teal" />
-        <span className="home-corner home-corner-coral" />
-        <span className="home-doodle home-doodle-wave" />
-        <span className="home-doodle home-doodle-stitches" />
-        <div className="home-hero-copy">
-          <p className="home-breadcrumb">Home &gt; Sui Dhaga</p>
-          <h1>Your style.<span>Our craft.</span></h1>
-          <p>
-            Discover expert tailors near you or create custom outfits with AI.
-            Perfect fit, made easy.
-          </p>
-          <div className="button-row">
-            <Link className="btn primary" href="/tailors">Find a Tailor</Link>
-            <Link className="btn secondary" href="/design-studio">Start AI Designing</Link>
-          </div>
-        </div>
-        <div className="home-hero-art" aria-label="Customer and tailor beside a dress form">
-          <img
-            className="home-hero-image"
-            src="/images/home/hero_illustration.png"
-            alt="A customer and tailor standing beside a dress form"
-          />
-        </div>
-      </section>
+      <LandingHero />
 
-      <section className="home-trust-strip">
-        {trustCards.map(([title, copy], index) => (
+      <section className="home-trust-strip" aria-labelledby="home-trust-title">
+        <div className="home-trust-intro">
+          <span>Why Sui Dhaga</span>
+          <h2 id="home-trust-title">Confidence stitched into every order</h2>
+        </div>
+        {trustCards.map(([metric, title, copy], index) => (
           <article className="home-trust-card" key={title}>
             <div className={`trust-icon trust-icon-${index + 1}`}>
-              {index < 3 ? (
+              {index === 0 ? (
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+              ) : index === 1 ? (
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3l2.7 5.47 6.03.88-4.36 4.25 1.03 6-5.4-2.84-5.4 2.84 1.03-6-4.36-4.25 6.03-.88L12 3z"></path></svg>
+              ) : index === 2 ? (
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="m9 12 2 2 4-5"></path></svg>
               ) : (
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1 2.96-3.08"></path><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0-2.96-3.08"></path></svg>
               )}
             </div>
+            <span className="home-trust-metric">{metric}</span>
             <h3>{title}</h3>
             <p>{copy}</p>
           </article>
         ))}
       </section>
 
+      <section className="home-mobile-inspired">
+        <div className="home-greeting">
+          <div>
+            <span>Ready to look your best today?</span>
+            <h2>Explore your Sui Dhaga home</h2>
+          </div>
+          <Link href="/notifications" aria-label="Open notifications">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 7h18s-3 0-3-7"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+          </Link>
+        </div>
+
+        <div className="home-quick-actions" aria-label="Quick actions">
+          {quickActions.map(([title, href, icon]) => (
+            <Link href={href} className="home-action-tile" key={title}>
+              <span className={`home-action-icon home-action-${icon}`}>
+                {icon === "calendar" && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>}
+                {icon === "wand" && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 4V2"></path><path d="M15 16v-2"></path><path d="M8 9h2"></path><path d="M20 9h2"></path><path d="m17.8 11.8 1.4 1.4"></path><path d="m10.8 4.8-1.4-1.4"></path><path d="m17.8 6.2 1.4-1.4"></path><path d="m3 21 9-9"></path><path d="M12.2 6.2 17.8 11.8"></path></svg>}
+                {icon === "bag" && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path><path d="M3 6h18"></path><path d="M16 10a4 4 0 0 1-8 0"></path></svg>}
+                {icon === "sparkles" && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m12 3-1.9 5.8L4 11l6.1 2.2L12 19l1.9-5.8L20 11l-6.1-2.2Z"></path><path d="M5 3v4"></path><path d="M3 5h4"></path><path d="M19 17v4"></path><path d="M17 19h4"></path></svg>}
+              </span>
+              <strong>{title}</strong>
+            </Link>
+          ))}
+        </div>
+
+        <div className="home-reference-grid">
+          <section className="home-categories" aria-labelledby="home-categories-title">
+            <div className="home-section-row">
+              <h2 id="home-categories-title">Popular Categories</h2>
+              <Link href="/fabrics">View all</Link>
+            </div>
+            <div className="home-category-grid">
+              {categories.map(([title, image, tone]) => (
+                <Link href="/tailors" className={`home-category-card tone-${tone}`} key={title}>
+                  <img src={image} alt="" aria-hidden="true" />
+                  <span>{title}</span>
+                </Link>
+              ))}
+            </div>
+          </section>
+
+          <section className="home-recommended-tailor" aria-labelledby="home-tailor-title">
+            <div className="home-section-row">
+              <h2 id="home-tailor-title">Recommended Tailor</h2>
+              <Link href="/tailors">View all</Link>
+            </div>
+            <article className="home-tailor-feature">
+              <img src="/images/home/tailor-rekha.png" alt="" aria-hidden="true" />
+              <div>
+                <strong>Rekha Tailors</strong>
+                <p>4.8 (128 reviews) · 2.1 km away</p>
+                <span>Bridal, Suits, Sarees</span>
+                <div className="home-tailor-badges">
+                  <em>Verified</em>
+                  <em>Top Rated</em>
+                </div>
+              </div>
+              <Link href="/tailors/rekha-tailors">View Profile</Link>
+            </article>
+          </section>
+        </div>
+      </section>
+
       <section className="home-create-band">
-        <h2>Two powerful ways to create</h2>
+        <div className="create-wave-field" aria-hidden="true">
+          <span />
+          <span />
+          <span />
+        </div>
+        <div className="home-create-head">
+          <span>Create your way</span>
+          <h2>Two powerful ways to create</h2>
+          <p>Start with a human expert or shape your idea in the AI studio. Both paths lead to a custom outfit that feels made for you.</p>
+        </div>
         <div className="home-create-grid">
           <article className="home-create-card">
+            <img src="/images/home/create-hire-tailor.png" alt="" aria-hidden="true" className="home-create-bg" />
             <div>
               <h3>Hire a Tailor</h3>
-              <p>Your perfect solution, custom profiles, and local expert work.</p>
               <Link href="/tailors" aria-label="Explore tailors">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
               </Link>
             </div>
-            <img src="/images/home/hire_tailor.png" alt="Hire a Tailor illustration" className="mini-tailor-art" />
           </article>
           <article className="home-create-card">
+            <img src="/images/home/create-ai-studio.png" alt="" aria-hidden="true" className="home-create-bg" />
             <div>
               <h3>AI Design Studio</h3>
-              <p>Bring your ideas to life with AI-powered design tools.</p>
               <Link href="/design-studio" aria-label="Open AI Design Studio">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
               </Link>
             </div>
-            <img src="/images/home/ai_studio.png" alt="AI Design Studio illustration" className="mini-studio-art" />
           </article>
         </div>
       </section>
@@ -102,9 +170,9 @@ export function HomePage() {
           <Link href="/community">View all</Link>
         </div>
         <div className="home-community-grid">
-          {communityCards.map(([handle, title, likes], index) => (
+          {communityCards.map(([handle, title, likes, image]) => (
             <article className="home-community-card" key={handle}>
-              <img src={`/images/home/community_${index + 1}.png`} alt={title} className="outfit-card" />
+              <img src={image} alt={title} className="outfit-card" />
               <div className="home-community-meta">
                 <strong>{handle}</strong>
                 <span className="likes">
@@ -122,30 +190,13 @@ export function HomePage() {
       </section>
 
       <section className="home-process">
-        <div>
-          <h2>How It Works</h2>
-          <p>Simple steps to your perfect fit.</p>
-          <div className="home-step-row">
-            {steps.map(([title, copy], index) => (
-              <div className="home-step-wrapper" key={title}>
-                <article>
-                  <div className="step-icon">
-                    {index === 0 && <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>}
-                    {index === 1 && <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>}
-                    {index === 2 && <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 19v-4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v4M12 9V5M8 9V5"></path></svg>}
-                    {index === 3 && <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>}
-                  </div>
-                  <strong>{index + 1}. {title}</strong>
-                  <p>{copy}</p>
-                </article>
-                {index < steps.length - 1 && (
-                  <div className="step-arrow">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
-                  </div>
-                )}
-              </div>
-            ))}
+        <div className="home-process-main">
+          <div className="home-process-head">
+            <span>How it works</span>
+            <h2>From idea to outfit</h2>
+            <p>Each step is designed to keep the process clear, personal, and easy to follow.</p>
           </div>
+          <HowItWorksDeck steps={steps} />
         </div>
         <div className="home-phone-block">
           <div>
@@ -153,11 +204,7 @@ export function HomePage() {
             <p>Seamless on the go.</p>
           </div>
           <div className="home-phone">
-            <span>9:00</span>
-            <h3>Sui Dhaga</h3>
-            <strong>Your style.<br />Our craft.</strong>
-            <button>Find a Tailor</button>
-            <button>Start Designing</button>
+            <img src="/images/home/mobile-app-home.png" alt="Sui Dhaga mobile app home screen" />
           </div>
         </div>
       </section>
@@ -255,9 +302,10 @@ export function AuthPage({ mode }: { mode: "login" | "register" | "forgot" | "re
 
   return (
     <PublicShell footer={false}>
-      <div className="auth-page-container">
+      <div className={`auth-page-container auth-page-${mode}`}>
         <div className="auth-bg-blob-left"></div>
         <div className="auth-bg-blob-right"></div>
+        {mode === "register" ? <img className="auth-edge-coral" src="/images/auth/edge-coral.png" alt="" aria-hidden="true" /> : null}
         
         {/* Full-page floating tailoring elements */}
         {mode === "login" && (
@@ -335,8 +383,8 @@ export function AuthPage({ mode }: { mode: "login" | "register" | "forgot" | "re
           </div>
           <FormCard
             title={copy[3]}
-            intro={mode === "register" ? "First, tell us who you are." : mode === "login" ? "Welcome back! Please enter your details." : "Please enter your details."}
-            fields={mode === "login" ? ["Email Address", "Password"] : mode === "forgot" ? ["Email Address"] : mode === "reset" ? ["New Password", "Confirm Password"] : ["Full Name", "Email Address", "Password", "Confirm Password"]}
+            intro={mode === "register" ? "Join Sui Dhaga and discover the perfect custom tailoring experience." : mode === "login" ? "Welcome back! Please enter your details." : "Please enter your details."}
+            fields={mode === "login" ? ["Email Address", "Password"] : mode === "forgot" ? ["Email Address"] : mode === "reset" ? ["New Password", "Confirm Password"] : ["Full Name", "Email", "Phone Number", "Password", "Confirm Password"]}
             button={copy[4]}
             mode={mode}
           />
@@ -726,32 +774,31 @@ function TailorMini({ tailor }: { tailor: (typeof tailors)[number] }) {
 
 function FormCard({ title, intro, fields, button, mode }: { title: string; intro?: string; fields: string[]; button: string; mode?: string }) {
   const roleChoice = mode === "register";
+  const roles = [
+    ["Customer", "Book orders & get custom outfits", "/images/auth/role-customer.png"],
+    ["Tailor", "Offer services & grow business", "/images/auth/role-tailor.png"],
+    ["Designer", "Create designs & get discovered", "/images/auth/role-designer.png"],
+  ];
 
   return (
-    <form className="form-card">
+    <form className={`form-card ${mode ? `form-card-${mode}` : ""}`}>
       <h2>{title}</h2>
       {intro ? <p className="form-intro">{intro}</p> : null}
       
       {roleChoice ? (
-        <div className="role-choice">
-          <button type="button" className="role-btn active">
-            <div className="role-icon customer-icon">
-              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-            </div>
-            <div className="role-text">
-              <strong>I'm a Customer</strong>
-              <span>I want to order custom outfits</span>
-            </div>
-          </button>
-          <button type="button" className="role-btn">
-             <div className="role-icon tailor-icon">
-                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9.46 3.14l-3.32 3.32C5.46 7.15 5 8.08 5 9.05V21h14V9.05c0-.97-.46-1.9-1.14-2.59l-3.32-3.32c-.39-.39-1.02-.39-1.41 0L12 4.24l-1.14-1.14c-.38-.38-1.02-.38-1.4 0.04zM12 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>
-             </div>
-             <div className="role-text">
-              <strong>I'm a Tailor</strong>
-              <span>I want to offer my tailoring services</span>
-            </div>
-          </button>
+        <div className="role-choice" aria-label="Choose account type">
+          {roles.map(([role, description, image], index) => (
+            <button type="button" className={`role-btn ${index === 0 ? "active" : ""}`} key={role}>
+              {index === 0 ? <span className="role-check" aria-hidden="true">&#10003;</span> : null}
+              <span className="role-icon">
+                <img src={image} alt="" aria-hidden="true" />
+              </span>
+              <span className="role-text">
+                <strong>{role}</strong>
+                <span>{description}</span>
+              </span>
+            </button>
+          ))}
         </div>
       ) : null}
 
@@ -759,10 +806,16 @@ function FormCard({ title, intro, fields, button, mode }: { title: string; intro
         {fields.map((field) => (
           <label key={field}>
             <span className="field-label">{field}</span>
-            <div className="input-wrap">
+            <div className={`input-wrap ${field === "Phone Number" ? "phone-input-wrap" : ""}`}>
+               {field === "Phone Number" ? (
+                 <span className="phone-prefix">
+                   <span>IN</span>
+                   <strong>+91</strong>
+                 </span>
+               ) : null}
                <input 
-                 type={field.toLowerCase().includes("password") ? "password" : field.toLowerCase().includes("email") ? "email" : "text"} 
-                 placeholder={field.toLowerCase().includes("password") ? (field.includes("Confirm") ? "Confirm your password" : "Create a password") : field.toLowerCase().includes("email") ? `Enter your email` : `Enter your full name`} 
+                 type={field.toLowerCase().includes("password") ? "password" : field.toLowerCase().includes("email") ? "email" : field === "Phone Number" ? "tel" : "text"} 
+                 placeholder={field.toLowerCase().includes("password") ? (field.includes("Confirm") ? "Confirm your password" : "Create a password") : field.toLowerCase().includes("email") ? "Enter your email address" : field === "Phone Number" ? "Enter phone number" : "Enter your full name"} 
                />
                {field.toLowerCase().includes("password") && (
                  <span className="eye-icon">
@@ -776,7 +829,7 @@ function FormCard({ title, intro, fields, button, mode }: { title: string; intro
       
       {roleChoice && (
         <label className="terms-checkbox">
-           <input type="checkbox" />
+           <input type="checkbox" defaultChecked />
            <span>I agree to the <Link href="/terms-and-conditions">Terms & Conditions</Link> and <Link href="/privacy-policy">Privacy Policy</Link></span>
         </label>
       )}
