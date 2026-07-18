@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { AccountRoleChoice } from "./account-role-choice";
 import { adminUsers, appointments, designs, orders, tailors } from "./data";
+import { CountryCodeSelect } from "./country-code-select";
 import { HowItWorksDeck } from "./how-it-works-deck";
 import { LandingHero } from "./landing-hero";
 import { DashboardShell, DecorativeFrame, FigureCard, PageHero, PublicShell, StatusPill } from "./site-shell";
@@ -774,11 +776,6 @@ function TailorMini({ tailor }: { tailor: (typeof tailors)[number] }) {
 
 function FormCard({ title, intro, fields, button, mode }: { title: string; intro?: string; fields: string[]; button: string; mode?: string }) {
   const roleChoice = mode === "register";
-  const roles = [
-    ["Customer", "Book orders & get custom outfits", "/images/auth/role-customer.png"],
-    ["Tailor", "Offer services & grow business", "/images/auth/role-tailor.png"],
-    ["Designer", "Create designs & get discovered", "/images/auth/role-designer.png"],
-  ];
 
   return (
     <form className={`form-card ${mode ? `form-card-${mode}` : ""}`}>
@@ -786,20 +783,7 @@ function FormCard({ title, intro, fields, button, mode }: { title: string; intro
       {intro ? <p className="form-intro">{intro}</p> : null}
       
       {roleChoice ? (
-        <div className="role-choice" aria-label="Choose account type">
-          {roles.map(([role, description, image], index) => (
-            <button type="button" className={`role-btn ${index === 0 ? "active" : ""}`} key={role}>
-              {index === 0 ? <span className="role-check" aria-hidden="true">&#10003;</span> : null}
-              <span className="role-icon">
-                <img src={image} alt="" aria-hidden="true" />
-              </span>
-              <span className="role-text">
-                <strong>{role}</strong>
-                <span>{description}</span>
-              </span>
-            </button>
-          ))}
-        </div>
+        <AccountRoleChoice />
       ) : null}
 
       <div className="form-fields">
@@ -808,10 +792,7 @@ function FormCard({ title, intro, fields, button, mode }: { title: string; intro
             <span className="field-label">{field}</span>
             <div className={`input-wrap ${field === "Phone Number" ? "phone-input-wrap" : ""}`}>
                {field === "Phone Number" ? (
-                 <span className="phone-prefix">
-                   <span>IN</span>
-                   <strong>+91</strong>
-                 </span>
+                 <CountryCodeSelect />
                ) : null}
                <input 
                  type={field.toLowerCase().includes("password") ? "password" : field.toLowerCase().includes("email") ? "email" : field === "Phone Number" ? "tel" : "text"} 

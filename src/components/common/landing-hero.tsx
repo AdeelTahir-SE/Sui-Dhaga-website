@@ -97,7 +97,7 @@ export function LandingHero() {
       floatingRefs.current.forEach((element, index) => {
         if (!element) return;
         const item = floatingImages[index];
-        const strength = item.depth / 18;
+        const strength = item.depth * 5;
         const x = currentX * strength;
         const y = currentY * strength;
         element.style.transform = `translate3d(${x}px, ${y}px, 0) ${item.baseTransform}`;
@@ -108,8 +108,8 @@ export function LandingHero() {
 
     const updateFromPoint = (clientX: number, clientY: number) => {
       const rect = section.getBoundingClientRect();
-      targetX = clientX - rect.left - rect.width / 2;
-      targetY = clientY - rect.top - rect.height / 2;
+      targetX = Math.max(-1, Math.min(1, (clientX - rect.left - rect.width / 2) / (rect.width / 2)));
+      targetY = Math.max(-1, Math.min(1, (clientY - rect.top - rect.height / 2) / (rect.height / 2)));
     };
 
     const handleMouseMove = (event: MouseEvent) => {
