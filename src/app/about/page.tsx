@@ -100,16 +100,20 @@ export default function AboutPage() {
               </div>
 
               {/* Small BG Image */}
-              <img
+              <Image
                 src="/images/about/about-main-bg.png"
                 alt="Background Shape"
+                width={380}
+                height={380}
                 className="absolute z-[5] w-full max-w-[380px] object-contain rounded-xl top-9"
               />
 
               {/* Main Image */}
-              <img
+              <Image
                 src="/images/about/about-main.png"
                 alt="Tailor measuring"
+                width={480}
+                height={480}
                 className="relative z-10 w-full max-w-[480px] object-contain"
               />
             </div>
@@ -156,9 +160,11 @@ export default function AboutPage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-center  mb-20">
             {/* Left Photo */}
             <div className="flex justify-start">
-              <img
+              <Image
                 src="/images/about/for-customers.png"
                 alt="Happy Customer"
+                width={360}
+                height={260}
                 className="w-full max-w-[360px] h-[260px] object-cover rounded-3xl object-top"
               />
             </div>
@@ -185,9 +191,11 @@ export default function AboutPage() {
 
             {/* Right Illustration */}
             <div className="flex justify-end">
-              <img
+              <Image
                 src="/images/about/for-customers-illustration.png"
                 alt="Tailor Illustration"
+                width={500}
+                height={500}
                 className="w-full max-w-[500px] object-contain scale-110 origin-right"
               />
             </div>
@@ -214,9 +222,11 @@ export default function AboutPage() {
               </ul>
             </div>
             <div className="flex-[1_1_400px]">
-              <img
+              <Image
                 src="/images/about/for-tailors.png"
                 alt="For Tailors"
+                width={800}
+                height={600}
                 className="w-full h-[360px] object-cover rounded-[32px]"
               />
             </div>
@@ -363,16 +373,18 @@ export default function AboutPage() {
                   key={i}
                   className="bg-white p-4 rounded-2xl border border-[#EAEAEA] flex flex-col items-center"
                 >
-                  <img
+                  <Image
                     src={member.image}
                     alt={member.name}
+                    width={400}
+                    height={240}
                     className="w-full h-[240px] object-cover rounded-xl mb-5 bg-[#F0EFEA]"
                   />
                   <h3 className="text-lg font-bold m-0 mb-1 text-[#111]">
                     {member.name}
                   </h3>
                   <p className="text-sm text-[#666] m-0 mb-4">{member.role}</p>
-                  <a href="#" className="text-[#0077b5] flex">
+                  <Link href="#" className="text-[#0077b5] flex">
                    <Image 
                     src="/icons/about/linkedin-icon.png"
                     alt="LinkedIn"
@@ -380,7 +392,7 @@ export default function AboutPage() {
                     height={20}
                     className="mr-2"
                   />
-                  </a>
+                  </Link>
                 </div>
               ))}
             </div>
