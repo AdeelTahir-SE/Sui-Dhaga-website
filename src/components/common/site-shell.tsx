@@ -90,7 +90,35 @@ export function PublicNav() {
 export function PublicFooter() {
   return (
     <footer style={{ backgroundColor: '#0F172A', color: '#fff', padding: '60px 48px 24px', position: 'relative', overflow: 'hidden', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-      
+      <style dangerouslySetInnerHTML={{__html: `
+        .footer-link {
+          color: #94A3B8;
+          text-decoration: none;
+          font-size: 16px;
+          transition: color 0.2s ease, transform 0.2s ease;
+          display: inline-block;
+        }
+        .footer-link:hover {
+          color: #14919b;
+          transform: translateX(4px);
+        }
+        .footer-social-link {
+          transition: transform 0.2s ease, opacity 0.2s ease;
+          display: inline-block;
+        }
+        .footer-social-link:hover {
+          transform: translateY(-4px) scale(1.1);
+          opacity: 0.8;
+        }
+        .footer-app-btn {
+          transition: transform 0.2s ease, background-color 0.2s ease;
+        }
+        .footer-app-btn:hover {
+          transform: translateY(-4px);
+          background-color: #1e293b !important;
+        }
+      `}} />
+
       {/* Decorative Wavy Corner SVG */}
       <svg 
         viewBox="0 0 300 300" 
@@ -124,16 +152,16 @@ export function PublicFooter() {
           <Link href="/" style={{ fontSize: '26px', fontWeight: 800, color: '#fff', textDecoration: 'none', display: 'block', marginBottom: '16px' }}>Sui Dhaga</Link>
           <p style={{ fontSize: '16px', color: '#94A3B8', marginBottom: '32px' }}>Tailored for you. Made by experts.</p>
           <div style={{ display: 'flex', gap: '16px' }}>
-            <a href="#" style={{ color: '#fff' }}>
+            <a href="#" className="footer-social-link">
               <img src="/icons/footer/facebook.png" alt="Facebook" style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
             </a>
-            <a href="#" style={{ color: '#fff' }}>
+            <a href="#" className="footer-social-link">
               <img src="/icons/footer/instagram.png" alt="Instagram" style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
             </a>
-            <a href="#" style={{ color: '#fff' }}>
+            <a href="#" className="footer-social-link">
               <img src="/icons/footer/pinterest.png" alt="Pinterest" style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
             </a>
-            <a href="#" style={{ color: '#fff' }}>
+            <a href="#" className="footer-social-link">
               <img src="/icons/footer/youtube.png" alt="YouTube" style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
             </a>
           </div>
@@ -152,14 +180,14 @@ export function PublicFooter() {
         <div style={{ flex: '1 1 200px' }}>
           <h4 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '20px', color: '#F8FAFC' }}>Download App</h4>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <button style={{ backgroundColor: '#000', color: '#fff', border: '1px solid #334155', borderRadius: '8px', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', textAlign: 'left' }}>
+            <button className="footer-app-btn" style={{ backgroundColor: '#000', color: '#fff', border: '1px solid #334155', borderRadius: '8px', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', textAlign: 'left' }}>
               <img src="/icons/footer/google-play.png" alt="Google Play" style={{ width: '26px', height: '26px', objectFit: 'contain' }} />
               <div>
                 <div style={{ fontSize: '11px', color: '#94A3B8', lineHeight: 1 }}>GET IT ON</div>
                 <div style={{ fontSize: '15px', fontWeight: 600, lineHeight: 1, marginTop: '4px' }}>Google Play</div>
               </div>
             </button>
-            <button style={{ backgroundColor: '#000', color: '#fff', border: '1px solid #334155', borderRadius: '8px', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', textAlign: 'left' }}>
+            <button className="footer-app-btn" style={{ backgroundColor: '#000', color: '#fff', border: '1px solid #334155', borderRadius: '8px', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', textAlign: 'left' }}>
               <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71,19.5C17.88,20.74 17,21.95 15.66,21.97C14.32,22 13.89,21.18 12.37,21.18C10.84,21.18 10.37,21.95 9.1,22C7.79,22.05 6.8,20.68 5.96,19.47C4.25,17 2.94,12.45 4.7,9.39C5.57,7.87 7.13,6.91 8.82,6.88C10.1,6.86 11.32,7.75 12.11,7.75C12.89,7.75 14.37,6.68 15.92,6.84C16.57,6.87 18.39,7.1 19.56,8.82C19.47,8.88 17.39,10.1 17.41,12.63C17.44,15.65 20.06,16.66 20.09,16.69C20.06,16.76 19.6,18.23 18.71,19.5M12,6.11C13.11,6.11 14.39,5.2 15.11,4.07C15.75,3.15 16.25,1.84 16.14,0.5C14.93,0.55 13.56,1.31 12.8,2.23C12.16,3 11.59,4.32 11.73,5.64C13.06,5.75 14.41,4.96 15.17,4C14.5,4.96 13.25,5.75 12,5.64V6.11Z" /></svg>
               <div>
                 <div style={{ fontSize: '11px', color: '#94A3B8', lineHeight: 1 }}>Download on the</div>
@@ -185,7 +213,7 @@ function FooterColumn({ title, links }: { title: string; links: string[] }) {
       <h4 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '20px', color: '#F8FAFC' }}>{title}</h4>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
         {links.map((link) => (
-          <Link key={link} href="#" style={{ color: '#94A3B8', textDecoration: 'none', fontSize: '16px' }}>{link}</Link>
+          <Link key={link} href="#" className="footer-link">{link}</Link>
         ))}
       </div>
     </div>
