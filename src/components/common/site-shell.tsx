@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { navItems } from "./data";
 import { AnimeNavBar, AnimeMascot } from "@/components/ui/anime-navbar";
-import { Scissors, Wand2, Users, HelpCircle, CreditCard, Search, Bell, User } from "lucide-react";
+import { Scissors, Wand2, Users, HelpCircle, CreditCard, Search, Bell, User, Menu } from "lucide-react";
 import { usePathname } from "next/navigation";
 
 const animeNavItems = [
@@ -42,7 +42,7 @@ export function PublicNav() {
         Sui Dhága
       </Link>
       
-      <nav style={{ display: 'flex', gap: '32px', alignItems: 'center' }}>
+      <nav className="hidden md:flex" style={{ gap: '32px', alignItems: 'center' }}>
         {animeNavItems.map((item) => (
           <Link 
             key={item.name} 
@@ -60,7 +60,7 @@ export function PublicNav() {
         ))}
       </nav>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+      <div className="hidden md:flex" style={{ alignItems: 'center', gap: '24px' }}>
         <button aria-label="Search" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#111', padding: 0, display: 'flex' }}>
           <Search size={22} strokeWidth={2} />
         </button>
@@ -83,6 +83,10 @@ export function PublicNav() {
           <User size={20} strokeWidth={2} />
         </Link>
       </div>
+
+      <button className="md:hidden flex" aria-label="Menu" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#111', padding: 0, alignItems: 'center' }}>
+        <Menu size={28} strokeWidth={2} />
+      </button>
     </header>
   );
 }
