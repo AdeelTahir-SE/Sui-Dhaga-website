@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { navItems } from "./data";
 import { AnimeNavBar, AnimeMascot } from "@/components/ui/anime-navbar";
@@ -16,9 +17,36 @@ const animeNavItems = [
 
 export function PublicNav() {
   const pathname = usePathname();
+  const [hidden, setHidden] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    let lastScrollY = window.scrollY;
+
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+
+      if (currentScrollY < 24) {
+        setHidden(false);
+        setScrolled(false);
+      } else if (currentScrollY > lastScrollY + 8) {
+        setHidden(true);
+        setScrolled(true);
+      } else if (currentScrollY < lastScrollY - 8) {
+        setHidden(false);
+        setScrolled(true);
+      }
+
+      lastScrollY = currentScrollY;
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   return (
-    <header className="site-nav" style={{ 
+    <header className={`site-nav ${scrolled ? "site-nav-scrolled" : ""}`} style={{ 
       position: 'fixed', 
       top: 0,
       left: 0,
@@ -28,13 +56,19 @@ export function PublicNav() {
       alignItems: 'center', 
       justifyContent: 'space-between', 
       padding: '16px 48px',
-      backgroundColor: '#FAF8F5',
-      boxSizing: 'border-box'
+      backgroundColor: scrolled ? 'rgba(250, 248, 245, 0.62)' : '#FAF8F5',
+      boxSizing: 'border-box',
+      border: 'none',
+      borderRadius: 0,
+      backdropFilter: scrolled ? 'blur(18px) saturate(1.2)' : 'none',
+      transform: hidden ? 'translateY(-110%)' : 'translateY(0)',
+      transition: 'transform 280ms ease, background-color 240ms ease, color 240ms ease',
+      boxShadow: 'none'
     }}>
       <Link href="/" style={{ 
         fontSize: '26px', 
         fontWeight: 900, 
-        color: '#000', 
+        color: scrolled ? '#078b87' : '#000', 
         textDecoration: 'none', 
         letterSpacing: '-0.5px',
         fontFamily: 'system-ui, -apple-system, sans-serif'
@@ -48,9 +82,9 @@ export function PublicNav() {
             key={item.name} 
             href={item.url} 
             style={{ 
-              fontSize: '14px', 
+              fontSize: '16px', 
               fontWeight: 600, 
-              color: '#111',
+              color: scrolled ? '#078b87' : '#111',
               textDecoration: 'none',
               fontFamily: 'system-ui, -apple-system, sans-serif'
             }}
@@ -61,10 +95,10 @@ export function PublicNav() {
       </nav>
 
       <div className="hidden md:flex" style={{ alignItems: 'center', gap: '24px' }}>
-        <button aria-label="Search" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#111', padding: 0, display: 'flex' }}>
+        <button aria-label="Search" style={{ background: 'none', border: 'none', cursor: 'pointer', color: scrolled ? '#078b87' : '#111', padding: 0, display: 'flex' }}>
           <Search size={22} strokeWidth={2} />
         </button>
-        <button aria-label="Alerts" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#111', padding: 0, display: 'flex' }}>
+        <button aria-label="Alerts" style={{ background: 'none', border: 'none', cursor: 'pointer', color: scrolled ? '#078b87' : '#111', padding: 0, display: 'flex' }}>
           <Bell size={22} strokeWidth={2} />
         </button>
         <Link href="/auth/login" aria-label="Profile" style={{ 
@@ -84,7 +118,7 @@ export function PublicNav() {
         </Link>
       </div>
 
-      <button className="md:hidden flex" aria-label="Menu" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#111', padding: 0, alignItems: 'center' }}>
+      <button className="md:hidden flex" aria-label="Menu" style={{ background: 'none', border: 'none', cursor: 'pointer', color: scrolled ? '#078b87' : '#111', padding: 0, alignItems: 'center' }}>
         <Menu size={28} strokeWidth={2} />
       </button>
     </header>
@@ -184,20 +218,20 @@ export function PublicFooter() {
         <div style={{ flex: '1 1 200px' }}>
           <h4 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '20px', color: '#F8FAFC' }}>Download App</h4>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <button className="footer-app-btn" style={{ backgroundColor: '#000', color: '#fff', border: '1px solid #334155', borderRadius: '8px', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', textAlign: 'left' }}>
+            <a href="https://play.google.com/store" target="_blank" rel="noreferrer" className="footer-app-btn" style={{ backgroundColor: '#000', color: '#fff', border: '1px solid #334155', borderRadius: '8px', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', textAlign: 'left', textDecoration: 'none' }}>
               <img src="/icons/footer/google-play.png" alt="Google Play" style={{ width: '26px', height: '26px', objectFit: 'contain' }} />
               <div>
                 <div style={{ fontSize: '11px', color: '#94A3B8', lineHeight: 1 }}>GET IT ON</div>
                 <div style={{ fontSize: '15px', fontWeight: 600, lineHeight: 1, marginTop: '4px' }}>Google Play</div>
               </div>
-            </button>
-            <button className="footer-app-btn" style={{ backgroundColor: '#000', color: '#fff', border: '1px solid #334155', borderRadius: '8px', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', textAlign: 'left' }}>
+            </a>
+            <a href="https://www.apple.com/app-store/" target="_blank" rel="noreferrer" className="footer-app-btn" style={{ backgroundColor: '#000', color: '#fff', border: '1px solid #334155', borderRadius: '8px', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', textAlign: 'left', textDecoration: 'none' }}>
               <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71,19.5C17.88,20.74 17,21.95 15.66,21.97C14.32,22 13.89,21.18 12.37,21.18C10.84,21.18 10.37,21.95 9.1,22C7.79,22.05 6.8,20.68 5.96,19.47C4.25,17 2.94,12.45 4.7,9.39C5.57,7.87 7.13,6.91 8.82,6.88C10.1,6.86 11.32,7.75 12.11,7.75C12.89,7.75 14.37,6.68 15.92,6.84C16.57,6.87 18.39,7.1 19.56,8.82C19.47,8.88 17.39,10.1 17.41,12.63C17.44,15.65 20.06,16.66 20.09,16.69C20.06,16.76 19.6,18.23 18.71,19.5M12,6.11C13.11,6.11 14.39,5.2 15.11,4.07C15.75,3.15 16.25,1.84 16.14,0.5C14.93,0.55 13.56,1.31 12.8,2.23C12.16,3 11.59,4.32 11.73,5.64C13.06,5.75 14.41,4.96 15.17,4C14.5,4.96 13.25,5.75 12,5.64V6.11Z" /></svg>
               <div>
                 <div style={{ fontSize: '11px', color: '#94A3B8', lineHeight: 1 }}>Download on the</div>
                 <div style={{ fontSize: '15px', fontWeight: 600, lineHeight: 1, marginTop: '4px' }}>App Store</div>
               </div>
-            </button>
+            </a>
           </div>
         </div>
 
@@ -212,12 +246,27 @@ export function PublicFooter() {
 }
 
 function FooterColumn({ title, links }: { title: string; links: string[] }) {
+  const footerHref: Record<string, string> = {
+    "Find a Tailor": "/tailors",
+    "AI Design Studio": "/design-studio",
+    "How It Works": "/faqs",
+    Pricing: "/checkout",
+    "About Us": "/about",
+    "Contact Us": "/contact",
+    Blog: "/blog",
+    Careers: "/become-a-tailor",
+    FAQs: "/faqs",
+    "Privacy Policy": "/privacy-policy",
+    "Terms & Conditions": "/terms-and-conditions",
+    "Refund Policy": "/refund-policy",
+  };
+
   return (
     <div style={{ flex: '1 1 140px' }}>
       <h4 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '20px', color: '#F8FAFC' }}>{title}</h4>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
         {links.map((link) => (
-          <Link key={link} href="#" className="footer-link">{link}</Link>
+          <Link key={link} href={footerHref[link] ?? "/"} className="footer-link">{link}</Link>
         ))}
       </div>
     </div>
