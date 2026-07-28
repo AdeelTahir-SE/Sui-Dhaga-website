@@ -1,5 +1,6 @@
-import { PublicInfoPage } from "@/components/common/pages";
+import { BlogPage } from "@/components/blog/blog-page";
 
 export default function Page() {
-  return <PublicInfoPage type="blog" />;
+  return <BlogPage />;
 }
+
