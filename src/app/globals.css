@@ -5825,3 +5825,418 @@ body,
     display: none;
   }
 }
+
+/* Privacy policy reference layout */
+.privacy-reference-page {
+  background: #fffaf1;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  max-width: none;
+  overflow: hidden;
+  padding: 104px 0 0;
+  position: relative;
+  width: 100vw;
+}
+
+.privacy-reference-page::before {
+  background-image: radial-gradient(circle, rgba(17, 17, 17, 0.36) 1.55px, transparent 1.65px);
+  background-size: 15px 15px;
+  content: "";
+  height: 96px;
+  left: 50.3%;
+  opacity: 0.46;
+  position: absolute;
+  top: 238px;
+  width: 86px;
+  z-index: 0;
+}
+
+.privacy-hero,
+.privacy-policy-grid,
+.privacy-support-card {
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 1380px;
+  position: relative;
+  z-index: 1;
+  width: calc(100% - clamp(36px, 8vw, 156px));
+}
+
+.privacy-hero {
+  align-items: center;
+  display: grid;
+  gap: clamp(26px, 5vw, 86px);
+  grid-template-columns: minmax(360px, 0.9fr) minmax(430px, 1.1fr);
+  min-height: 310px;
+}
+
+.privacy-breadcrumb {
+  align-items: center;
+  color: #111111;
+  display: flex;
+  font-size: 13px;
+  font-weight: 650;
+  gap: 10px;
+  line-height: 1;
+  margin: 0 0 40px;
+}
+
+.privacy-breadcrumb a {
+  align-items: center;
+  display: inline-flex;
+  gap: 6px;
+}
+
+.privacy-hero-copy h1 {
+  color: #111111;
+  font-size: clamp(42px, 5.4vw, 70px);
+  line-height: 0.98;
+  margin: 0 0 18px;
+}
+
+.privacy-hero-copy > p:last-child {
+  color: #111111;
+  font-size: clamp(16px, 1.55vw, 20px);
+  font-weight: 650;
+  line-height: 1.56;
+  max-width: 525px;
+}
+
+.privacy-hero-art {
+  align-self: end;
+  height: clamp(270px, 31vw, 390px);
+  position: relative;
+}
+
+.privacy-sun {
+  background: #f7b915;
+  border-radius: 999px;
+  height: clamp(118px, 11vw, 160px);
+  left: 21%;
+  position: absolute;
+  top: 18px;
+  width: clamp(118px, 11vw, 160px);
+}
+
+.privacy-document {
+  background: #fff8ed;
+  border: 1px solid #eadfce;
+  border-radius: 8px;
+  box-shadow: 18px 0 0 rgba(17, 17, 17, 0.06), 0 16px 28px rgba(38, 28, 18, 0.08);
+  display: grid;
+  gap: 17px;
+  height: clamp(194px, 19vw, 254px);
+  left: 35%;
+  padding: 34px 34px 24px 64px;
+  position: absolute;
+  top: 44px;
+  width: clamp(190px, 19vw, 255px);
+}
+
+.privacy-document span {
+  background: #cfc7bb;
+  border-radius: 999px;
+  display: block;
+  height: 5px;
+}
+
+.privacy-document span:first-child {
+  height: 10px;
+  width: 46%;
+}
+
+.privacy-document span:nth-child(2) {
+  width: 85%;
+}
+
+.privacy-document span:nth-child(3) {
+  width: 74%;
+}
+
+.privacy-document span:nth-child(4) {
+  width: 62%;
+}
+
+.privacy-shield {
+  align-items: center;
+  background: #078b87;
+  border: 4px solid #062c32;
+  color: #fffaf1;
+  display: flex;
+  height: clamp(162px, 16vw, 218px);
+  justify-content: center;
+  left: 18%;
+  position: absolute;
+  top: 92px;
+  width: clamp(132px, 13vw, 176px);
+  clip-path: polygon(50% 0, 100% 18%, 94% 72%, 50% 100%, 6% 72%, 0 18%);
+}
+
+.privacy-shield::before {
+  border: 3px solid rgba(255, 250, 241, 0.68);
+  content: "";
+  inset: 14px;
+  position: absolute;
+  clip-path: inherit;
+}
+
+.privacy-shield svg {
+  position: relative;
+  z-index: 1;
+}
+
+.privacy-policy-grid {
+  display: grid;
+  gap: 36px 38px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: clamp(24px, 3.5vw, 50px);
+}
+
+.privacy-policy-card {
+  align-items: start;
+  background: rgba(255, 253, 248, 0.78);
+  border: 1px solid #eadfce;
+  border-radius: 14px;
+  box-shadow: 0 13px 30px rgba(38, 28, 18, 0.035);
+  display: grid;
+  gap: clamp(20px, 2.4vw, 36px);
+  grid-template-columns: 74px 1fr;
+  min-height: 194px;
+  padding: clamp(28px, 3.1vw, 40px);
+}
+
+.privacy-policy-icon,
+.privacy-support-icon {
+  align-items: center;
+  background: #fbf0dd;
+  border-radius: 999px;
+  color: #078b87;
+  display: flex;
+  height: 68px;
+  justify-content: center;
+  position: relative;
+  width: 68px;
+}
+
+.privacy-policy-icon::before,
+.privacy-support-icon::before {
+  border: 2px solid rgba(7, 139, 135, 0.3);
+  border-radius: 16px;
+  content: "";
+  height: 34px;
+  position: absolute;
+  width: 34px;
+}
+
+.privacy-policy-icon svg,
+.privacy-support-icon svg {
+  filter: drop-shadow(1px 1px 0 rgba(17, 17, 17, 0.22));
+  position: relative;
+  z-index: 1;
+}
+
+.privacy-policy-card h2,
+.privacy-support-card h2 {
+  color: #111111;
+  font-size: clamp(16px, 1.45vw, 20px);
+  font-weight: 950;
+  line-height: 1.15;
+  margin: 4px 0 14px;
+}
+
+.privacy-policy-card p,
+.privacy-support-card p {
+  color: #111111;
+  font-size: clamp(13px, 1.05vw, 15px);
+  font-weight: 650;
+  line-height: 1.65;
+  margin: 0;
+  max-width: 430px;
+}
+
+.privacy-support-card {
+  background:
+    linear-gradient(90deg, rgba(255, 253, 248, 0.88), rgba(255, 246, 229, 0.88)),
+    #fff8ed;
+  border: 1px solid #eadfce;
+  border-radius: 14px;
+  box-shadow: 0 15px 32px rgba(38, 28, 18, 0.045);
+  display: grid;
+  gap: 28px;
+  grid-template-columns: minmax(0, 1.25fr) minmax(260px, 0.75fr);
+  margin-bottom: 34px;
+  margin-top: 42px;
+  min-height: 132px;
+  overflow: hidden;
+  padding: 30px 40px;
+}
+
+.privacy-support-card::before {
+  background: #eadfce;
+  content: "";
+  height: 76%;
+  left: 60%;
+  opacity: 0.7;
+  position: absolute;
+  top: 12%;
+  width: 1px;
+}
+
+.privacy-support-card article {
+  align-items: center;
+  display: grid;
+  gap: 24px;
+  grid-template-columns: 70px 1fr;
+}
+
+.privacy-support-card article + article {
+  display: block;
+  padding-left: clamp(0px, 2vw, 18px);
+}
+
+.privacy-support-card a {
+  align-items: center;
+  background: #078b87;
+  border-radius: 6px;
+  color: #ffffff;
+  display: inline-flex;
+  font-size: 14px;
+  font-weight: 850;
+  justify-content: center;
+  margin-top: 16px;
+  min-height: 42px;
+  padding: 0 30px;
+}
+
+.privacy-side-illustration {
+  display: block;
+  height: auto;
+  max-width: 14vw;
+  object-fit: contain;
+  pointer-events: none;
+  position: absolute;
+  width: clamp(120px, 8.7vw, 176px);
+  z-index: 1;
+}
+
+.privacy-side-illustration-left {
+  left: clamp(6px, 1.1vw, 22px);
+  top: clamp(610px, 51vw, 740px);
+}
+
+.privacy-side-illustration-right {
+  left: auto;
+  right: clamp(6px, 1.1vw, 22px);
+  top: clamp(735px, 62vw, 900px);
+  width: clamp(112px, 8.2vw, 162px);
+}
+
+.privacy-floating-diamond {
+  border: 3px solid #078b87;
+  height: 27px;
+  left: 54%;
+  position: absolute;
+  top: 142px;
+  transform: rotate(44deg);
+  width: 27px;
+  z-index: 2;
+}
+
+.privacy-floating-diamond::after {
+  background: #078b87;
+  content: "";
+  height: 9px;
+  left: 6px;
+  position: absolute;
+  top: 6px;
+  width: 9px;
+}
+
+.privacy-floating-ring {
+  border: 3px solid #111111;
+  border-radius: 999px;
+  height: 31px;
+  position: absolute;
+  right: 13%;
+  top: 156px;
+  width: 31px;
+  z-index: 2;
+}
+
+@media (max-width: 980px) {
+  .privacy-reference-page {
+    padding-top: 92px;
+  }
+
+  .privacy-hero,
+  .privacy-policy-grid,
+  .privacy-support-card {
+    grid-template-columns: 1fr;
+  }
+
+  .privacy-hero-art {
+    order: -1;
+  }
+
+  .privacy-support-card::before {
+    display: none;
+  }
+
+  .privacy-side-illustration {
+    max-width: none;
+    opacity: 0.16;
+    width: 124px;
+  }
+
+  .privacy-side-illustration-left {
+    left: -30px;
+    top: 585px;
+  }
+
+  .privacy-side-illustration-right {
+    right: -30px;
+    top: 740px;
+    width: 118px;
+  }
+}
+
+@media (max-width: 620px) {
+  .privacy-hero,
+  .privacy-policy-grid,
+  .privacy-support-card {
+    width: calc(100% - 32px);
+  }
+
+  .privacy-hero {
+    min-height: 0;
+  }
+
+  .privacy-breadcrumb {
+    margin-bottom: 20px;
+  }
+
+  .privacy-hero-art {
+    height: 250px;
+  }
+
+  .privacy-policy-card,
+  .privacy-support-card article {
+    grid-template-columns: 1fr;
+  }
+
+  .privacy-policy-card {
+    min-height: 0;
+    padding: 24px;
+  }
+
+  .privacy-support-card {
+    padding: 24px;
+  }
+
+  .privacy-reference-page::before,
+  .privacy-side-illustration,
+  .privacy-floating-diamond,
+  .privacy-floating-ring {
+    display: none;
+  }
+}

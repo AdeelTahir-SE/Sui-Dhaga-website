@@ -187,7 +187,7 @@ export function PublicFooter() {
         
         {/* Brand Block */}
         <div style={{ flex: '1 1 240px' }}>
-          <Link href="/" style={{ fontSize: '26px', fontWeight: 800, color: '#fff', textDecoration: 'none', display: 'block', marginBottom: '16px' }}>Sui Dhaga</Link>
+          <Link href="/" style={{ fontSize: '26px', fontWeight: 800, color: '#fff', textDecoration: 'none', display: 'block', marginBottom: '16px' }}>Sui Dhāga</Link>
           <p style={{ fontSize: '16px', color: '#94A3B8', marginBottom: '32px' }}>Tailored for you. Made by experts.</p>
           <div style={{ display: 'flex', gap: '16px' }}>
             <a href="#" className="footer-social-link">
@@ -239,7 +239,7 @@ export function PublicFooter() {
 
       {/* Footer Bottom */}
       <div style={{ position: 'relative', zIndex: 1, borderTop: '1px solid #1E293B', paddingTop: '24px', display: 'flex', justifyContent: 'space-between', color: '#94A3B8', fontSize: '16px' }}>
-        <span>© 2024 Sui Dhaga. All rights reserved.</span>
+        <span>© 2024 Sui Dhāga. All rights reserved.</span>
       </div>
     </footer>
   );
