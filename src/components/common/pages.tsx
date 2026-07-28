@@ -293,33 +293,26 @@ function InfoGrid({ type }: { type: string }) {
     </section>
   );
 }
-
 export function AuthPage({ mode }: { mode: "login" | "register" | "forgot" | "reset" }) {
   const copy = {
     login: ["WELCOME BACK", "Glad to see you again!", "Login to continue your custom fashion journey with Sui Dhaga.", "Login to your account", "Login"],
     register: ["CREATE YOUR ACCOUNT", "Let's get you started!", "Join Sui Dhaga and connect with expert tailors or showcase your craft.", "Create your account", "Create Account"],
-    forgot: ["FORGOT PASSWORD?", "No worries, happens to the best of us!", "Enter your email and we will send you a link to reset your password.", "Reset your password", "Send Reset Link"],
+    forgot: ["FORGOT PASSWORD?", "No worries, happens to the best of us!", "Enter your email address and we'll send you a link to reset your password.", "Reset your password", "Send Reset Link"],
     reset: ["CREATE NEW PASSWORD", "Almost there! Set new password", "Your new password must be different from previous used passwords.", "Set new password", "Reset Password"],
   }[mode];
 
   return (
-    <PublicShell footer={false}>
+    <PublicShell footer={mode === "login" || mode === "forgot" || mode === "reset"}>
       <div className={`auth-page-container auth-page-${mode}`}>
-        <div className="auth-bg-blob-left"></div>
-        <div className="auth-bg-blob-right"></div>
+        {mode === "register" ? <div className="auth-bg-blob-left"></div> : null}
+        {mode === "register" ? <div className="auth-bg-blob-right"></div> : null}
         {mode === "register" ? <img className="auth-edge-coral" src="/images/auth/edge-coral.png" alt="" aria-hidden="true" /> : null}
-        
-        {/* Full-page floating tailoring elements */}
-        {mode === "login" && (
+        {(mode === "forgot" || mode === "login" || mode === "reset") ? (
           <>
-             <span className="bg-icon float-button">
-               <svg viewBox="0 0 24 24" fill="none" stroke="var(--coral)" strokeWidth="2"><circle cx="12" cy="12" r="10"/><circle cx="9" cy="9" r="1.5" fill="var(--coral)"/><circle cx="15" cy="9" r="1.5" fill="var(--coral)"/><circle cx="9" cy="15" r="1.5" fill="var(--coral)"/><circle cx="15" cy="15" r="1.5" fill="var(--coral)"/></svg>
-             </span>
-             <span className="bg-icon float-scissors">
-               <svg viewBox="0 0 24 24" fill="none" stroke="var(--teal)" strokeWidth="2"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>
-             </span>
+            <img className="auth-edge-teal" src="/images/auth/edge-teal.png" alt="" aria-hidden="true" />
+            <img className="auth-edge-coral-forgot" src="/images/auth/edge-coral.png" alt="" aria-hidden="true" />
           </>
-        )}
+        ) : null}
         
         {mode === "register" && (
           <>
@@ -344,48 +337,42 @@ export function AuthPage({ mode }: { mode: "login" | "register" | "forgot" | "re
             <p className="eyebrow">{copy[0]}</p>
             <h1>{copy[1]}</h1>
             <p>{copy[2]}</p>
-            {(mode === "register" || mode === "login") ? (
-               <div className="auth-illustration">
-                  <div className="bg-elements">
-                     {mode === "login" ? (
-                       <>
-                         <span className="dot-pattern top-right"></span>
-                         <span className="dot-pattern bottom-right"></span>
-                         <span className="red-cube">
-                           <svg viewBox="0 0 24 24" fill="#FF5B52" stroke="#111" strokeWidth="1.5">
-                             <polygon points="12 2 2 7 12 12 22 7" />
-                             <polygon points="2 7 2 17 12 22 12 12" />
-                             <polygon points="22 7 22 17 12 22 12 12" />
-                           </svg>
-                         </span>
-                         <span className="yellow-diamond">
-                            <svg viewBox="0 0 24 24" fill="#F7B915" stroke="#111" strokeWidth="1.5">
-                              <polygon points="12 2 22 12 12 22 2 12" />
-                              <line x1="2" y1="12" x2="22" y2="12" />
-                              <line x1="12" y1="2" x2="12" y2="22" />
-                            </svg>
-                         </span>
-                       </>
-                     ) : (
-                       <>
-                         <span className="dot-pattern top-right"></span>
-                         <span className="dot-pattern bottom-right"></span>
-                         <span className="paper-plane">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="#FF5B52" strokeWidth="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
-                         </span>
-                         <span className="yellow-triangle"></span>
-                       </>
-                     )}
-                  </div>
-                  <img src={mode === "login" ? "/images/auth/login_illustration.png" : "/images/auth/signup_illustration.png"} alt={mode === "login" ? "Login illustration" : "Tailor illustration"} />
-               </div>
-            ) : (
-               <FigureCard label={mode === "forgot" ? "Secure reset" : "Atelier welcome"} tone="yellow" />
-            )}
+            <div className="auth-illustration">
+              {mode === "register" && (
+                <div className="bg-elements">
+                   <span className="dot-pattern top-right"></span>
+                   <span className="dot-pattern bottom-right"></span>
+                   <span className="paper-plane">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="#FF5B52" strokeWidth="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+                   </span>
+                   <span className="yellow-triangle"></span>
+                </div>
+              )}
+              <img 
+                src={
+                  mode === "login" 
+                    ? "/images/auth/login_illustration.png" 
+                    : mode === "register" 
+                      ? "/images/auth/signup_illustration.png" 
+                      : mode === "reset" 
+                        ? "/images/auth/reset_illustration.png" 
+                        : "/images/auth/forgot_illustration.png"
+                } 
+                alt={
+                  mode === "login" 
+                    ? "Login illustration" 
+                    : mode === "register" 
+                      ? "Tailor illustration" 
+                      : mode === "reset"
+                        ? "Reset password illustration"
+                        : "Forgot password illustration"
+                } 
+              />
+            </div>
           </div>
           <FormCard
             title={copy[3]}
-            intro={mode === "register" ? "Join Sui Dhaga and discover the perfect custom tailoring experience." : mode === "login" ? "Welcome back! Please enter your details." : "Please enter your details."}
+            intro={mode === "register" ? "Join Sui Dhaga and discover the perfect custom tailoring experience." : mode === "login" ? "Welcome back! Please enter your details." : mode === "forgot" ? "Enter the email address associated with your account." : "Choose a strong password for your account."}
             fields={mode === "login" ? ["Email Address", "Password"] : mode === "forgot" ? ["Email Address"] : mode === "reset" ? ["New Password", "Confirm Password"] : ["Full Name", "Email", "Phone Number", "Password", "Confirm Password"]}
             button={copy[4]}
             mode={mode}
@@ -396,10 +383,142 @@ export function AuthPage({ mode }: { mode: "login" | "register" | "forgot" | "re
   );
 }
 
+function FormCard({ title, intro, fields, button, mode }: { title: string; intro?: string; fields: string[]; button: string; mode?: string }) {
+  const roleChoice = mode === "register";
+
+  return (
+    <form className={`form-card ${mode ? `form-card-${mode}` : ""}`}>
+      <h2>{title}</h2>
+      {intro ? <p className="form-intro">{intro}</p> : null}
+      
+      {roleChoice ? (
+        <AccountRoleChoice />
+      ) : null}
+
+      <div className="form-fields">
+        {fields.map((field) => (
+          <div key={field} style={{ marginBottom: '16px' }}>
+            <label>
+              <span className="field-label">{field}</span>
+              <div className={`input-wrap ${field === "Phone Number" ? "phone-input-wrap" : ""}`}>
+                 {field === "Phone Number" ? (
+                   <CountryCodeSelect />
+                 ) : null}
+                 <input 
+                   type={field.toLowerCase().includes("password") ? "password" : field.toLowerCase().includes("email") ? "email" : field === "Phone Number" ? "tel" : "text"} 
+                   placeholder={field.toLowerCase().includes("password") ? (field.includes("Confirm") ? "Confirm new password" : field.includes("New") ? "Enter new password" : "Create a password") : field.toLowerCase().includes("email") ? "Enter your email" : field === "Phone Number" ? "Enter phone number" : "Enter your full name"} 
+                 />
+                 {field.toLowerCase().includes("password") && (
+                   <span className="eye-icon">
+                      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+                   </span>
+                 )}
+              </div>
+            </label>
+
+            {mode === "reset" && field === "New Password" && (
+              <ul className="password-checklist" style={{ listStyle: 'none', padding: 0, margin: '14px 0 8px 0', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {[
+                  "At least 8 characters",
+                  "One uppercase letter",
+                  "One number",
+                  "One special character"
+                ].map((rule) => (
+                  <li key={rule} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', color: '#64748b' }}>
+                    <span style={{ width: '18px', height: '18px', borderRadius: '50%', background: '#e6f4f1', color: '#078b87', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    </span>
+                    {rule}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        ))}
+      </div>
+      
+      {roleChoice && (
+        <label className="terms-checkbox">
+           <input type="checkbox" defaultChecked />
+           <span>I agree to the <Link href="/terms-and-conditions">Terms & Conditions</Link> and <Link href="/privacy-policy">Privacy Policy</Link></span>
+        </label>
+      )}
+
+      {mode === "login" && (
+        <div className="login-options" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '16px 0', fontSize: '14px' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: 'var(--muted)' }}>
+             <input type="checkbox" style={{ width: '16px', height: '16px', borderRadius: '4px', border: '1px solid var(--line)' }} />
+             Remember me
+          </label>
+          <Link href="/auth/forgot-password" style={{ color: 'var(--teal)', fontWeight: '600' }}>Forgot Password?</Link>
+        </div>
+      )}
+
+      <button type="button" className="btn primary submit-btn">{button}</button>
+
+      {mode === "forgot" && (
+        <>
+          <div className="forgot-info-box" style={{ marginTop: '24px', background: '#fffdf0', border: '1px solid #fef08a', borderRadius: '12px', padding: '16px 18px', display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
+            <div className="info-icon" style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#ffffff', border: '1px solid #fde047', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#078b87', flexShrink: 0, marginTop: '2px' }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="16" x2="12" y2="12" />
+                <line x1="12" y1="8" x2="12.01" y2="8" />
+              </svg>
+            </div>
+            <div>
+              <strong style={{ display: 'block', fontSize: '13.5px', fontWeight: '800', color: '#1e293b', marginBottom: '2px' }}>Didn't receive the email?</strong>
+              <p style={{ fontSize: '12.5px', color: '#64748b', margin: 0, lineHeight: 1.4 }}>Check your spam folder or try again.</p>
+            </div>
+          </div>
+          <Link href="/auth/login" className="back-to-login-link" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: '#078b87', fontWeight: '700', fontSize: '14.5px', marginTop: '24px', textDecoration: 'none' }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="19" y1="12" x2="5" y2="12" />
+              <polyline points="12 19 5 12 12 5" />
+            </svg>
+            Back to Login
+          </Link>
+        </>
+      )}
+
+      {mode === "reset" && (
+        <div style={{ textAlign: 'center', marginTop: '24px' }}>
+          <Link href="/auth/login" className="back-to-login-link" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: '#078b87', fontWeight: '700', fontSize: '14.5px', textDecoration: 'none' }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="19" y1="12" x2="5" y2="12" />
+              <polyline points="12 19 5 12 12 5" />
+            </svg>
+            Back to Login
+          </Link>
+        </div>
+      )}
+      
+      {roleChoice && (
+         <p className="auth-footer-link">Already have an account? <Link href="/auth/login">Login</Link></p>
+      )}
+
+      {mode === "login" && (
+        <div className="social-login-section" style={{ marginTop: '24px', textAlign: 'center' }}>
+          <div className="divider" style={{ display: 'flex', alignItems: 'center', gap: '16px', color: 'var(--muted)', fontSize: '12px', margin: '24px 0' }}>
+            <span style={{ flex: 1, height: '1px', background: 'var(--line)' }}></span>
+            or continue with
+            <span style={{ flex: 1, height: '1px', background: 'var(--line)' }}></span>
+          </div>
+          <button type="button" className="google-btn" style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--line)', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', fontWeight: '600', cursor: 'pointer', color: 'var(--ink)' }}>
+             <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+             Continue with Google
+          </button>
+          <p className="auth-footer-link" style={{ marginTop: '32px' }}>Don't have an account? <Link href="/auth/register" style={{ color: 'var(--teal)', fontWeight: '600' }}>Register now</Link></p>
+        </div>
+      )}
+    </form>
+  );
+}
+
 export function MarketplacePage({ view }: { view: "list" | "map" | "profile" | "compare" | "fabrics" }) {
   if (view === "profile") return <TailorProfile />;
-  if (view === "compare") return <CompareTailors />;
-
   return (
     <PublicShell>
       <DecorativeFrame>
@@ -774,81 +893,6 @@ function TailorMini({ tailor }: { tailor: (typeof tailors)[number] }) {
   return <div className="tailor-mini"><FigureCard label={tailor.name} /><div><strong>{tailor.name}</strong><p>{tailor.rating} ({tailor.reviews}) · {tailor.distance}</p></div></div>;
 }
 
-function FormCard({ title, intro, fields, button, mode }: { title: string; intro?: string; fields: string[]; button: string; mode?: string }) {
-  const roleChoice = mode === "register";
-
-  return (
-    <form className={`form-card ${mode ? `form-card-${mode}` : ""}`}>
-      <h2>{title}</h2>
-      {intro ? <p className="form-intro">{intro}</p> : null}
-      
-      {roleChoice ? (
-        <AccountRoleChoice />
-      ) : null}
-
-      <div className="form-fields">
-        {fields.map((field) => (
-          <label key={field}>
-            <span className="field-label">{field}</span>
-            <div className={`input-wrap ${field === "Phone Number" ? "phone-input-wrap" : ""}`}>
-               {field === "Phone Number" ? (
-                 <CountryCodeSelect />
-               ) : null}
-               <input 
-                 type={field.toLowerCase().includes("password") ? "password" : field.toLowerCase().includes("email") ? "email" : field === "Phone Number" ? "tel" : "text"} 
-                 placeholder={field.toLowerCase().includes("password") ? (field.includes("Confirm") ? "Confirm your password" : "Create a password") : field.toLowerCase().includes("email") ? "Enter your email address" : field === "Phone Number" ? "Enter phone number" : "Enter your full name"} 
-               />
-               {field.toLowerCase().includes("password") && (
-                 <span className="eye-icon">
-                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
-                 </span>
-               )}
-            </div>
-          </label>
-        ))}
-      </div>
-      
-      {roleChoice && (
-        <label className="terms-checkbox">
-           <input type="checkbox" defaultChecked />
-           <span>I agree to the <Link href="/terms-and-conditions">Terms & Conditions</Link> and <Link href="/privacy-policy">Privacy Policy</Link></span>
-        </label>
-      )}
-
-      {mode === "login" && (
-        <div className="login-options" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '16px 0', fontSize: '14px' }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: 'var(--muted)' }}>
-             <input type="checkbox" style={{ width: '16px', height: '16px', borderRadius: '4px', border: '1px solid var(--line)' }} />
-             Remember me
-          </label>
-          <Link href="/auth/forgot-password" style={{ color: 'var(--teal)', fontWeight: '600' }}>Forgot Password?</Link>
-        </div>
-      )}
-
-      <button type="button" className="btn primary submit-btn">{button}</button>
-      
-      {roleChoice && (
-         <p className="auth-footer-link">Already have an account? <Link href="/auth/login">Login</Link></p>
-      )}
-
-      {mode === "login" && (
-        <div className="social-login-section" style={{ marginTop: '24px', textAlign: 'center' }}>
-          <div className="divider" style={{ display: 'flex', alignItems: 'center', gap: '16px', color: 'var(--muted)', fontSize: '12px', margin: '24px 0' }}>
-            <span style={{ flex: 1, height: '1px', background: 'var(--line)' }}></span>
-            or continue with
-            <span style={{ flex: 1, height: '1px', background: 'var(--line)' }}></span>
-          </div>
-          <button type="button" className="google-btn" style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--line)', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', fontWeight: '600', cursor: 'pointer', color: 'var(--ink)' }}>
-             <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
-             Continue with Google
-          </button>
-          <p className="auth-footer-link" style={{ marginTop: '32px' }}>Don't have an account? <Link href="/auth/register" style={{ color: 'var(--teal)', fontWeight: '600' }}>Register now</Link></p>
-        </div>
-      )}
-    </form>
-  );
-}
-
 function PageHeader({ title, copy, action }: { title: string; copy: string; action?: string }) {
   return <header className="page-header"><div><h1>{title}</h1><p>{copy}</p></div>{action ? <button>{action}</button> : null}</header>;
 }
@@ -856,7 +900,6 @@ function PageHeader({ title, copy, action }: { title: string; copy: string; acti
 function ListPanel({ title, rows }: { title: string; rows: string[] }) {
   return <article className="panel list-panel"><h2>{title}</h2>{rows.map((row) => <div key={row} className="list-row"><span>{row}</span><button>View</button></div>)}</article>;
 }
-
 function ListPage({ title }: { title: string }) {
   return <><PageHeader title={title} copy="Track and manage everything in one place." action="New" /><ListPanel title={title} rows={[...orders.map((o) => `${o.id} · ${o.item} · ${o.status}`), ...appointments.map((a) => `${a.date} · ${a.tailor}`)]} /></>;
 }
