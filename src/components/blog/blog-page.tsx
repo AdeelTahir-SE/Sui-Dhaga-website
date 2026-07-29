@@ -3,43 +3,14 @@
 import Link from "next/link";
 import { PublicNav, PublicFooter } from "@/components/common/site-shell";
 import { Clock, ChevronRight, Mail } from "lucide-react";
+import { getAllBlogPosts } from "@/lib/blog-data";
 
 export function BlogPage() {
-  const featuredArticles = [
-    {
-      id: "anarkali-styles",
-      badge: "STYLE GUIDE",
-      title: "Top 10 Anarkali Styles You Need This Season",
-      desc: "From classic cuts to modern twists – find your perfect Anarkali.",
-      image: "/images/blog/anarkali.png",
-      author: "Meena Tailors",
-      avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80",
-      date: "20 May 2024",
-      readTime: "6 min read",
-    },
-    {
-      id: "perfect-fabric",
-      badge: "FABRIC GUIDE",
-      title: "How to Choose the Perfect Fabric",
-      desc: "A complete guide to fabrics, their feel, fall & occasion.",
-      image: "/images/blog/fabrics.png",
-      author: "Stitch Craft",
-      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80",
-      date: "18 May 2024",
-      readTime: "5 min read",
-    },
-    {
-      id: "custom-vs-readymade",
-      badge: "TAILORING TIPS",
-      title: "Custom vs Ready-made: What's Better?",
-      desc: "We break down the pros, cons, and what suits you best.",
-      image: "/images/blog/sketch.png",
-      author: "Aarav Bespoke",
-      avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&auto=format&fit=crop&q=80",
-      date: "15 May 2024",
-      readTime: "4 min read",
-    },
-  ];
+  const allPosts = getAllBlogPosts();
+
+  // Split featured articles and latest posts
+  const featuredArticles = allPosts.slice(0, 3);
+  const latestPosts = allPosts.slice(3);
 
   const categories = [
     {
@@ -109,39 +80,6 @@ export function BlogPage() {
           <path d="M16 3.13a4 4 0 0 1 0 7.75" />
         </svg>
       ),
-    },
-  ];
-
-  const latestPosts = [
-    {
-      id: "groom-wear-2024",
-      title: "Groom Wear Trends 2024: What's in Style",
-      desc: "From sherwanis to indo-westerns, explore the top groom wear trends for your big day.",
-      image: "/images/blog/groomwear.png",
-      author: "Rohit Sharma",
-      avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100&auto=format&fit=crop&q=80",
-      date: "12 May 2024",
-      readTime: "5 min read",
-    },
-    {
-      id: "embroidery-guide",
-      title: "Hand Embroidery vs Machine Embroidery",
-      desc: "Understand the differences, uses, and which one is right for your outfit.",
-      image: "/images/blog/embroidery.png",
-      author: "Stitch Craft",
-      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80",
-      date: "10 May 2024",
-      readTime: "4 min read",
-    },
-    {
-      id: "summer-fabric-guide",
-      title: "Summer Fabric Guide: Stay Cool & Stylish",
-      desc: "Beat the heat with these breathable fabrics perfect for summer outfits.",
-      image: "/images/blog/summer.png",
-      author: "Meena Tailors",
-      avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80",
-      date: "8 May 2024",
-      readTime: "5 min read",
     },
   ];
 
@@ -220,14 +158,14 @@ export function BlogPage() {
                   <div className="card-body">
                     <span className="card-badge">{article.badge}</span>
                     <h3 className="card-title">
-                      <Link href={`/blog/${article.id}`}>{article.title}</Link>
+                      <Link href={`/blog/${article.slug}`}>{article.title}</Link>
                     </h3>
-                    <p className="card-desc">{article.desc}</p>
+                    <p className="card-desc">{article.excerpt}</p>
 
                     <div className="card-footer">
                       <div className="author-info">
-                        <img src={article.avatar} alt={article.author} className="author-avatar" />
-                        <span className="author-name">{article.author}</span>
+                        <img src={article.author.avatar} alt={article.author.name} className="author-avatar" />
+                        <span className="author-name">{article.author.name}</span>
                       </div>
                       <span className="meta-date">{article.date}</span>
                       <div className="meta-readtime">
@@ -287,13 +225,13 @@ export function BlogPage() {
                   </div>
                   <div className="post-details">
                     <h3 className="post-title">
-                      <Link href={`/blog/${post.id}`}>{post.title}</Link>
+                      <Link href={`/blog/${post.slug}`}>{post.title}</Link>
                     </h3>
-                    <p className="post-desc">{post.desc}</p>
+                    <p className="post-desc">{post.excerpt}</p>
                     <div className="card-footer">
                       <div className="author-info">
-                        <img src={post.avatar} alt={post.author} className="author-avatar" />
-                        <span className="author-name">{post.author}</span>
+                        <img src={post.author.avatar} alt={post.author.name} className="author-avatar" />
+                        <span className="author-name">{post.author.name}</span>
                       </div>
                       <span className="meta-date">{post.date}</span>
                       <div className="meta-readtime">

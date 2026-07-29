@@ -1,5 +1,10 @@
-import { PublicInfoPage } from "@/components/common/pages";
+import { BlogDetailPage } from "@/components/blog/blog-detail-page";
 
-export default function Page() {
-  return <PublicInfoPage type="blog-detail" />;
+interface PageProps {
+  params: Promise<{ slug: string }> | { slug: string };
+}
+
+export default async function Page({ params }: PageProps) {
+  const resolvedParams = await params;
+  return <BlogDetailPage slug={resolvedParams.slug} />;
 }
