@@ -1,0 +1,101 @@
+/* Global surface alignment with signup page */
+:root {
+  --background: #ffffff;
+  --cream: #ffffff;
+  --paper: #ffffff;
+  --line: #e5e7eb;
+  --muted: #6f757b;
+}
+
+body,
+.brand-page,
+.app-page,
+.admin-page,
+.auth-page-container,
+.auth-page-register {
+  background: #ffffff;
+}
+
+.ambient-layer {
+  opacity: 0.08;
+}
+
+.brand-page .site-nav,
+.app-page .site-nav,
+.site-nav {
+  backdrop-filter: none;
+  background: transparent !important;
+  border-color: transparent;
+  border-bottom: 0;
+  box-shadow: none;
+  left: 0;
+  margin: 0;
+  max-width: none;
+  position: fixed !important;
+  right: 0;
+  top: 0;
+  width: 100%;
+  z-index: 10000;
+}
+
+.site-nav .brand,
+.site-nav .nav-icons span,
+.site-nav .nav-icons a,
+.site-nav .nav-auth-buttons .btn {
+  background: rgba(255, 255, 255, 0.64);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(229, 231, 235, 0.58);
+  box-shadow: 0 10px 28px rgba(26, 29, 31, 0.08);
+}
+
+.site-nav .brand {
+  border-radius: 999px;
+  padding: 8px 14px;
+}
+
+.site-nav .nav-auth-buttons .btn.primary,
+.site-nav .nav-auth-buttons .btn.primary:visited {
+  background: #14919b;
+  border-color: rgba(20, 145, 155, 0.92);
+  color: #ffffff;
+}
+
+.site-nav .nav-auth-buttons .btn.primary:hover {
+  background: #0f7f87;
+  color: #ffffff;
+}
+
+.site-nav .nav-auth-buttons .btn.secondary,
+.site-nav .nav-auth-buttons .btn.secondary:visited {
+  background: rgba(255, 255, 255, 0.64);
+  border-color: rgba(20, 145, 155, 0.42);
+  color: #0f6f68;
+}
+
+.site-nav .nav-auth-buttons .btn.secondary:hover {
+  background: rgba(238, 250, 250, 0.86);
+  color: #0f6f68;
+}
+
+.home-hero {
+  background:
+    radial-gradient(circle at 92% 22%, rgba(247, 185, 21, 0.08), transparent 18rem),
+    linear-gradient(180deg, #ffffff 0%, #ffffff 100%);
+}
+
+.home-create-card,
+.home-phone,
+.home-phone-block {
+  background-color: #ffffff;
+}
+
+.panel,
+.info-card,
+.form-card,
+.home-trust-card,
+.tailor-card,
+.post-card,
+.progress-line {
+  background-color: #ffffff;
+}
+

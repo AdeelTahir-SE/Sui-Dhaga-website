@@ -1,0 +1,619 @@
+/* ==========================================================================
+   SUI DHAGA TAILORS MARKETPLACE PAGE STYLES (MATCHING REFERENCE UI 1:1)
+   ========================================================================== */
+
+.tailors-page-root {
+  background-color: #FAF8F5;
+  min-height: 100vh;
+  color: #0f172a;
+  position: relative;
+  overflow-x: hidden;
+}
+
+.tailors-container {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 96px 24px 60px;
+  position: relative;
+  z-index: 1;
+}
+
+/* Breadcrumb */
+.tailors-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #64748b;
+  margin-bottom: 20px;
+}
+
+.tailors-breadcrumb a {
+  color: #475569;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.tailors-breadcrumb a:hover {
+  color: #078b87;
+}
+
+.tailors-breadcrumb .breadcrumb-arrow {
+  color: #94a3b8;
+}
+
+.tailors-breadcrumb .current {
+  color: #1e293b;
+  font-weight: 600;
+}
+
+/* Hero Header Section */
+.tailors-hero-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+  margin-bottom: 32px;
+  position: relative;
+}
+
+.tailors-hero-copy h1 {
+  font-size: clamp(34px, 4vw, 48px);
+  font-weight: 900;
+  line-height: 1.15;
+  letter-spacing: -0.8px;
+  color: #0f172a;
+  margin-bottom: 10px;
+}
+
+.tailors-hero-copy h1 .accent-text {
+  color: #e86054;
+}
+
+.tailors-hero-copy p {
+  font-size: 16px;
+  color: #64748b;
+  margin: 0;
+}
+
+/* Decorative Doodles */
+.tailors-doodle-dotgrid {
+  width: 48px;
+  height: 48px;
+  opacity: 0.5;
+  flex-shrink: 0;
+}
+
+/* Search Bar & Filters Section */
+.tailors-search-filter-block {
+  margin-bottom: 36px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.search-input-group {
+  display: flex;
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 14px;
+  padding: 6px 6px 6px 18px;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.03);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.search-input-group:focus-within {
+  border-color: #078b87;
+  box-shadow: 0 0 0 3px rgba(7, 139, 135, 0.12);
+}
+
+.search-icon-inline {
+  color: #94a3b8;
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+
+.tailor-search-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 15px;
+  color: #0f172a;
+  background: transparent;
+}
+
+.tailor-search-input::placeholder {
+  color: #94a3b8;
+}
+
+.tailor-search-btn {
+  background: #078b87;
+  color: #ffffff;
+  font-size: 14.5px;
+  font-weight: 700;
+  border: none;
+  padding: 11px 26px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.tailor-search-btn:hover {
+  background: #06726e;
+}
+
+/* Filter Pills Strip */
+.filter-pills-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.filter-select-wrapper {
+  position: relative;
+}
+
+.filter-select-wrapper select {
+  appearance: none;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 8px 32px 8px 14px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.2s ease;
+  min-width: 110px;
+}
+
+.filter-select-wrapper select:hover {
+  border-color: #078b87;
+  color: #078b87;
+}
+
+.filter-select-wrapper select.active {
+  background: #e6f4f1;
+  border-color: #078b87;
+  color: #078b87;
+}
+
+.filter-select-arrow {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #64748b;
+  pointer-events: none;
+}
+
+.sort-select-wrapper {
+  margin-left: auto;
+}
+
+.sort-select-wrapper select {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 8px 32px 8px 14px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+/* Main Split View Layout (Tailors List + Map Preview) */
+.tailors-split-layout {
+  display: grid;
+  grid-template-columns: 1fr 520px;
+  gap: 36px;
+  align-items: start;
+  position: relative;
+}
+
+.tailors-list-column {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.list-results-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.list-results-header h2 {
+  font-size: 18px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+}
+
+.active-filter-tags {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.clear-filters-btn {
+  font-size: 12.5px;
+  color: #e86054;
+  font-weight: 700;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.clear-filters-btn:hover {
+  text-decoration: underline;
+}
+
+/* Tailor Cards (Matching Reference UI 1:1) */
+.tailors-cards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.tailor-marketplace-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 20px;
+  display: flex;
+  gap: 20px;
+  position: relative;
+  transition: transform 0.24s ease, box-shadow 0.24s ease, border-color 0.24s ease;
+}
+
+.tailor-marketplace-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.05);
+  border-color: #cbd5e1;
+}
+
+.tailor-card-thumb {
+  width: 120px;
+  height: 120px;
+  border-radius: 14px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: #f1f5f9;
+}
+
+.tailor-card-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.tailor-card-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.tailor-card-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.tailor-name-block {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tailor-card-name {
+  font-size: 19px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+}
+
+.tailor-card-name a {
+  color: inherit;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.tailor-card-name a:hover {
+  color: #078b87;
+}
+
+.top-rated-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #fff7ed;
+  color: #ea580c;
+  border: 1px solid #ffedd5;
+  font-size: 10.5px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 6px;
+  text-transform: uppercase;
+}
+
+.wishlist-heart-btn {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 4px;
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.wishlist-heart-btn:hover {
+  color: #e86054;
+  transform: scale(1.1);
+}
+
+.wishlist-heart-btn.active {
+  color: #e86054;
+}
+
+.tailor-rating-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13.5px;
+  color: #64748b;
+  margin-bottom: 6px;
+}
+
+.star-icon {
+  color: #f59e0b;
+  fill: #f59e0b;
+}
+
+.rating-score {
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.dot-divider {
+  color: #cbd5e1;
+}
+
+.tailor-specialties-line {
+  font-size: 13.5px;
+  color: #475569;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.tailor-bottom-action-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+}
+
+.price-delivery-info {
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.view-profile-btn {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 8px 18px;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.view-profile-btn:hover {
+  background: #f8fafc;
+  border-color: #078b87;
+  color: #078b87;
+}
+
+/* Load More Button */
+.load-more-btn {
+  width: 100%;
+  background: #078b87;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 700;
+  padding: 14px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  margin-top: 8px;
+}
+
+.load-more-btn:hover {
+  background: #06726e;
+}
+
+/* Right Column: Interactive Map Preview Panel */
+.tailors-map-column {
+  position: sticky;
+  top: 110px;
+}
+
+.map-preview-card {
+  width: 100%;
+  height: 520px;
+  border-radius: 20px;
+  background: #e8f0ec;
+  border: 1px solid #cbd5e1;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.05);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Vector Map Representation Background */
+.map-vector-bg {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  background-color: #e8f0ec;
+  background-image: 
+    radial-gradient(circle at 50% 50%, rgba(255,255,255,0.6) 0%, transparent 60%),
+    linear-gradient(90deg, rgba(203, 213, 225, 0.4) 1px, transparent 1px),
+    linear-gradient(rgba(203, 213, 225, 0.4) 1px, transparent 1px);
+  background-size: 100% 100%, 40px 40px, 40px 40px;
+}
+
+.map-road-lines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.map-close-btn {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #078b87;
+  color: #ffffff;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  transition: transform 0.2s ease;
+}
+
+.map-close-btn:hover {
+  transform: scale(1.1);
+}
+
+.map-locality-labels {
+  position: absolute;
+  font-size: 11px;
+  font-weight: 800;
+  color: #64748b;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
+.label-siri-fort { top: 38%; left: 16%; }
+.label-greater-kailash { top: 26%; right: 12%; }
+.label-saket { bottom: 22%; right: 10%; }
+
+.map-pin-marker {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  cursor: pointer;
+  z-index: 5;
+  transition: transform 0.2s ease;
+}
+
+.map-pin-marker:hover {
+  transform: translate(-50%, -110%) scale(1.15);
+  z-index: 10;
+}
+
+.map-pin-icon {
+  color: #078b87;
+  filter: drop-shadow(0 4px 8px rgba(7, 139, 135, 0.3));
+}
+
+.map-pin-marker.active .map-pin-icon {
+  color: #e86054;
+  filter: drop-shadow(0 6px 12px rgba(232, 96, 84, 0.4));
+}
+
+.floating-map-toggle-btn {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #078b87;
+  color: #ffffff;
+  font-size: 13.5px;
+  font-weight: 700;
+  padding: 10px 22px;
+  border-radius: 30px;
+  border: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 6px 18px rgba(7, 139, 135, 0.3);
+  cursor: pointer;
+  z-index: 10;
+  transition: all 0.2s ease;
+}
+
+.floating-map-toggle-btn:hover {
+  background: #06726e;
+  transform: translateX(-50%) translateY(-2px);
+}
+
+/* Background Decorative Geometry */
+.tailors-bg-doodle-yellow {
+  position: absolute;
+  bottom: -40px;
+  left: -40px;
+  width: 180px;
+  height: 180px;
+  background: #f7b915;
+  border-radius: 60px;
+  opacity: 0.15;
+  pointer-events: none;
+}
+
+.tailors-bg-doodle-coral {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 260px;
+  height: 220px;
+  background: #e86054;
+  border-radius: 120px 0 0 0;
+  opacity: 0.12;
+  pointer-events: none;
+}
+
+/* Responsive Media Queries */
+@media (max-width: 1024px) {
+  .tailors-split-layout {
+    grid-template-columns: 1fr;
+  }
+  .tailors-map-column {
+    position: static;
+  }
+  .map-preview-card {
+    height: 380px;
+  }
+}
+
+@media (max-width: 640px) {
+  .tailors-container {
+    padding: 80px 16px 40px;
+  }
+  .tailor-marketplace-card {
+    flex-direction: column;
+  }
+  .tailor-card-thumb {
+    width: 100%;
+    height: 160px;
+  }
+  .sort-select-wrapper {
+    margin-left: 0;
+    width: 100%;
+  }
+}
