@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import {
   Search,
@@ -15,7 +15,15 @@ import {
   Sparkles
 } from "lucide-react";
 import { PublicShell } from "@/components/common/site-shell";
-import { getTailors, TailorItem, FilterOptions } from "@/lib/tailors-data";
+import {
+  getTailors,
+  fetchTailorsApi,
+  toggleWishlistApi,
+  TailorItem,
+  FilterOptions,
+  PaginatedTailorsResponse
+} from "@/lib/tailors-data";
+import { TailorsGoogleMap } from "./tailors-google-map";
 
 export function TailorsMarketplacePage() {
   // Search and Filter State
@@ -53,11 +61,36 @@ export function TailorsMarketplacePage() {
     [searchQuery, location, specialty, service, priceRange, ratingMin, moreFilter, sortBy]
   );
 
-  // Backend-ready data service response
-  const { tailors, totalCount, hasMore } = useMemo(
-    () => getTailors(filterOptions, page, pageSize),
-    [filterOptions, page, pageSize]
+  // Backend-ready data state (synchronous initial render + async API sync)
+  const [tailorsData, setTailorsData] = useState<PaginatedTailorsResponse>(() =>
+    getTailors(filterOptions, page, pageSize)
   );
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  useEffect(() => {
+    let isSubscribed = true;
+    setIsLoading(true);
+
+    fetchTailorsApi(filterOptions, page, pageSize)
+      .then((data) => {
+        if (isSubscribed) {
+          setTailorsData(data);
+          setIsLoading(false);
+        }
+      })
+      .catch((err) => {
+        if (isSubscribed) {
+          console.error("[Tailors Page] Failed to fetch tailors from backend:", err);
+          setIsLoading(false);
+        }
+      });
+
+    return () => {
+      isSubscribed = false;
+    };
+  }, [filterOptions, page, pageSize]);
+
+  const { tailors, totalCount, hasMore } = tailorsData;
 
   // Handlers
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -69,10 +102,12 @@ export function TailorsMarketplacePage() {
   const toggleWishlist = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
+    const nextState = !wishlist[id];
     setWishlist((prev) => ({
       ...prev,
-      [id]: !prev[id]
+      [id]: nextState
     }));
+    toggleWishlistApi(id, nextState);
   };
 
   const handleLoadMore = () => {
@@ -101,9 +136,22 @@ export function TailorsMarketplacePage() {
     ratingMin > 0 ||
     moreFilter !== "all";
 
+  const mapLocationQuery = location !== "all"
+    ? `${location}, Faisalabad`
+    : (searchQuery.trim() !== "" ? searchQuery : "Faisalabad, Pakistan");
+
   return (
     <PublicShell>
       <div className="tailors-page-root">
+        {/* Left Hero Yellow Ribbon Motif (Image Asset) */}
+        <div className="tailors-left-hero-ribbon" aria-hidden="true">
+          <img
+            src="/images/tailors/hero-ribbon.png"
+            alt=""
+            className="tailors-left-hero-ribbon-img"
+          />
+        </div>
+
         <div className="tailors-container">
           {/* Breadcrumb */}
           <nav className="tailors-breadcrumb" aria-label="Breadcrumb">
@@ -164,11 +212,12 @@ export function TailorsMarketplacePage() {
                   className={location !== "all" ? "active" : ""}
                 >
                   <option value="all">Location</option>
-                  <option value="Siri Fort">Siri Fort</option>
-                  <option value="Greater Kailash">Greater Kailash</option>
-                  <option value="Saket">Saket</option>
-                  <option value="Hauz Khas">Hauz Khas</option>
-                  <option value="Vasant Kunj">Vasant Kunj</option>
+                  <option value="D Ground">D Ground</option>
+                  <option value="Kohinoor City">Kohinoor City</option>
+                  <option value="People's Colony">People&apos;s Colony</option>
+                  <option value="Satyana Road">Satyana Road</option>
+                  <option value="Anarkali Bazaar">Anarkali Bazaar</option>
+                  <option value="Canal Road">Canal Road</option>
                 </select>
                 <ChevronDown size={14} className="filter-select-arrow" />
               </div>
@@ -225,9 +274,9 @@ export function TailorsMarketplacePage() {
                   className={priceRange !== "all" ? "active" : ""}
                 >
                   <option value="all">Price Range</option>
-                  <option value="under-1500">Under ₹1,500</option>
-                  <option value="1500-3000">₹1,500 - ₹3,000</option>
-                  <option value="above-3000">Above ₹3,000</option>
+                  <option value="under-1500">Under Rs. 1,500</option>
+                  <option value="1500-3000">Rs. 1,500 - Rs. 3,000</option>
+                  <option value="above-3000">Above Rs. 3,000</option>
                 </select>
                 <ChevronDown size={14} className="filter-select-arrow" />
               </div>
@@ -279,8 +328,28 @@ export function TailorsMarketplacePage() {
                 </select>
                 <ChevronDown size={14} className="filter-select-arrow" />
               </div>
+
+              {/* Compare Link Button */}
+              <Link href="/tailors/compare" className="tailor-compare-nav-btn" title="Compare Tailors Side by Side">
+                <SlidersHorizontal size={15} />
+                <span>Compare</span>
+              </Link>
+
+              {/* Map View Link Button */}
+              <Link href="/tailors/map" className="tailor-map-nav-btn" title="Open Full Interactive Map View">
+                <MapIcon size={15} />
+                <span>Map View</span>
+              </Link>
             </div>
           </section>
+
+          {/* Floating Middle Kite Doodle */}
+          <div className="tailors-middle-kite-doodle" aria-hidden="true">
+            <svg width="34" height="34" viewBox="0 0 34 34" fill="none">
+              <path d="M17 0 L34 17 L17 34 L0 17 Z" fill="#078B87" />
+              <path d="M17 0 V34 M0 17 H34" stroke="#FAF8F5" strokeWidth="1.5" />
+            </svg>
+          </div>
 
           {/* Main Split Layout: Tailors List + Map */}
           <div className="tailors-split-layout">
@@ -383,86 +452,35 @@ export function TailorsMarketplacePage() {
               )}
             </main>
 
-            {/* Right Column: Interactive Map Preview Panel */}
+            {/* Right Column: Dynamic Google Maps System */}
             {isMapVisible && (
-              <aside className="tailors-map-column" aria-label="Map View">
-                <div className="map-preview-card">
-                  {/* Close Map Button */}
-                  <button
-                    className="map-close-btn"
-                    onClick={() => setIsMapVisible(false)}
-                    aria-label="Close Map"
-                  >
-                    <X size={16} />
-                  </button>
-
-                  {/* Vector Map Graphic Canvas */}
-                  <div className="map-vector-bg">
-                    {/* Road graphics SVG */}
-                    <svg className="map-road-lines" width="100%" height="100%">
-                      <path
-                        d="M -20 120 Q 180 80 320 220 T 540 380"
-                        stroke="#CBD5E1"
-                        strokeWidth="8"
-                        fill="none"
-                      />
-                      <path
-                        d="M 120 -20 Q 220 180 160 380 T 420 540"
-                        stroke="#CBD5E1"
-                        strokeWidth="6"
-                        fill="none"
-                      />
-                      <path
-                        d="M 380 0 Q 320 240 480 360"
-                        stroke="#E2E8F0"
-                        strokeWidth="5"
-                        fill="none"
-                      />
-                    </svg>
-
-                    {/* Locality Text Labels */}
-                    <span className="map-locality-labels label-siri-fort">SIRI FORT</span>
-                    <span className="map-locality-labels label-greater-kailash">
-                      GREATER KAILASH
-                    </span>
-                    <span className="map-locality-labels label-saket">SAKET</span>
-
-                    {/* Map Pins for Loaded Tailors */}
-                    {tailors.map((t) => {
-                      const isActive = hoveredTailorId === t.id || selectedPinId === t.id;
-
-                      return (
-                        <div
-                          key={t.id}
-                          className={`map-pin-marker ${isActive ? "active" : ""}`}
-                          style={{ left: `${t.mapPin.x}%`, top: `${t.mapPin.y}%` }}
-                          onClick={() => setSelectedPinId(t.id)}
-                          onMouseEnter={() => setHoveredTailorId(t.id)}
-                          onMouseLeave={() => setHoveredTailorId(null)}
-                          title={`${t.name} (${t.locality})`}
-                        >
-                          <MapPin size={32} className="map-pin-icon" fill={isActive ? "#e86054" : "#078b87"} />
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {/* Floating Toggle Map Button */}
-                  <button
-                    className="floating-map-toggle-btn"
-                    onClick={() => setIsMapVisible(false)}
-                  >
-                    <MapIcon size={16} /> Hide map
-                  </button>
-                </div>
+              <aside className="tailors-map-column" aria-label="Google Map View">
+                <TailorsGoogleMap
+                  locationQuery={mapLocationQuery}
+                  onCloseMap={() => setIsMapVisible(false)}
+                />
               </aside>
             )}
           </div>
         </div>
 
-        {/* Background Organic Decorative Waves */}
-        <span className="tailors-bg-doodle-yellow" aria-hidden="true" />
-        <span className="tailors-bg-doodle-coral" aria-hidden="true" />
+        {/* Bottom Left Teal Organic Edge (Transparent Image Asset from Auth) */}
+        <div className="tailors-bg-doodle-yellow" aria-hidden="true">
+          <img
+            src="/images/auth/edge-teal.png"
+            alt=""
+            className="tailors-bg-doodle-yellow-img"
+          />
+        </div>
+
+        {/* Bottom Right Coral Organic Edge (Transparent Image Asset from Auth) */}
+        <div className="tailors-bg-doodle-coral" aria-hidden="true">
+          <img
+            src="/images/auth/edge-coral.png"
+            alt=""
+            className="tailors-bg-doodle-coral-img"
+          />
+        </div>
       </div>
     </PublicShell>
   );
