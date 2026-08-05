@@ -1,5 +1,5 @@
-import { CommunityPage } from "@/components/common/pages";
+import { CommunityCreatePostPage } from "@/components/community/community-create-post-page";
 
 export default function Page() {
-  return <CommunityPage view="create" />;
+  return <CommunityCreatePostPage />;
 }
