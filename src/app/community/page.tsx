@@ -1,5 +1,5 @@
-import { CommunityPage } from "@/components/common/pages";
+import { CommunityFeedPage } from "@/components/community/community-feed-page";
 
 export default function Page() {
-  return <CommunityPage view="feed" />;
+  return <CommunityFeedPage />;
 }
