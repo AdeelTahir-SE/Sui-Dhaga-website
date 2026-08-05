@@ -1,5 +1,5 @@
-import { CommunityPage } from "@/components/common/pages";
+import { MessagesOverviewPage } from "@/components/messages/messages-overview-page";
 
 export default function Page() {
-  return <CommunityPage view="messages" />;
+  return <MessagesOverviewPage />;
 }

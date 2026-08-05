@@ -1,5 +1,5 @@
-import { CommunityPage } from "@/components/common/pages";
+import { MessagesChatRoomPage } from "@/components/messages/messages-chat-room-page";
 
 export default function Page() {
-  return <CommunityPage view="conversation" />;
+  return <MessagesChatRoomPage />;
 }
