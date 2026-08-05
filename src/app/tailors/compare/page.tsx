@@ -1,5 +1,5 @@
-import { MarketplacePage } from "@/components/common/pages";
+import { TailorsComparePage } from "@/components/tailors/tailors-compare-page";
 
 export default function Page() {
-  return <MarketplacePage view="compare" />;
+  return <TailorsComparePage />;
 }
