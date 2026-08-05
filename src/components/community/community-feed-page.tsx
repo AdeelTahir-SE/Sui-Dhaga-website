@@ -254,13 +254,10 @@ export function CommunityFeedPage() {
                 </div>
 
                 {/* + Create Post Primary Button */}
-                <button
-                  className="create-post-header-btn"
-                  onClick={() => setIsCreateModalOpen(true)}
-                >
+                <Link href="/community/create" className="create-post-header-btn">
                   <Plus size={18} />
                   <span>Create Post</span>
-                </button>
+                </Link>
               </div>
 
               {/* Feed Tabs Navigation */}
@@ -320,36 +317,40 @@ export function CommunityFeedPage() {
                       </div>
 
                       {/* Post Content Caption */}
-                      <p className="post-caption-text">{post.content}</p>
+                      <Link href={`/community/post/${post.id}`} className="post-caption-link">
+                        <p className="post-caption-text">{post.content}</p>
+                      </Link>
 
                       {/* Multi-Image Collage Grid Layout */}
                       {post.images && post.images.length > 0 && (
-                        <div className="post-images-collage">
-                          {/* Main Left Featured Image */}
-                          <div className="collage-featured-img-wrap">
-                            <img src={post.images[0]} alt="Post visual 1" className="collage-img" />
-                          </div>
-
-                          {/* Right Side 2x2 Sub-Grid */}
-                          {post.images.length > 1 && (
-                            <div className="collage-sub-grid">
-                              <div className="collage-sub-img-wrap">
-                                <img src={post.images[1]} alt="Post visual 2" className="collage-img" />
-                              </div>
-                              {post.images.length > 2 && (
-                                <div className="collage-sub-img-wrap">
-                                  <img src={post.images[2]} alt="Post visual 3" className="collage-img" />
-                                </div>
-                              )}
-                              {post.images.length > 3 && (
-                                <div className="collage-sub-img-wrap badge-overlay-wrap">
-                                  <img src={post.images[3]} alt="Post visual 4" className="collage-img" />
-                                  <div className="extra-images-badge">+{extraImagesCount}</div>
-                                </div>
-                              )}
+                        <Link href={`/community/post/${post.id}`} className="post-images-collage-link">
+                          <div className="post-images-collage">
+                            {/* Main Left Featured Image */}
+                            <div className="collage-featured-img-wrap">
+                              <img src={post.images[0]} alt="Post visual 1" className="collage-img" />
                             </div>
-                          )}
-                        </div>
+
+                            {/* Right Side 2x2 Sub-Grid */}
+                            {post.images.length > 1 && (
+                              <div className="collage-sub-grid">
+                                <div className="collage-sub-img-wrap">
+                                  <img src={post.images[1]} alt="Post visual 2" className="collage-img" />
+                                </div>
+                                {post.images.length > 2 && (
+                                  <div className="collage-sub-img-wrap">
+                                    <img src={post.images[2]} alt="Post visual 3" className="collage-img" />
+                                  </div>
+                                )}
+                                {post.images.length > 3 && (
+                                  <div className="collage-sub-img-wrap badge-overlay-wrap">
+                                    <img src={post.images[3]} alt="Post visual 4" className="collage-img" />
+                                    <div className="extra-images-badge">+{extraImagesCount}</div>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </Link>
                       )}
 
                       {/* Hashtag Pills */}
@@ -465,7 +466,7 @@ export function CommunityFeedPage() {
 
                 <div className="trending-designs-list">
                   {trendingDesigns.map((design) => (
-                    <div key={design.id} className="trending-design-item">
+                    <Link key={design.id} href="/community/post/post-1" className="trending-design-item">
                       <img
                         src={design.image}
                         alt={design.title}
@@ -478,7 +479,7 @@ export function CommunityFeedPage() {
                           <span>{design.likes}</span>
                         </div>
                       </div>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               </div>

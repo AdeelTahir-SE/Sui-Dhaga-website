@@ -47,11 +47,11 @@ export const initialPosts: CommunityPost[] = [
     timestamp: "2 hours ago",
     content: "Designed this pastel Anarkali for a summer wedding 🌸 Would love your feedback!",
     images: [
-      "/images/home/feature-tailors.png",
-      "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=600&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=600&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=600&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=600&auto=format&fit=crop&q=80"
+      "/images/home/community_1.png",
+      "/images/home/community_2.png",
+      "/images/home/community_3.png",
+      "/images/home/community_4.png",
+      "https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=600&auto=format&fit=crop&q=80"
     ],
     tags: ["Anarkali", "Pastel", "WeddingWear", "Embroidered"],
     likesCount: 128,
@@ -138,7 +138,7 @@ export const initialTrendingDesigns: TrendingDesign[] = [
   {
     id: "trend-2",
     title: "Pastel Anarkali",
-    image: "/images/home/feature-tailors.png",
+    image: "/images/home/hero-float-pastel-anarkali.png",
     likes: 98
   },
   {
@@ -203,6 +203,59 @@ export const initialFollowingUsers: FollowingUser[] = [
     isFollowing: true
   }
 ];
+
+export function getCommunityPostById(id: string): CommunityPost | undefined {
+  const post = initialPosts.find((p) => p.id === id) || initialPosts[0];
+  if (!post) return undefined;
+
+  return {
+    ...post,
+    content: post.content || "Designed this pastel Anarkali for a summer wedding 🌸 Used georgette fabric with thread and sequin embroidery. Perfect for day events!",
+    comments: post.comments && post.comments.length > 0 ? post.comments : [
+      {
+        id: "c-1",
+        author: "Stitch Craft",
+        avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80",
+        text: "Beautiful color combination! 😍",
+        timestamp: "1 hour ago"
+      },
+      {
+        id: "c-2",
+        author: "Noor & Thread",
+        avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=80",
+        text: "Love the embroidery details! ❤️",
+        timestamp: "55 mins ago"
+      },
+      {
+        id: "c-3",
+        author: "Meera Tailors",
+        avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80",
+        text: "What fabric did you use?",
+        timestamp: "30 mins ago"
+      }
+    ]
+  };
+}
+
+export async function fetchCommunityPostByIdApi(id: string): Promise<CommunityPost | undefined> {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_BACKEND_URL;
+
+  if (apiUrl) {
+    try {
+      const res = await fetch(`${apiUrl}/api/community/posts/${encodeURIComponent(id)}`, {
+        headers: { "Content-Type": "application/json" }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return data.post ?? data;
+      }
+    } catch (err) {
+      console.warn("[Community API] Fetch post detail failed, fallback to mock:", err);
+    }
+  }
+
+  return getCommunityPostById(id);
+}
 
 /**
  * Async API fetcher for community feed posts.
