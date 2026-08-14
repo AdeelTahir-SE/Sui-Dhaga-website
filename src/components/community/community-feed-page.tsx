@@ -184,23 +184,23 @@ export function CommunityFeedPage() {
             {/* 1. Left Customer Dashboard Navigation Sidebar */}
             <aside className="community-sidebar-nav">
               <nav className="sidebar-menu-list">
-                <Link href="/dashboard" className="sidebar-item">
+                <Link href="/customer/dashboard" className="sidebar-item">
                   <LayoutDashboard size={18} />
                   <span>Dashboard</span>
                 </Link>
-                <Link href="/appointments" className="sidebar-item">
+                <Link href="/customer/appointments" className="sidebar-item">
                   <Calendar size={18} />
                   <span>Appointments</span>
                 </Link>
-                <Link href="/orders" className="sidebar-item">
+                <Link href="/customer/orders" className="sidebar-item">
                   <Package size={18} />
                   <span>Orders</span>
                 </Link>
-                <Link href="/measurements" className="sidebar-item">
+                <Link href="/customer/measurements" className="sidebar-item">
                   <Ruler size={18} />
                   <span>Measurements</span>
                 </Link>
-                <Link href="/saved-designs" className="sidebar-item">
+                <Link href="/customer/saved-designs" className="sidebar-item">
                   <FolderHeart size={18} />
                   <span>Saved Designs</span>
                 </Link>
@@ -459,7 +459,7 @@ export function CommunityFeedPage() {
               <div className="widget-card trending-designs-card">
                 <div className="widget-card-header">
                   <h3>Trending Designs</h3>
-                  <Link href="/saved-designs" className="widget-view-all">
+                  <Link href="/customer/saved-designs" className="widget-view-all">
                     View all
                   </Link>
                 </div>

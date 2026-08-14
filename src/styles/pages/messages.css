@@ -411,7 +411,7 @@
   margin: 0;
 }
 
-.contact-support-btn {
+.messages-need-help-card .contact-support-btn {
   display: block;
   width: 100%;
   text-align: center;
@@ -427,7 +427,7 @@
   transition: all 0.2s ease;
 }
 
-.contact-support-btn:hover {
+.messages-need-help-card .contact-support-btn:hover {
   background: #056e6b;
   transform: translateY(-1px);
   box-shadow: 0 6px 18px rgba(7, 139, 135, 0.35);

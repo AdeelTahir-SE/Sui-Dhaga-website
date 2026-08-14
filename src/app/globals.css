@@ -19,3 +19,12 @@
 @import "../styles/pages/tailors.css";
 @import "../styles/pages/community.css";
 @import "../styles/pages/messages.css";
+@import "../styles/pages/booking.css";
+@import "../styles/pages/customer-dashboard.css";
+@import "../styles/pages/customer-appointments.css";
+@import "../styles/pages/appointment-detail.css";
+@import "../styles/pages/customer-orders.css";
+@import "../styles/pages/order-detail.css";
+@import "../styles/pages/customer-measurements.css";
+@import "../styles/pages/add-measurement.css";
+@import "../styles/pages/customer-saved-designs.css";
