@@ -1,5 +1,5 @@
-import { CustomerPage } from "@/components/common/pages";
+import { CustomerOrdersPage } from "@/components/customer/customer-orders-page";
 
 export default function Page() {
-  return <CustomerPage view="orders" />;
+  return <CustomerOrdersPage />;
 }
