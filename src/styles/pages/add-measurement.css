@@ -1,0 +1,454 @@
+/* ==========================================================================
+   ADD NEW MEASUREMENT PAGE STYLES (/customer/measurements/new)
+   Matches Reference Screenshot with Units Toggle, Form Inputs, Interactive Mannequin,
+   Measurement Tips Card, and Save Button
+   ========================================================================== */
+
+.add-measurement-page-root {
+  background: #faf8f5;
+  min-height: 100vh;
+  padding-bottom: 90px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Left Hero Ribbon Accent */
+.add-measurement-hero-ribbon {
+  position: absolute;
+  top: 100px;
+  left: 0;
+  width: clamp(140px, 14vw, 220px);
+  height: auto;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.add-measurement-hero-ribbon .ribbon-img {
+  width: 100%;
+  height: auto;
+  display: block;
+  opacity: 0.9;
+}
+
+.add-measurement-container {
+  max-width: 1380px;
+  margin: 0 auto;
+  padding: clamp(96px, 10vw, 116px) clamp(20px, 4vw, 48px) 40px;
+  position: relative;
+  z-index: 10;
+}
+
+/* --------------------------------------------------------------------------
+   Breadcrumb Navigation
+   -------------------------------------------------------------------------- */
+.add-measurement-breadcrumb-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 1.25rem;
+  font-size: 0.88rem;
+}
+
+.add-measurement-breadcrumb-nav .crumb-link {
+  color: #6b665e;
+  font-weight: 500;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.add-measurement-breadcrumb-nav .crumb-link:hover {
+  color: #078b87;
+  text-decoration: underline;
+}
+
+.add-measurement-breadcrumb-nav .crumb-sep {
+  color: #a89f91;
+}
+
+.add-measurement-breadcrumb-nav .crumb-current {
+  color: #111111;
+  font-weight: 700;
+}
+
+/* --------------------------------------------------------------------------
+   Header Row with Units Toggle
+   -------------------------------------------------------------------------- */
+.add-measurement-header-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 1.75rem;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.add-measurement-title {
+  font-size: 2.25rem;
+  font-weight: 850;
+  color: #111111;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  margin: 0 0 0.25rem;
+}
+
+.add-measurement-subtitle {
+  font-size: 0.95rem;
+  color: #6b665e;
+  margin: 0;
+}
+
+.units-toggle-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.35rem;
+}
+
+.units-toggle-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #111111;
+}
+
+.units-segmented-pill {
+  display: flex;
+  background: #ffffff;
+  border: 1px solid #dcd1c0;
+  border-radius: 0.65rem;
+  padding: 3px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+}
+
+.unit-toggle-btn {
+  padding: 0.4rem 1.15rem;
+  background: transparent;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #6b665e;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.unit-toggle-btn.active {
+  background: #078b87;
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(7, 139, 135, 0.25);
+}
+
+/* --------------------------------------------------------------------------
+   Main Content Card
+   -------------------------------------------------------------------------- */
+.add-measurement-main-card {
+  background: #ffffff;
+  border: 1px solid #eadfce;
+  border-radius: 1.35rem;
+  padding: 2.25rem;
+  box-shadow: 0 4px 22px rgba(38, 28, 18, 0.04);
+}
+
+.form-main-content-layout {
+  display: grid;
+  grid-template-columns: 1.35fr 1fr 1.1fr;
+  gap: 2.5rem;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+/* Left Column: Form Fields */
+.measurement-fields-column {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.fields-group-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #111111;
+  letter-spacing: -0.01em;
+  margin: 0 0 0.85rem;
+}
+
+.form-input-row {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  align-items: center;
+  gap: 1rem;
+}
+
+.row-label {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #111111;
+}
+
+.input-with-suffix {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.form-num-input {
+  width: 100%;
+  background: #faf7f2;
+  border: 1px solid #e2d8c7;
+  border-radius: 0.65rem;
+  padding: 0.65rem 2.5rem 0.65rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #111111;
+  outline: none;
+  transition: all 0.15s ease;
+}
+
+.form-num-input::placeholder {
+  color: #a89f91;
+  font-weight: 400;
+}
+
+.form-num-input:focus,
+.form-input-row.focused .form-num-input {
+  background: #ffffff;
+  border-color: #078b87;
+  box-shadow: 0 0 0 3px rgba(7, 139, 135, 0.15);
+}
+
+.form-num-input.text-input-full {
+  padding-right: 1rem;
+}
+
+.unit-suffix-tag {
+  position: absolute;
+  right: 14px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #8b8376;
+  pointer-events: none;
+}
+
+/* Center Column: Mannequin Diagram */
+.body-diagram-center-column {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.diagram-container-frame {
+  position: relative;
+  width: 100%;
+  max-width: 260px;
+}
+
+.diagram-mannequin-image {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: contain;
+}
+
+/* Hotspot Indicator Pins */
+.body-hotspot {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #078b87;
+  border: 2.5px solid #ffffff;
+  box-shadow: 0 0 0 3px rgba(7, 139, 135, 0.35);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: translate(-50%, -50%);
+}
+
+.body-hotspot:hover,
+.body-hotspot.active {
+  transform: translate(-50%, -50%) scale(1.4);
+  background: #056a67;
+  box-shadow: 0 0 0 6px rgba(7, 139, 135, 0.45);
+}
+
+.neck-pin {
+  top: 14%;
+  left: 50%;
+}
+
+.shoulder-pin {
+  top: 23%;
+  left: 37%;
+}
+
+.bust-pin {
+  top: 30%;
+  left: 48%;
+}
+
+.waist-pin {
+  top: 38%;
+  left: 48%;
+}
+
+.hip-pin {
+  top: 44%;
+  left: 48%;
+}
+
+.arm-pin {
+  top: 35%;
+  left: 80%;
+}
+
+/* Right Column: Tips Card */
+.measurement-tips-column {
+  display: flex;
+  flex-direction: column;
+}
+
+.measurement-tips-card {
+  background: #faf7f2;
+  border: 1px solid #eadfce;
+  border-radius: 1.15rem;
+  padding: 1.5rem 1.65rem;
+}
+
+.tips-card-heading {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #111111;
+  margin: 0 0 1rem;
+}
+
+.tips-checklist {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.tip-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tip-bullet-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #078b87;
+  flex-shrink: 0;
+}
+
+.tip-text {
+  font-size: 0.86rem;
+  color: #474138;
+  line-height: 1.4;
+}
+
+/* --------------------------------------------------------------------------
+   Bottom Save Action
+   -------------------------------------------------------------------------- */
+.add-measurement-form-footer {
+  display: flex;
+  align-items: center;
+  padding-top: 1.5rem;
+  border-top: 1px solid #f0e7da;
+}
+
+.save-measurements-submit-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0.85rem 2.75rem;
+  background-color: #078b87;
+  color: #ffffff;
+  border: none;
+  border-radius: 0.75rem;
+  font-size: 0.95rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(7, 139, 135, 0.3);
+  transition: all 0.2s ease;
+}
+
+.save-measurements-submit-btn:hover:not(:disabled) {
+  background-color: #056a67;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(7, 139, 135, 0.4);
+}
+
+.save-measurements-submit-btn:disabled {
+  opacity: 0.85;
+  cursor: not-allowed;
+}
+
+/* --------------------------------------------------------------------------
+   Page-Level Transparent Corner Motifs
+   -------------------------------------------------------------------------- */
+.add-measurement-corner-png-left {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: clamp(100px, 10vw, 140px);
+  max-width: 140px;
+  height: auto;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.add-measurement-corner-png-right {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: clamp(120px, 12vw, 180px);
+  max-width: 180px;
+  height: auto;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.add-measurement-corner-png-left .corner-png-img,
+.add-measurement-corner-png-right .corner-png-img {
+  width: 100%;
+  height: auto;
+  display: block;
+  opacity: 0.85;
+}
+
+/* --------------------------------------------------------------------------
+   Responsive Breakpoints
+   -------------------------------------------------------------------------- */
+@media (max-width: 1100px) {
+  .form-main-content-layout {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .measurement-tips-column {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 768px) {
+  .form-main-content-layout {
+    grid-template-columns: 1fr;
+    gap: 1.75rem;
+  }
+
+  .form-input-row {
+    grid-template-columns: 1fr;
+    gap: 0.35rem;
+  }
+
+  .add-measurement-main-card {
+    padding: 1.5rem;
+  }
+
+  .save-measurements-submit-btn {
+    width: 100%;
+  }
+}
