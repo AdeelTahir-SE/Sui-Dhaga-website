@@ -1,5 +1,10 @@
-import { CustomerPage } from "@/components/common/pages";
+import { OrderDetailPage } from "@/components/customer/order-detail-page";
 
-export default function Page() {
-  return <CustomerPage view="order-detail" />;
+export default async function Page({
+  params
+}: {
+  params: Promise<{ orderId: string }>;
+}) {
+  const resolvedParams = await params;
+  return <OrderDetailPage orderId={resolvedParams.orderId} />;
 }
