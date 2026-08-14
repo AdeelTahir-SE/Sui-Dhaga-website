@@ -1,5 +1,5 @@
-import { CustomerPage } from "@/components/common/pages";
+import { CustomerSavedDesignsPage } from "@/components/customer/customer-saved-designs-page";
 
 export default function Page() {
-  return <CustomerPage view="saved-designs" />;
+  return <CustomerSavedDesignsPage />;
 }
