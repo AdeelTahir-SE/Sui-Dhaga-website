@@ -1,0 +1,672 @@
+/* ==========================================================================
+   CUSTOMER DASHBOARD PAGE STYLES (/customer/dashboard)
+   Unified with Community Sidebar Navigation & Page-Level Corner Accents
+   ========================================================================== */
+
+.customer-dashboard-page-root {
+  background: #faf8f5;
+  min-height: 100vh;
+  padding-bottom: 80px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Left Hero Ribbon Accent */
+.customer-dashboard-ribbon {
+  position: absolute;
+  top: 100px;
+  left: 0;
+  width: clamp(140px, 14vw, 220px);
+  height: auto;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.customer-dashboard-ribbon .ribbon-img {
+  width: 100%;
+  height: auto;
+  display: block;
+  opacity: 0.9;
+}
+
+.customer-dashboard-container {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: clamp(96px, 10vw, 116px) clamp(20px, 4vw, 48px) 40px;
+  position: relative;
+  z-index: 10;
+}
+
+/* 2-Column Layout Grid: Reused Community Sidebar + Main Content */
+.customer-dashboard-layout-grid {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 28px;
+  align-items: start;
+}
+
+/* --------------------------------------------------------------------------
+   1. Left Customer Navigation Sidebar (Reused Community Sidebar Design)
+   -------------------------------------------------------------------------- */
+.customer-sidebar-nav {
+  background: #ffffff;
+  border-radius: 24px;
+  border: 1px solid #e2e8f0;
+  padding: 20px 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+  position: sticky;
+  top: 106px;
+}
+
+.customer-sidebar-nav .sidebar-menu-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.customer-sidebar-nav .sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 16px;
+  border-radius: 16px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #475569;
+  text-decoration: none;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.customer-sidebar-nav .sidebar-item:hover {
+  background: #f8fafc;
+  color: #078b87;
+}
+
+.customer-sidebar-nav .sidebar-item.active {
+  background: #078b87;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(7, 139, 135, 0.25);
+}
+
+.customer-sidebar-nav .logout-btn {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: #ef4444;
+  width: 100%;
+  margin-top: 12px;
+  border-top: 1px solid #f1f5f9;
+  padding-top: 16px;
+}
+
+.customer-sidebar-nav .logout-btn:hover {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+/* --------------------------------------------------------------------------
+   2. Main Dashboard Content Area
+   -------------------------------------------------------------------------- */
+.customer-dashboard-main-content {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Welcome Header Banner */
+.customer-welcome-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: transparent;
+  margin-bottom: 2rem;
+  position: relative;
+  z-index: 2;
+  gap: 2rem;
+}
+
+.welcome-text-content {
+  max-width: 520px;
+}
+
+.welcome-greeting {
+  font-size: 1.15rem;
+  font-weight: 500;
+  color: #6b665e;
+  display: block;
+  margin-bottom: 0.2rem;
+}
+
+.customer-user-name {
+  font-size: 2.75rem;
+  font-weight: 900;
+  color: #111111;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  margin: 0 0 0.5rem;
+}
+
+.welcome-tagline {
+  font-size: 1.05rem;
+  color: #6b665e;
+  margin: 0;
+}
+
+.welcome-illustration-banner {
+  width: 320px;
+  height: 160px;
+  border-radius: 1.25rem;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(38, 28, 18, 0.08);
+  flex-shrink: 0;
+  background: #eef7f6;
+}
+
+.welcome-banner-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* --------------------------------------------------------------------------
+   3. Quick Overview (4 Stat Cards)
+   -------------------------------------------------------------------------- */
+.dashboard-section-block {
+  margin-bottom: 2rem;
+  position: relative;
+  z-index: 2;
+}
+
+.section-title-heading {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #111111;
+  margin: 0 0 1rem;
+}
+
+.quick-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.25rem;
+}
+
+.stat-overview-card {
+  background: #ffffff;
+  border: 1px solid #eadfce;
+  border-radius: 1.15rem;
+  padding: 1.35rem 1.25rem;
+  box-shadow: 0 4px 18px rgba(38, 28, 18, 0.04);
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stat-overview-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(38, 28, 18, 0.08);
+}
+
+.stat-card-number {
+  font-size: 2.25rem;
+  font-weight: 900;
+  color: #111111;
+  line-height: 1;
+  margin-bottom: 0.4rem;
+}
+
+.stat-card-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #6b665e;
+  margin-bottom: 0.85rem;
+}
+
+.stat-card-link {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #078b87;
+  text-decoration: none;
+  margin-top: auto;
+  transition: color 0.15s ease;
+}
+
+.stat-card-link:hover {
+  color: #055f5c;
+  text-decoration: underline;
+}
+
+/* --------------------------------------------------------------------------
+   4. Middle Section: Recent Orders & Upcoming Appointments Grid
+   -------------------------------------------------------------------------- */
+.dashboard-middle-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  position: relative;
+  z-index: 2;
+}
+
+.dashboard-panel-card {
+  background: #ffffff;
+  border: 1px solid #eadfce;
+  border-radius: 1.25rem;
+  padding: 1.5rem;
+  box-shadow: 0 4px 20px rgba(38, 28, 18, 0.04);
+  display: flex;
+  flex-direction: column;
+}
+
+.panel-card-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #111111;
+  margin: 0 0 1.25rem;
+}
+
+.margin-0 {
+  margin: 0 !important;
+}
+
+/* Orders List */
+.orders-list-wrapper,
+.appointments-list-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  margin-bottom: 1.5rem;
+  flex: 1;
+}
+
+.order-row-item,
+.appointment-row-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 0.85rem;
+  background: #faf7f2;
+  border-radius: 0.85rem;
+  transition: background 0.15s ease;
+}
+
+.order-row-item:hover,
+.appointment-row-item:hover {
+  background: #f4eee3;
+}
+
+.order-item-avatar,
+.tailor-avatar-circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 0.65rem;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: #eef7f6;
+}
+
+.tailor-avatar-circle {
+  border-radius: 50%;
+}
+
+.order-avatar-img,
+.tailor-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.order-info-details,
+.appointment-info-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin-left: 0.75rem;
+  flex: 1;
+}
+
+.order-number-text,
+.appointment-datetime {
+  font-size: 0.75rem;
+  color: #7b756d;
+  font-weight: 500;
+}
+
+.order-item-name,
+.appointment-tailor-name {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #111111;
+  margin: 0;
+}
+
+.appointment-service-name {
+  font-size: 0.75rem;
+  color: #078b87;
+  font-weight: 600;
+}
+
+.order-status-col,
+.appointment-status-col {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.order-status-pill,
+.appointment-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.order-status-pill.in-progress {
+  background: #fff6e0;
+  color: #b25e00;
+  border: 1px solid #fedc8b;
+}
+
+.order-status-pill.delivered {
+  background: #e6f7ef;
+  color: #15803d;
+  border: 1px solid #a7f3d0;
+}
+
+.order-status-pill.out-for-delivery {
+  background: #f3e8ff;
+  color: #7e22ce;
+  border: 1px solid #e9d5ff;
+}
+
+.appointment-status-pill {
+  background: #fff6e0;
+  color: #b25e00;
+  border: 1px solid #fedc8b;
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.row-chevron {
+  color: #9c958a;
+}
+
+/* Full Width Panel Button */
+.panel-full-btn {
+  display: block;
+  width: 100%;
+  text-align: center;
+  padding: 0.85rem 1rem;
+  background-color: #078b87;
+  color: #ffffff;
+  border-radius: 0.85rem;
+  font-size: 0.92rem;
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: 0 4px 14px rgba(7, 139, 135, 0.25);
+  transition: all 0.2s ease;
+  margin-top: auto;
+}
+
+.panel-full-btn:hover {
+  background-color: #056a67;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(7, 139, 135, 0.35);
+}
+
+/* --------------------------------------------------------------------------
+   5. Bottom Section: 3 Cards Row Grid
+   -------------------------------------------------------------------------- */
+.dashboard-bottom-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  position: relative;
+  z-index: 2;
+}
+
+.compact-card {
+  height: 100%;
+}
+
+.panel-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.header-view-link {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #078b87;
+  text-decoration: none;
+}
+
+.header-view-link:hover {
+  text-decoration: underline;
+}
+
+/* Saved Designs Thumbnails */
+.saved-designs-thumbnails-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.6rem;
+  margin-top: 0.25rem;
+}
+
+.saved-design-thumb-card {
+  aspect-ratio: 0.85;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  background: #f4eee3;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.design-thumb-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.saved-design-thumb-card:hover .design-thumb-img {
+  transform: scale(1.08);
+}
+
+/* Style Assistant Card */
+.style-assistant-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.assistant-copy {
+  font-size: 0.88rem;
+  color: #6b665e;
+  line-height: 1.4;
+  margin: 0 0 1.25rem;
+}
+
+.assistant-start-btn {
+  display: block;
+  width: 100%;
+  text-align: center;
+  padding: 0.8rem 1rem;
+  background-color: #078b87;
+  color: #ffffff;
+  border-radius: 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-decoration: none;
+  margin-top: auto;
+  transition: all 0.2s ease;
+}
+
+.assistant-start-btn:hover {
+  background-color: #056a67;
+}
+
+/* Recommended For You Card */
+.recommended-card-body {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  margin-top: 0.25rem;
+}
+
+.recommended-thumb-box {
+  width: 75px;
+  height: 90px;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: #f4eee3;
+}
+
+.rec-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.recommended-meta-box {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.rec-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #111111;
+  margin: 0 0 0.15rem;
+}
+
+.rec-starting-label {
+  font-size: 0.72rem;
+  color: #7b756d;
+}
+
+.rec-price-val {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #111111;
+  margin-bottom: 0.6rem;
+}
+
+.rec-explore-btn {
+  display: inline-block;
+  align-self: flex-start;
+  padding: 0.45rem 1rem;
+  background: #ffffff;
+  border: 1px solid #dcd1c0;
+  border-radius: 0.6rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #111111;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.rec-explore-btn:hover {
+  background: #078b87;
+  color: #ffffff;
+  border-color: #078b87;
+}
+
+/* --------------------------------------------------------------------------
+   6. Page-Level Transparent Corner Motifs (Exact Page Corner Edges)
+   -------------------------------------------------------------------------- */
+.customer-corner-png-left {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: clamp(100px, 10vw, 140px);
+  max-width: 140px;
+  height: auto;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.customer-corner-png-right {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: clamp(120px, 12vw, 180px);
+  max-width: 180px;
+  height: auto;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.customer-corner-png-left .corner-png-img,
+.customer-corner-png-right .corner-png-img {
+  width: 100%;
+  height: auto;
+  display: block;
+  opacity: 0.85;
+}
+
+/* --------------------------------------------------------------------------
+   Responsive Breakpoints
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 1200px) {
+  .customer-dashboard-layout-grid {
+    grid-template-columns: 210px 1fr;
+    gap: 20px;
+  }
+
+  .quick-overview-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .dashboard-bottom-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .customer-dashboard-layout-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .customer-sidebar-nav {
+    position: static;
+    margin-bottom: 24px;
+  }
+
+  .customer-welcome-hero {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .welcome-illustration-banner {
+    width: 100%;
+    height: 180px;
+  }
+
+  .dashboard-middle-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .customer-dashboard-container {
+    padding: 80px 16px 40px;
+  }
+
+  .customer-user-name {
+    font-size: 2.15rem;
+  }
+
+  .quick-overview-grid {
+    grid-template-columns: 1fr;
+  }
+}
