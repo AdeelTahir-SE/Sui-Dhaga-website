@@ -1,0 +1,807 @@
+/* ==========================================================================
+   CUSTOMER MEASUREMENTS PAGE STYLES (/customer/measurements)
+   Matches Reference Screenshot with Profile Selector, Interactive Body Diagram,
+   Measurements List Table, Size Guide, and How to Measure Tutorial
+   ========================================================================== */
+
+.customer-measurements-page-root {
+  background: #faf8f5;
+  min-height: 100vh;
+  padding-bottom: 90px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Left Hero Ribbon Accent */
+.measurements-hero-ribbon {
+  position: absolute;
+  top: 100px;
+  left: 0;
+  width: clamp(140px, 14vw, 220px);
+  height: auto;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.measurements-hero-ribbon .ribbon-img {
+  width: 100%;
+  height: auto;
+  display: block;
+  opacity: 0.9;
+}
+
+.measurements-container {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: clamp(96px, 10vw, 116px) clamp(20px, 4vw, 48px) 40px;
+  position: relative;
+  z-index: 10;
+}
+
+/* 2-Column Layout Grid (Sidebar + Main Content) */
+.measurements-layout-grid {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 28px;
+  align-items: start;
+}
+
+/* --------------------------------------------------------------------------
+   Breadcrumb Navigation
+   -------------------------------------------------------------------------- */
+.measurements-breadcrumb-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 0.75rem;
+  font-size: 0.88rem;
+}
+
+.measurements-breadcrumb-nav .crumb-link {
+  color: #6b665e;
+  font-weight: 500;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.measurements-breadcrumb-nav .crumb-link:hover {
+  color: #078b87;
+  text-decoration: underline;
+}
+
+.measurements-breadcrumb-nav .crumb-sep {
+  color: #a89f91;
+}
+
+.measurements-breadcrumb-nav .crumb-current {
+  color: #111111;
+  font-weight: 700;
+}
+
+/* --------------------------------------------------------------------------
+   Header Row
+   -------------------------------------------------------------------------- */
+.measurements-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.75rem;
+}
+
+.measurements-page-title {
+  font-size: 2.25rem;
+  font-weight: 850;
+  color: #111111;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  margin: 0 0 0.25rem;
+}
+
+.measurements-page-subtitle {
+  font-size: 0.95rem;
+  color: #6b665e;
+  margin: 0;
+}
+
+.header-spark-accent {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #fbf0d9;
+  border: 1px solid #fedc8b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sparkle-gold-icon {
+  color: #d97706;
+}
+
+/* --------------------------------------------------------------------------
+   3-Column Main Cards Grid
+   -------------------------------------------------------------------------- */
+.measurements-cards-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.65fr 0.95fr;
+  gap: 22px;
+  align-items: stretch;
+}
+
+.measurement-panel-card {
+  background: #ffffff;
+  border: 1px solid #eadfce;
+  border-radius: 1.35rem;
+  padding: 1.5rem;
+  box-shadow: 0 4px 20px rgba(38, 28, 18, 0.03);
+  display: flex;
+  flex-direction: column;
+}
+
+.measurement-panel-card .panel-card-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #111111;
+  letter-spacing: -0.01em;
+  margin: 0 0 1.25rem;
+}
+
+/* --------------------------------------------------------------------------
+   Column 1: Measurement Profile Panel
+   -------------------------------------------------------------------------- */
+.profile-selector-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+.profile-input-group,
+.units-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
+}
+
+.field-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #111111;
+}
+
+.select-dropdown-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.profile-name-select,
+.unit-select-dropdown {
+  width: 100%;
+  appearance: none;
+  background: #ffffff;
+  border: 1px solid #dcd1c0;
+  border-radius: 0.75rem;
+  padding: 0.65rem 2.2rem 0.65rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #111111;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.profile-name-select:focus,
+.unit-select-dropdown:focus {
+  border-color: #078b87;
+  box-shadow: 0 0 0 3px rgba(7, 139, 135, 0.15);
+}
+
+.dropdown-arrow-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #7b756d;
+  pointer-events: none;
+}
+
+.last-updated-text {
+  font-size: 0.78rem;
+  color: #8b8376;
+  margin-bottom: 1.25rem;
+  display: block;
+}
+
+.profile-actions-bottom {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding-top: 1rem;
+}
+
+.add-new-measurement-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background-color: #078b87;
+  color: #ffffff;
+  border: none;
+  border-radius: 0.75rem;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(7, 139, 135, 0.25);
+  transition: all 0.15s ease;
+}
+
+.add-new-measurement-btn:hover {
+  background-color: #056a67;
+  transform: translateY(-1px);
+}
+
+.edit-current-profile-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 0.65rem 1rem;
+  background-color: #ffffff;
+  color: #078b87;
+  border: 1.5px solid #078b87;
+  border-radius: 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.edit-current-profile-btn:hover {
+  background-color: #f0fdf9;
+}
+
+/* --------------------------------------------------------------------------
+   Column 2: Body Overview Panel (Silhouette + Table)
+   -------------------------------------------------------------------------- */
+.body-overview-panel {
+  padding: 1.5rem 1.65rem;
+}
+
+.body-overview-inner-split {
+  display: grid;
+  grid-template-columns: 1fr 1.1fr;
+  gap: 1.5rem;
+  align-items: center;
+}
+
+.body-diagram-visual-box {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0.5rem;
+}
+
+.diagram-img-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 210px;
+  margin: 0 auto;
+}
+
+.diagram-silhouette-img {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: contain;
+}
+
+/* Hotspot Indicators */
+.diagram-hotspot {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #078b87;
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 0 3px rgba(7, 139, 135, 0.3);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.diagram-hotspot:hover,
+.diagram-hotspot.active {
+  transform: scale(1.4);
+  background: #056a67;
+  box-shadow: 0 0 0 5px rgba(7, 139, 135, 0.45);
+}
+
+.diagram-hotspot.bust-dot {
+  top: 30%;
+  left: 48%;
+}
+
+.diagram-hotspot.waist-dot {
+  top: 38%;
+  left: 48%;
+}
+
+.diagram-hotspot.hip-dot {
+  top: 44%;
+  left: 48%;
+}
+
+.diagram-hotspot.shoulder-dot {
+  top: 23%;
+  left: 37%;
+}
+
+/* Measurement List Table */
+.measurements-list-table-box {
+  display: flex;
+  flex-direction: column;
+}
+
+.measurements-table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid #f0e7da;
+  margin-bottom: 0.35rem;
+}
+
+.th-col {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #7b756d;
+}
+
+.measurements-table-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.measurement-table-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.65rem 0.5rem;
+  border-bottom: 1px solid #f7f1e6;
+  border-radius: 0.5rem;
+  transition: background-color 0.15s ease;
+  cursor: default;
+}
+
+.measurement-table-row:hover,
+.measurement-table-row.highlighted {
+  background-color: #f2faf8;
+}
+
+.row-item-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #111111;
+}
+
+.row-item-value {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #111111;
+}
+
+/* --------------------------------------------------------------------------
+   Column 3: Help & Video Cards
+   -------------------------------------------------------------------------- */
+.measurements-side-cards-column {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.help-panel-card,
+.video-panel-card {
+  padding: 1.35rem 1.45rem;
+}
+
+.help-card-desc {
+  font-size: 0.86rem;
+  color: #6b665e;
+  line-height: 1.4;
+  margin: 0 0 1rem;
+}
+
+.size-badge-box {
+  margin-bottom: 1.25rem;
+}
+
+.standard-size-pill {
+  display: inline-block;
+  padding: 0.4rem 0.9rem;
+  background: #f4eee3;
+  border: 1px solid #dcd1c0;
+  border-radius: 0.65rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #111111;
+}
+
+.view-size-guide-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 0.7rem 1rem;
+  background-color: #078b87;
+  color: #ffffff;
+  border: none;
+  border-radius: 0.75rem;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(7, 139, 135, 0.25);
+  transition: all 0.15s ease;
+}
+
+.view-size-guide-btn:hover {
+  background-color: #056a67;
+  transform: translateY(-1px);
+}
+
+.watch-video-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 0.7rem 1rem;
+  background-color: #ffffff;
+  color: #078b87;
+  border: 1.5px solid #078b87;
+  border-radius: 0.75rem;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.watch-video-btn:hover {
+  background-color: #078b87;
+  color: #ffffff;
+}
+
+/* --------------------------------------------------------------------------
+   Modals
+   -------------------------------------------------------------------------- */
+.measurements-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 17, 17, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.measurements-modal-card {
+  background: #ffffff;
+  border-radius: 1.5rem;
+  max-width: 540px;
+  width: 100%;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.18);
+  border: 1px solid #eadfce;
+  overflow: hidden;
+  animation: modalIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.measurements-modal-card.size-guide-modal {
+  max-width: 650px;
+}
+
+.measurements-modal-card.video-modal {
+  max-width: 600px;
+}
+
+.measurements-modal-card .modal-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid #f0e7da;
+}
+
+.measurements-modal-card .modal-title {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #111111;
+  margin: 0;
+}
+
+.measurements-modal-card .modal-close-btn {
+  background: transparent;
+  border: none;
+  color: #716b62;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.modal-form-scrollable,
+.modal-content-scrollable {
+  padding: 1.5rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.form-field-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+}
+
+.form-field-item.full-width {
+  grid-column: span 2;
+}
+
+.form-two-col-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem;
+}
+
+.form-text-input,
+.form-textarea-input {
+  width: 100%;
+  background: #ffffff;
+  border: 1px solid #dcd1c0;
+  border-radius: 0.65rem;
+  padding: 0.65rem 0.85rem;
+  font-size: 0.9rem;
+  color: #111111;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.form-text-input:focus,
+.form-textarea-input:focus {
+  border-color: #078b87;
+  box-shadow: 0 0 0 3px rgba(7, 139, 135, 0.15);
+}
+
+.modal-footer-actions,
+.modal-footer-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #f0e7da;
+  background: #faf7f2;
+}
+
+.modal-primary-btn,
+.modal-done-btn {
+  padding: 0.65rem 1.35rem;
+  background: #078b87;
+  color: #ffffff;
+  border: none;
+  border-radius: 0.65rem;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.modal-secondary-btn {
+  padding: 0.65rem 1.25rem;
+  background: #ffffff;
+  border: 1px solid #dcd1c0;
+  border-radius: 0.65rem;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #6b665e;
+  cursor: pointer;
+}
+
+/* Size Guide Chart Table */
+.guide-intro-note {
+  font-size: 0.88rem;
+  color: #6b665e;
+  margin: 0 0 1rem;
+}
+
+.size-chart-table-wrapper {
+  overflow-x: auto;
+  border: 1px solid #eadfce;
+  border-radius: 0.75rem;
+}
+
+.size-chart-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.82rem;
+}
+
+.size-chart-table th {
+  background: #faf7f2;
+  padding: 0.65rem 0.85rem;
+  font-weight: 700;
+  color: #111111;
+  border-bottom: 1px solid #eadfce;
+}
+
+.size-chart-table td {
+  padding: 0.65rem 0.85rem;
+  border-bottom: 1px solid #f2e9dc;
+  color: #4b443b;
+}
+
+.size-chart-table tr.highlight-row {
+  background: #f0fdf9;
+  font-weight: 600;
+}
+
+/* Video Player Mock */
+.video-player-mock-box {
+  margin-bottom: 1.5rem;
+}
+
+.video-backdrop {
+  position: relative;
+  width: 100%;
+  height: 220px;
+  border-radius: 1rem;
+  overflow: hidden;
+  background: #111111;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.video-poster-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.75;
+}
+
+.video-play-center-btn {
+  position: absolute;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(7, 139, 135, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.video-play-center-btn:hover {
+  transform: scale(1.1);
+}
+
+.video-caption {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #111111;
+  margin-top: 0.5rem;
+}
+
+.steps-list-heading {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #111111;
+  margin: 0 0 0.85rem;
+}
+
+.measuring-steps-guide-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.measuring-step-card {
+  background: #faf7f2;
+  border: 1px solid #eadfce;
+  border-radius: 0.75rem;
+  padding: 0.85rem 1rem;
+}
+
+.step-card-title {
+  display: block;
+  font-size: 0.88rem;
+  color: #078b87;
+  margin-bottom: 0.2rem;
+}
+
+.step-card-desc {
+  font-size: 0.82rem;
+  color: #6b665e;
+  margin: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Page-Level Transparent Corner Motifs
+   -------------------------------------------------------------------------- */
+.measurements-corner-png-left {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: clamp(100px, 10vw, 140px);
+  max-width: 140px;
+  height: auto;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.measurements-corner-png-right {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: clamp(120px, 12vw, 180px);
+  max-width: 180px;
+  height: auto;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.measurements-corner-png-left .corner-png-img,
+.measurements-corner-png-right .corner-png-img {
+  width: 100%;
+  height: auto;
+  display: block;
+  opacity: 0.85;
+}
+
+/* --------------------------------------------------------------------------
+   Responsive Breakpoints
+   -------------------------------------------------------------------------- */
+@media (max-width: 1200px) {
+  .measurements-layout-grid {
+    grid-template-columns: 210px 1fr;
+    gap: 20px;
+  }
+
+  .measurements-cards-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .measurements-side-cards-column {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 950px) {
+  .measurements-layout-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .customer-sidebar-nav {
+    position: static;
+    margin-bottom: 24px;
+  }
+
+  .measurements-cards-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .measurements-side-cards-column {
+    grid-template-columns: 1fr;
+  }
+
+  .body-overview-inner-split {
+    grid-template-columns: 1fr;
+  }
+}
