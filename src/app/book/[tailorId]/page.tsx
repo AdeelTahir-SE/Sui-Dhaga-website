@@ -1,5 +1,10 @@
-import { CustomerPage } from "@/components/common/pages";
+import { BookingAppointmentPage } from "@/components/booking/booking-appointment-page";
 
-export default function Page() {
-  return <CustomerPage view="book" />;
+export default async function Page({
+  params
+}: {
+  params: Promise<{ tailorId: string }>;
+}) {
+  const { tailorId } = await params;
+  return <BookingAppointmentPage tailorId={tailorId} />;
 }

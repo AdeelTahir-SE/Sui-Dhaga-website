@@ -149,7 +149,7 @@ export function TailorProfilePage({ tailorId: propTailorId }: TailorProfilePageP
 
                   {/* Top Action CTAs */}
                   <div className="profile-cta-buttons">
-                    <Link href={`/book?tailorId=${tailor.id}`} className="cta-btn book-btn">
+                    <Link href={`/book/${tailor.id}`} className="cta-btn book-btn">
                       Book Appointment
                     </Link>
                     <Link href={`/messages?tailorId=${tailor.id}`} className="cta-btn message-btn">

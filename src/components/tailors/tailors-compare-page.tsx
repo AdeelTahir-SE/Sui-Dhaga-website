@@ -295,7 +295,7 @@ export function TailorsComparePage() {
                       {selectedTailors.map((tailor) => (
                         <td key={tailor.id} className="cell-value cta-cell">
                           <Link
-                            href={`/book?tailorId=${tailor.id}`}
+                            href={`/book/${tailor.id}`}
                             className="compare-book-btn"
                           >
                             Book Now
