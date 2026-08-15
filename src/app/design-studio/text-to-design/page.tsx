@@ -1,5 +1,10 @@
-import { StudioPage } from "@/components/common/pages";
+import { StudioTextToDesignPage } from "@/components/design-studio/studio-text-to-design-page";
+
+export const metadata = {
+  title: "Text to Design | AI Design Studio | Sui Dhāga",
+  description: "Describe your dream ethnic outfit and generate AI design references."
+};
 
 export default function Page() {
-  return <StudioPage view="text-to-design" />;
+  return <StudioTextToDesignPage />;
 }
