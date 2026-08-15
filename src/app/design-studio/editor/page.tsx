@@ -5,11 +5,6 @@ export const metadata = {
   description: "Customize fabrics, colors, and 3D garment previews in the design editor."
 };
 
-interface PageProps {
-  params: Promise<{ designId: string }>;
-}
-
-export default async function Page({ params }: PageProps) {
-  const resolvedParams = await params;
-  return <StudioEditorPage designId={resolvedParams.designId} />;
+export default function Page() {
+  return <StudioEditorPage designId="DS67234" />;
 }

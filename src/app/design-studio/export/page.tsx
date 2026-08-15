@@ -5,11 +5,6 @@ export const metadata = {
   description: "Export full tech pack with measurements, color codes, and fabric specifications."
 };
 
-interface PageProps {
-  params: Promise<{ designId: string }>;
-}
-
-export default async function Page({ params }: PageProps) {
-  const resolvedParams = await params;
-  return <StudioExportPage designId={resolvedParams.designId} />;
+export default function Page() {
+  return <StudioExportPage designId="DSK1234" />;
 }
