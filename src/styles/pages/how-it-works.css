@@ -1,0 +1,390 @@
+/* ==========================================================================
+   How It Works & FAQs Page Styles - Sui Dhāga
+   ========================================================================== */
+
+.hiw-container {
+  min-height: 100vh;
+  background-color: #FAF8F5;
+  color: #111827;
+  font-family: inherit;
+  padding: 100px 24px 80px;
+}
+
+.hiw-inner {
+  max-width: 1160px;
+  margin: 0 auto;
+}
+
+/* Breadcrumb */
+.hiw-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: #6B7280;
+  font-weight: 500;
+  margin-bottom: 20px;
+}
+
+.hiw-breadcrumb a {
+  color: #6B7280;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.hiw-breadcrumb a:hover {
+  color: #078B87;
+}
+
+/* Hero Section */
+.hiw-hero {
+  text-align: center;
+  margin-bottom: 56px;
+  max-width: 780px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.hiw-hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #F0FDFA;
+  border: 1px solid #CCFBF1;
+  color: #0F766E;
+  font-size: 0.82rem;
+  font-weight: 750;
+  padding: 5px 14px;
+  border-radius: 20px;
+  margin-bottom: 14px;
+}
+
+.hiw-hero-title {
+  font-size: 2.75rem;
+  font-weight: 900;
+  color: #111827;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  margin: 0 0 14px;
+}
+
+.hiw-hero-title span {
+  color: #078B87;
+}
+
+.hiw-hero-subtitle {
+  font-size: 1.1rem;
+  line-height: 1.6;
+  color: #4B5563;
+  margin: 0;
+}
+
+/* --------------------------------------------------------------------------
+   4-Step How It Works Grid
+   -------------------------------------------------------------------------- */
+.hiw-steps-section {
+  margin-bottom: 64px;
+}
+
+.hiw-section-heading-wrap {
+  text-align: center;
+  margin-bottom: 36px;
+}
+
+.hiw-section-title {
+  font-size: 1.85rem;
+  font-weight: 850;
+  color: #111827;
+  letter-spacing: -0.02em;
+  margin: 0 0 8px;
+}
+
+.hiw-section-sub {
+  font-size: 0.95rem;
+  color: #6B7280;
+  margin: 0;
+}
+
+.hiw-steps-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  position: relative;
+}
+
+.hiw-step-card {
+  background: #FFFFFF;
+  border: 1px solid #EAE6DF;
+  border-radius: 20px;
+  padding: 26px 22px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+  position: relative;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hiw-step-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.06);
+  border-color: #078B87;
+}
+
+.hiw-step-num-badge {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: #F0FDFA;
+  border: 1px solid #CCFBF1;
+  color: #078B87;
+  font-size: 1.05rem;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 18px;
+}
+
+.hiw-step-icon-wrap {
+  margin-bottom: 14px;
+}
+
+.hiw-step-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #111827;
+  margin: 0 0 8px;
+}
+
+.hiw-step-desc {
+  font-size: 0.88rem;
+  color: #4B5563;
+  line-height: 1.55;
+  margin: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Interactive FAQs Accordion Section
+   -------------------------------------------------------------------------- */
+.hiw-faqs-section {
+  background: #FFFFFF;
+  border: 1px solid #EAE6DF;
+  border-radius: 24px;
+  padding: 44px 36px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+  margin-bottom: 56px;
+}
+
+.hiw-faq-search-wrap {
+  position: relative;
+  max-width: 600px;
+  margin: 0 auto 32px;
+}
+
+.hiw-faq-search-icon {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9CA3AF;
+}
+
+.hiw-faq-search-input {
+  width: 100%;
+  padding: 14px 18px 14px 48px;
+  border-radius: 14px;
+  border: 1.5px solid #EAE6DF;
+  background: #FAF8F5;
+  font-size: 0.95rem;
+  color: #111827;
+  outline: none;
+  transition: all 0.15s ease;
+}
+
+.hiw-faq-search-input:focus {
+  border-color: #078B87;
+  background: #FFFFFF;
+  box-shadow: 0 0 0 4px rgba(7, 139, 135, 0.12);
+}
+
+/* Category Filter Tabs */
+.hiw-faq-cats {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 32px;
+}
+
+.hiw-cat-pill {
+  background: #FAF8F5;
+  border: 1px solid #EAE6DF;
+  border-radius: 20px;
+  padding: 8px 18px;
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: #4B5563;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.hiw-cat-pill:hover {
+  background: #F3F4F6;
+  color: #111827;
+}
+
+.hiw-cat-pill.active {
+  background: #078B87;
+  border-color: #078B87;
+  color: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(7, 139, 135, 0.25);
+}
+
+/* Accordion Items List */
+.hiw-faq-accordion {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.hiw-accordion-item {
+  border: 1px solid #EAE6DF;
+  border-radius: 14px;
+  overflow: hidden;
+  transition: border-color 0.15s ease;
+}
+
+.hiw-accordion-item.open {
+  border-color: #078B87;
+}
+
+.hiw-accordion-header {
+  width: 100%;
+  background: #FFFFFF;
+  border: none;
+  padding: 18px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  text-align: left;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 750;
+  color: #111827;
+  transition: background 0.15s ease;
+}
+
+.hiw-accordion-header:hover {
+  background: #FAF8F5;
+}
+
+.hiw-accordion-item.open .hiw-accordion-header {
+  color: #078B87;
+  background: #F0FDFA;
+}
+
+.hiw-accordion-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #FAF8F5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.hiw-accordion-item.open .hiw-accordion-icon {
+  transform: rotate(180deg);
+  background: #078B87;
+  color: #FFFFFF;
+}
+
+.hiw-accordion-body {
+  padding: 16px 22px 20px;
+  font-size: 0.92rem;
+  color: #4B5563;
+  line-height: 1.6;
+  background: #FFFFFF;
+  border-top: 1px solid #F3F4F6;
+}
+
+/* --------------------------------------------------------------------------
+   Contact Support Callout Card
+   -------------------------------------------------------------------------- */
+.hiw-support-card {
+  background: linear-gradient(135deg, #078B87 0%, #056360 100%);
+  border-radius: 24px;
+  padding: 40px;
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 24px;
+  box-shadow: 0 10px 30px rgba(7, 139, 135, 0.25);
+}
+
+.hiw-support-info {
+  max-width: 600px;
+}
+
+.hiw-support-title {
+  font-size: 1.7rem;
+  font-weight: 850;
+  color: #FFFFFF;
+  margin: 0 0 8px;
+}
+
+.hiw-support-desc {
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.hiw-support-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.hiw-btn-contact {
+  background: #FFFFFF;
+  color: #078B87;
+  border: none;
+  border-radius: 12px;
+  padding: 12px 24px;
+  font-size: 0.92rem;
+  font-weight: 800;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.15s ease;
+}
+
+.hiw-btn-contact:hover {
+  background: #F0FDFA;
+  transform: translateY(-2px);
+}
+
+@media (max-width: 1000px) {
+  .hiw-steps-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .hiw-steps-grid {
+    grid-template-columns: 1fr;
+  }
+  .hiw-hero-title {
+    font-size: 2.1rem;
+  }
+  .hiw-faqs-section {
+    padding: 28px 18px;
+  }
+}
