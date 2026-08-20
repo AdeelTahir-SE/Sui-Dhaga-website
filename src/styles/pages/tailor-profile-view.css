@@ -1,0 +1,400 @@
+/* ==========================================================================
+   Tailor Business Profile Page Styles - Sui Dhāga
+   ========================================================================== */
+
+.tp-layout-wrapper {
+  min-height: 100vh;
+  background-color: #FAF8F5;
+  color: #111827;
+  font-family: inherit;
+  padding-top: 76px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.tp-body-container {
+  display: flex;
+  width: 100%;
+  max-width: 1420px;
+  margin: 0 auto;
+  min-height: calc(100vh - 76px);
+  background-color: #FAF8F5;
+}
+
+.tp-main-content {
+  flex: 1;
+  padding: 32px 36px 64px;
+  background-color: #FAF8F5;
+  min-width: 0;
+  max-width: 960px;
+}
+
+/* Page Header */
+.tp-header {
+  margin-bottom: 24px;
+}
+
+.tp-page-title {
+  font-size: 2rem;
+  font-weight: 850;
+  color: #111827;
+  letter-spacing: -0.02em;
+  margin: 0 0 6px;
+}
+
+.tp-page-subtitle {
+  font-size: 0.95rem;
+  color: #6B7280;
+  margin: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Top Business Card
+   -------------------------------------------------------------------------- */
+.tp-business-card {
+  background: #FFFFFF;
+  border: 1px solid #EAE6DF;
+  border-radius: 20px;
+  padding: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.tp-business-left {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+}
+
+.tp-avatar-img {
+  width: 110px;
+  height: 110px;
+  border-radius: 16px;
+  object-fit: cover;
+  border: 2px solid #EAE6DF;
+  flex-shrink: 0;
+}
+
+.tp-business-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tp-shop-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tp-shop-name {
+  font-size: 1.45rem;
+  font-weight: 850;
+  color: #111827;
+  margin: 0;
+}
+
+.tp-verified-badge {
+  background: #E0F2FE;
+  color: #0284C7;
+  font-size: 0.78rem;
+  font-weight: 750;
+  padding: 3px 10px;
+  border-radius: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tp-rating-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+}
+
+.tp-rating-star {
+  color: #F59E0B;
+  fill: #F59E0B;
+}
+
+.tp-reviews-count {
+  color: #6B7280;
+  font-weight: 500;
+}
+
+.tp-member-since {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.84rem;
+  color: #4B5563;
+  margin: 0;
+  font-weight: 550;
+}
+
+.tp-specializes-summary {
+  font-size: 0.85rem;
+  color: #4B5563;
+  margin: 4px 0 0;
+}
+
+.tp-specializes-summary strong {
+  color: #111827;
+}
+
+.tp-edit-btn {
+  background: #078B87;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 22px;
+  font-size: 0.9rem;
+  font-weight: 750;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 2px 6px rgba(7, 139, 135, 0.2);
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.tp-edit-btn:hover {
+  background: #06726F;
+  transform: translateY(-1px);
+}
+
+/* --------------------------------------------------------------------------
+   Middle Section (About, Specialties, Location)
+   -------------------------------------------------------------------------- */
+.tp-details-card {
+  background: #FFFFFF;
+  border: 1px solid #EAE6DF;
+  border-radius: 20px;
+  padding: 28px;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.tp-sub-heading {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #111827;
+  margin: 0 0 10px;
+}
+
+.tp-about-text {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: #4B5563;
+  margin: 0;
+}
+
+/* Specialties Pills */
+.tp-specialties-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.tp-specialty-pill {
+  background: #F0FDFA;
+  border: 1.5px solid #CCFBF1;
+  color: #0F766E;
+  font-size: 0.88rem;
+  font-weight: 700;
+  padding: 6px 16px;
+  border-radius: 20px;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Location Sub-block */
+.tp-location-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 20px;
+  align-items: center;
+}
+
+.tp-location-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tp-city-name {
+  font-size: 0.95rem;
+  font-weight: 750;
+  color: #111827;
+  margin: 0;
+}
+
+.tp-radius-info {
+  font-size: 0.85rem;
+  color: #6B7280;
+  margin: 0;
+}
+
+/* Mini Map Visual */
+.tp-map-preview-card {
+  background: #F3F4F6;
+  border: 1px solid #E5E7EB;
+  border-radius: 14px;
+  padding: 16px;
+  position: relative;
+  overflow: hidden;
+  height: 90px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-image: radial-gradient(#CBD5E1 1px, transparent 1px);
+  background-size: 14px 14px;
+}
+
+.tp-map-btn {
+  background: #FFFFFF;
+  border: 1px solid #D1D5DB;
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 0.8rem;
+  font-weight: 750;
+  color: #078B87;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  z-index: 2;
+}
+
+/* --------------------------------------------------------------------------
+   Bottom Card: Verification Status
+   -------------------------------------------------------------------------- */
+.tp-verification-card {
+  background: #FFFFFF;
+  border: 1px solid #EAE6DF;
+  border-radius: 20px;
+  padding: 28px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.tp-verify-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.tp-verify-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #F9FAFB;
+  border: 1px solid #F3F4F6;
+}
+
+.tp-verify-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #1F2937;
+}
+
+.tp-verify-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  font-weight: 750;
+  color: #15803D;
+}
+
+.tp-verify-status-badge::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #15803D;
+}
+
+/* --------------------------------------------------------------------------
+   Edit Profile Modal
+   -------------------------------------------------------------------------- */
+.tp-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(6px);
+  z-index: 100000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.tp-modal-card {
+  background: #FFFFFF;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 640px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+}
+
+.tp-modal-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid #EAE6DF;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tp-modal-body {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.tp-modal-footer {
+  padding: 16px 24px;
+  border-top: 1px solid #EAE6DF;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  background: #FAF8F5;
+  border-bottom-left-radius: 20px;
+  border-bottom-right-radius: 20px;
+}
+
+@media (max-width: 768px) {
+  .tp-business-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .tp-location-grid {
+    grid-template-columns: 1fr;
+  }
+}
