@@ -1,5 +1,6 @@
-import { TailorPage } from "@/components/common/pages";
+import { TailorOnboardingPage } from "@/components/tailors/tailor-onboarding-page";
 
 export default function Page() {
-  return <TailorPage view="onboarding" />;
+  return <TailorOnboardingPage />;
 }
+
