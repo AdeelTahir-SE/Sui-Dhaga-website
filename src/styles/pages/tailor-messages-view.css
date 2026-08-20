@@ -1,0 +1,381 @@
+/* ==========================================================================
+   Tailor Messages Page Styles - Sui Dhāga
+   ========================================================================== */
+
+.tms-layout-wrapper {
+  min-height: 100vh;
+  background-color: #FAF8F5;
+  color: #111827;
+  font-family: inherit;
+  padding-top: 76px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.tms-body-container {
+  display: flex;
+  width: 100%;
+  max-width: 1420px;
+  margin: 0 auto;
+  min-height: calc(100vh - 76px);
+  background-color: #FAF8F5;
+}
+
+.tms-main-content {
+  flex: 1;
+  padding: 32px 36px 64px;
+  background-color: #FAF8F5;
+  min-width: 0;
+}
+
+/* Page Header */
+.tms-header {
+  margin-bottom: 24px;
+}
+
+.tms-title {
+  font-size: 2rem;
+  font-weight: 850;
+  color: #111827;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+/* Search Bar Row */
+.tms-search-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.tms-search-input-wrap {
+  flex: 1;
+  max-width: 480px;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.tms-search-icon {
+  position: absolute;
+  left: 14px;
+  color: #9CA3AF;
+}
+
+.tms-search-input {
+  width: 100%;
+  padding: 11px 14px 11px 42px;
+  border-radius: 12px;
+  border: 1px solid #EAE6DF;
+  background: #FFFFFF;
+  font-size: 0.92rem;
+  color: #111827;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.tms-search-input:focus {
+  border-color: #078B87;
+  box-shadow: 0 0 0 3px rgba(7, 139, 135, 0.12);
+}
+
+.tms-filter-btn {
+  background: #FFFFFF;
+  border: 1px solid #EAE6DF;
+  border-radius: 12px;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #4B5563;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tms-filter-btn:hover {
+  background: #FAF8F5;
+  color: #111827;
+}
+
+/* --------------------------------------------------------------------------
+   2-Column Layout Grid (Conversations Left + Chat Window Right)
+   -------------------------------------------------------------------------- */
+.tms-chat-grid {
+  display: grid;
+  grid-template-columns: 440px 1fr;
+  gap: 28px;
+  align-items: stretch;
+  min-height: 580px;
+}
+
+/* Conversations List Card */
+.tms-conversations-card {
+  background: #FFFFFF;
+  border: 1px solid #EAE6DF;
+  border-radius: 20px;
+  padding: 12px 14px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
+  max-height: 640px;
+}
+
+.tms-conv-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  position: relative;
+}
+
+.tms-conv-item:hover {
+  background-color: #FAF8F5;
+}
+
+.tms-conv-item.active {
+  background-color: #F0FDFA;
+  border: 1px solid #CCFBF1;
+}
+
+.tms-conv-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1px solid #EAE6DF;
+}
+
+.tms-conv-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tms-conv-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tms-conv-name {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #111827;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tms-conv-time {
+  font-size: 0.78rem;
+  color: #9CA3AF;
+  font-weight: 550;
+  flex-shrink: 0;
+}
+
+.tms-conv-msg-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.tms-conv-last-msg {
+  font-size: 0.84rem;
+  color: #6B7280;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tms-unread-badge {
+  background: #078B87;
+  color: #FFFFFF;
+  font-size: 0.72rem;
+  font-weight: 800;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Right Column (Empty State & Active Chat View)
+   -------------------------------------------------------------------------- */
+.tms-chat-window-card {
+  background: #FFFFFF;
+  border: 1px solid #EAE6DF;
+  border-radius: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  height: 100%;
+  min-height: 580px;
+}
+
+/* Empty State */
+.tms-empty-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.tms-empty-illustration {
+  width: 140px;
+  height: 140px;
+  margin-bottom: 24px;
+}
+
+.tms-empty-title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #111827;
+  margin: 0 0 6px;
+}
+
+.tms-empty-sub {
+  font-size: 0.9rem;
+  color: #6B7280;
+  margin: 0;
+}
+
+/* Active Chat View */
+.tms-active-chat-header {
+  padding: 16px 24px;
+  border-bottom: 1px solid #EAE6DF;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #FAF8F5;
+}
+
+.tms-chat-user-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tms-chat-msgs-body {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: #FFFFFF;
+}
+
+.tms-bubble {
+  max-width: 70%;
+  padding: 12px 16px;
+  border-radius: 16px;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.tms-bubble.sent {
+  align-self: flex-end;
+  background: #078B87;
+  color: #FFFFFF !important;
+  border-bottom-right-radius: 4px;
+  box-shadow: 0 2px 6px rgba(7, 139, 135, 0.2);
+}
+
+.tms-bubble.sent p,
+.tms-bubble.sent span,
+.tms-bubble.sent div {
+  color: #FFFFFF !important;
+}
+
+.tms-bubble.sent .tms-bubble-time {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.tms-bubble.received {
+  align-self: flex-start;
+  background: #F3F4F6;
+  color: #1F2937;
+  border-bottom-left-radius: 4px;
+}
+
+.tms-bubble.received p {
+  color: #1F2937;
+}
+
+.tms-bubble-time {
+  font-size: 0.72rem;
+  margin-top: 4px;
+  display: block;
+  text-align: right;
+  opacity: 0.85;
+}
+
+/* Input Bar */
+.tms-input-bar {
+  padding: 14px 20px;
+  border-top: 1px solid #EAE6DF;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #FAF8F5;
+}
+
+.tms-chat-input {
+  flex: 1;
+  padding: 10px 16px;
+  border: 1px solid #D1D5DB;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  background: #FFFFFF;
+  outline: none;
+}
+
+.tms-chat-input:focus {
+  border-color: #078B87;
+}
+
+.tms-btn-send {
+  background: #078B87;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 12px;
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tms-btn-send:hover {
+  background: #06726F;
+}
+
+@media (max-width: 900px) {
+  .tms-chat-grid {
+    grid-template-columns: 1fr;
+  }
+}
