@@ -1,0 +1,370 @@
+/* ==========================================================================
+   Tailor Reviews Page Styles - Sui Dhāga
+   ========================================================================== */
+
+.trv-layout-wrapper {
+  min-height: 100vh;
+  background-color: #FAF8F5;
+  color: #111827;
+  font-family: inherit;
+  padding-top: 76px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.trv-body-container {
+  display: flex;
+  width: 100%;
+  max-width: 1420px;
+  margin: 0 auto;
+  min-height: calc(100vh - 76px);
+  background-color: #FAF8F5;
+}
+
+.trv-main-content {
+  flex: 1;
+  padding: 32px 36px 64px;
+  background-color: #FAF8F5;
+  min-width: 0;
+  max-width: 1080px;
+}
+
+/* Page Header */
+.trv-header {
+  margin-bottom: 24px;
+}
+
+.trv-title {
+  font-size: 2rem;
+  font-weight: 850;
+  color: #111827;
+  letter-spacing: -0.02em;
+  margin: 0 0 6px;
+}
+
+.trv-subtitle {
+  font-size: 0.95rem;
+  color: #6B7280;
+  margin: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Rating Overview Card (Top)
+   -------------------------------------------------------------------------- */
+.trv-overview-card {
+  background: #FFFFFF;
+  border: 1px solid #EAE6DF;
+  border-radius: 20px;
+  padding: 28px;
+  margin-bottom: 28px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  display: grid;
+  grid-template-columns: 240px 1fr 240px;
+  gap: 32px;
+  align-items: center;
+}
+
+.trv-big-rating-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  border-right: 1px solid #F3F4F6;
+  padding-right: 24px;
+}
+
+.trv-score-big {
+  font-size: 3.5rem;
+  font-weight: 900;
+  color: #111827;
+  line-height: 1;
+  margin: 0 0 6px;
+}
+
+.trv-stars-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #F59E0B;
+  margin-bottom: 6px;
+}
+
+.trv-total-sub {
+  font-size: 0.82rem;
+  color: #6B7280;
+  font-weight: 550;
+}
+
+/* Distribution Bars */
+.trv-dist-col {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.trv-dist-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #4B5563;
+}
+
+.trv-dist-bar-bg {
+  flex: 1;
+  height: 8px;
+  background: #F3F4F6;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.trv-dist-bar-fill {
+  height: 100%;
+  background: #078B87;
+  border-radius: 10px;
+}
+
+.trv-dist-pct {
+  width: 32px;
+  text-align: right;
+  color: #6B7280;
+  font-size: 0.78rem;
+}
+
+/* Quality Metrics Column */
+.trv-quality-col {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-left: 1px solid #F3F4F6;
+  padding-left: 24px;
+}
+
+.trv-quality-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.85rem;
+}
+
+.trv-q-label {
+  color: #4B5563;
+  font-weight: 600;
+}
+
+.trv-q-val {
+  font-weight: 800;
+  color: #111827;
+}
+
+/* --------------------------------------------------------------------------
+   Filter Tabs
+   -------------------------------------------------------------------------- */
+.trv-tabs-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 24px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.trv-tab-btn {
+  background: #FFFFFF;
+  border: 1px solid #EAE6DF;
+  border-radius: 12px;
+  padding: 8px 18px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #4B5563;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.trv-tab-btn:hover {
+  background: #FAF8F5;
+  color: #111827;
+}
+
+.trv-tab-btn.active {
+  background: #FFFFFF;
+  border-color: #078B87;
+  color: #078B87;
+  box-shadow: 0 0 0 2px rgba(7, 139, 135, 0.15);
+  font-weight: 800;
+}
+
+/* --------------------------------------------------------------------------
+   Reviews List
+   -------------------------------------------------------------------------- */
+.trv-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.trv-card {
+  background: #FFFFFF;
+  border: 1px solid #EAE6DF;
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.trv-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.trv-author-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.trv-author-avatar {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid #EAE6DF;
+}
+
+.trv-author-name {
+  font-size: 0.98rem;
+  font-weight: 800;
+  color: #111827;
+  margin: 0 0 2px;
+}
+
+.trv-order-tag {
+  font-size: 0.78rem;
+  color: #078B87;
+  font-weight: 700;
+}
+
+.trv-rating-date {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.trv-comment-text {
+  font-size: 0.92rem;
+  line-height: 1.6;
+  color: #374151;
+  margin: 0;
+}
+
+/* Review Photos Preview */
+.trv-photos-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.trv-photo-thumb {
+  width: 60px;
+  height: 60px;
+  border-radius: 10px;
+  object-fit: cover;
+  border: 1px solid #EAE6DF;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.trv-photo-thumb:hover {
+  transform: scale(1.05);
+}
+
+/* Tailor Official Reply Box */
+.trv-reply-box {
+  background: #F0FDFA;
+  border: 1px solid #CCFBF1;
+  border-radius: 12px;
+  padding: 14px 18px;
+  margin-top: 4px;
+}
+
+.trv-reply-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  font-weight: 750;
+  color: #0F766E;
+  margin-bottom: 4px;
+}
+
+.trv-reply-text {
+  font-size: 0.88rem;
+  color: #134E4A;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Reply Input Form */
+.trv-reply-form {
+  display: flex;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.trv-reply-input {
+  flex: 1;
+  padding: 8px 14px;
+  border: 1px solid #D1D5DB;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  outline: none;
+}
+
+.trv-reply-input:focus {
+  border-color: #078B87;
+}
+
+.trv-btn-send-reply {
+  background: #078B87;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 0.84rem;
+  font-weight: 750;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.trv-btn-send-reply:hover {
+  background: #06726F;
+}
+
+@media (max-width: 900px) {
+  .trv-overview-card {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  .trv-big-rating-col {
+    border-right: none;
+    border-bottom: 1px solid #F3F4F6;
+    padding-right: 0;
+    padding-bottom: 16px;
+  }
+  .trv-quality-col {
+    border-left: none;
+    border-top: 1px solid #F3F4F6;
+    padding-left: 0;
+    padding-top: 16px;
+  }
+}

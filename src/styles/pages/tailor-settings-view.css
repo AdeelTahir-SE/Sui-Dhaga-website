@@ -1,0 +1,243 @@
+/* ==========================================================================
+   Tailor Settings Page Styles - Sui Dhāga
+   ========================================================================== */
+
+.tst-layout-wrapper {
+  min-height: 100vh;
+  background-color: #FAF8F5;
+  color: #111827;
+  font-family: inherit;
+  padding-top: 76px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.tst-body-container {
+  display: flex;
+  width: 100%;
+  max-width: 1420px;
+  margin: 0 auto;
+  min-height: calc(100vh - 76px);
+  background-color: #FAF8F5;
+}
+
+.tst-main-content {
+  flex: 1;
+  padding: 32px 36px 64px;
+  background-color: #FAF8F5;
+  min-width: 0;
+  max-width: 980px;
+}
+
+/* Page Header */
+.tst-header {
+  margin-bottom: 24px;
+}
+
+.tst-title {
+  font-size: 2rem;
+  font-weight: 850;
+  color: #111827;
+  letter-spacing: -0.02em;
+  margin: 0 0 6px;
+}
+
+.tst-subtitle {
+  font-size: 0.95rem;
+  color: #6B7280;
+  margin: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Settings Sections Grid
+   -------------------------------------------------------------------------- */
+.tst-sections-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.tst-card {
+  background: #FFFFFF;
+  border: 1px solid #EAE6DF;
+  border-radius: 20px;
+  padding: 28px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.tst-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #F3F4F6;
+}
+
+.tst-card-icon-circle {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: #F0FDFA;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #078B87;
+}
+
+.tst-card-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #111827;
+  margin: 0;
+}
+
+/* Toggle Option Row */
+.tst-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  gap: 16px;
+}
+
+.tst-toggle-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.tst-toggle-label {
+  font-size: 0.92rem;
+  font-weight: 750;
+  color: #111827;
+  margin: 0;
+}
+
+.tst-toggle-desc {
+  font-size: 0.82rem;
+  color: #6B7280;
+  margin: 0;
+}
+
+/* Switch Styles */
+.tst-switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.tst-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.tst-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #D1D5DB;
+  transition: 0.2s;
+  border-radius: 24px;
+}
+
+.tst-slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.2s;
+  border-radius: 50%;
+}
+
+input:checked + .tst-slider {
+  background-color: #078B87;
+}
+
+input:checked + .tst-slider:before {
+  transform: translateX(20px);
+}
+
+/* Input Fields in Settings */
+.tst-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.tst-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tst-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #374151;
+}
+
+.tst-input {
+  width: 100%;
+  border: 1px solid #D1D5DB;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 0.92rem;
+  color: #111827;
+  background: #FFFFFF;
+  outline: none;
+}
+
+.tst-input:focus {
+  border-color: #078B87;
+  box-shadow: 0 0 0 3px rgba(7, 139, 135, 0.12);
+}
+
+/* Save Bottom Bar */
+.tst-save-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 14px;
+  margin-top: 10px;
+}
+
+.tst-btn-save {
+  background: #078B87;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 10px;
+  padding: 12px 28px;
+  font-size: 0.95rem;
+  font-weight: 750;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 2px 8px rgba(7, 139, 135, 0.25);
+  transition: all 0.15s ease;
+}
+
+.tst-btn-save:hover {
+  background: #06726F;
+  transform: translateY(-1px);
+}
+
+@media (max-width: 768px) {
+  .tst-form-row {
+    grid-template-columns: 1fr;
+  }
+}
