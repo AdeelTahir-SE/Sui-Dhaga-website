@@ -1,0 +1,347 @@
+/* ==========================================================================
+   Tailor Appointments Management Page Styles - Sui Dhāga
+   ========================================================================== */
+
+.tap-layout-wrapper {
+  min-height: 100vh;
+  background-color: #FAF8F5;
+  color: #111827;
+  font-family: inherit;
+  padding-top: 76px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.tap-body-container {
+  display: flex;
+  width: 100%;
+  max-width: 1420px;
+  margin: 0 auto;
+  min-height: calc(100vh - 76px);
+  background-color: #FAF8F5;
+}
+
+.tap-main-content {
+  flex: 1;
+  padding: 32px 36px 64px;
+  background-color: #FAF8F5;
+  min-width: 0;
+  max-width: 1060px;
+}
+
+/* Page Header */
+.tap-header {
+  margin-bottom: 24px;
+}
+
+.tap-title {
+  font-size: 2rem;
+  font-weight: 850;
+  color: #111827;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Tabs Row
+   -------------------------------------------------------------------------- */
+.tap-tabs-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.tap-tab-btn {
+  background: #FFFFFF;
+  border: 1px solid #EAE6DF;
+  border-radius: 12px;
+  padding: 9px 22px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #4B5563;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.tap-tab-btn:hover {
+  background: #F9FAFB;
+  color: #111827;
+}
+
+.tap-tab-btn.active {
+  background: #FFFFFF;
+  border-color: #078B87;
+  color: #078B87;
+  box-shadow: 0 0 0 2px rgba(7, 139, 135, 0.15);
+  font-weight: 800;
+}
+
+/* --------------------------------------------------------------------------
+   Appointments List Card
+   -------------------------------------------------------------------------- */
+.tap-card-container {
+  background: #FFFFFF;
+  border: 1px solid #EAE6DF;
+  border-radius: 20px;
+  padding: 8px 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.tap-item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 12px;
+  border-bottom: 1px solid #F3F4F6;
+  gap: 16px;
+  transition: background-color 0.15s ease;
+  border-radius: 12px;
+}
+
+.tap-item-row:hover {
+  background-color: #FAF8F5;
+}
+
+.tap-item-row:last-child {
+  border-bottom: none;
+}
+
+/* Customer Block (Avatar + Name + Service) */
+.tap-customer-block {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 240px;
+}
+
+.tap-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  object-fit: cover;
+  border: 1px solid #EAE6DF;
+  flex-shrink: 0;
+}
+
+.tap-name-service {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tap-customer-name {
+  font-size: 0.98rem;
+  font-weight: 800;
+  color: #111827;
+  margin: 0;
+}
+
+.tap-service-name {
+  font-size: 0.84rem;
+  color: #6B7280;
+  font-weight: 550;
+  margin: 0;
+}
+
+/* Date & Time Columns */
+.tap-date-col {
+  font-size: 0.88rem;
+  color: #374151;
+  font-weight: 600;
+  min-width: 110px;
+  margin: 0;
+}
+
+.tap-time-col {
+  font-size: 0.88rem;
+  color: #374151;
+  font-weight: 600;
+  min-width: 90px;
+  margin: 0;
+}
+
+/* Status Badges */
+.tap-badge-upcoming {
+  background: #FEF3C7;
+  color: #D97706;
+  font-size: 0.8rem;
+  font-weight: 750;
+  padding: 4px 14px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+.tap-badge-requests {
+  background: #FEE2E2;
+  color: #EF4444;
+  font-size: 0.8rem;
+  font-weight: 750;
+  padding: 4px 14px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+.tap-badge-completed {
+  background: #DCFCE7;
+  color: #15803D;
+  font-size: 0.8rem;
+  font-weight: 750;
+  padding: 4px 14px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+/* Action Buttons */
+.tap-actions-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 150px;
+  justify-content: flex-end;
+}
+
+.tap-btn-view {
+  background: #FFFFFF;
+  border: 1px solid #D1D5DB;
+  border-radius: 8px;
+  padding: 7px 18px;
+  font-size: 0.85rem;
+  font-weight: 750;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tap-btn-view:hover {
+  border-color: #078B87;
+  color: #078B87;
+  background: #F0FDFA;
+}
+
+.tap-btn-accept {
+  background: #078B87;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 8px;
+  padding: 7px 16px;
+  font-size: 0.85rem;
+  font-weight: 750;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tap-btn-accept:hover {
+  background: #06726F;
+}
+
+.tap-btn-reject {
+  background: #FFFFFF;
+  color: #4B5563;
+  border: 1px solid #D1D5DB;
+  border-radius: 8px;
+  padding: 7px 14px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tap-btn-reject:hover {
+  border-color: #EF4444;
+  color: #EF4444;
+  background: #FEF2F2;
+}
+
+/* Bottom Full CTA Button */
+.tap-bottom-cta-wrap {
+  display: flex;
+  justify-content: center;
+  margin-top: 24px;
+  padding: 8px 0;
+}
+
+.tap-btn-view-all {
+  background: #078B87;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 10px;
+  padding: 12px 28px;
+  font-size: 0.92rem;
+  font-weight: 750;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(7, 139, 135, 0.25);
+  transition: all 0.15s ease;
+}
+
+.tap-btn-view-all:hover {
+  background: #06726F;
+  transform: translateY(-1px);
+}
+
+/* Inspection Modal */
+.tap-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(6px);
+  z-index: 100000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.tap-modal-card {
+  background: #FFFFFF;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 540px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+}
+
+.tap-modal-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid #EAE6DF;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tap-modal-body {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.tap-modal-footer {
+  padding: 16px 24px;
+  border-top: 1px solid #EAE6DF;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  background: #FAF8F5;
+  border-bottom-left-radius: 20px;
+  border-bottom-right-radius: 20px;
+}
+
+@media (max-width: 800px) {
+  .tap-item-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .tap-actions-cell {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}

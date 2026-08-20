@@ -1,5 +1,6 @@
-import { TailorPage } from "@/components/common/pages";
+import { TailorAvailabilityPage } from "@/components/tailors/tailor-availability-page";
 
 export default function Page() {
-  return <TailorPage view="availability" />;
+  return <TailorAvailabilityPage />;
 }
+

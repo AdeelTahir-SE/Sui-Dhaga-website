@@ -1,0 +1,330 @@
+/* ==========================================================================
+   Tailor Availability Management Page Styles - Sui Dhāga
+   ========================================================================== */
+
+.tav-layout-wrapper {
+  min-height: 100vh;
+  background-color: #FAF8F5;
+  color: #111827;
+  font-family: inherit;
+  padding-top: 76px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.tav-body-container {
+  display: flex;
+  width: 100%;
+  max-width: 1420px;
+  margin: 0 auto;
+  min-height: calc(100vh - 76px);
+  background-color: #FAF8F5;
+}
+
+.tav-main-content {
+  flex: 1;
+  padding: 32px 36px 64px;
+  background-color: #FAF8F5;
+  min-width: 0;
+  max-width: 1080px;
+}
+
+/* Page Header */
+.tav-header {
+  margin-bottom: 26px;
+}
+
+.tav-title {
+  font-size: 2rem;
+  font-weight: 850;
+  color: #111827;
+  letter-spacing: -0.02em;
+  margin: 0 0 6px;
+}
+
+.tav-subtitle {
+  font-size: 0.95rem;
+  color: #6B7280;
+  margin: 0;
+}
+
+/* --------------------------------------------------------------------------
+   2-Column Layout Grid
+   -------------------------------------------------------------------------- */
+.tav-grid {
+  display: grid;
+  grid-template-columns: 1.25fr 0.75fr;
+  gap: 28px;
+  align-items: start;
+}
+
+/* Left Calendar Card */
+.tav-calendar-card {
+  background: #FFFFFF;
+  border: 1px solid #EAE6DF;
+  border-radius: 20px;
+  padding: 28px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.tav-month-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 6px;
+}
+
+.tav-month-label {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #111827;
+}
+
+.tav-nav-btn {
+  background: #FAF8F5;
+  border: 1px solid #EAE6DF;
+  border-radius: 10px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tav-nav-btn:hover {
+  background: #F3F4F6;
+  color: #111827;
+}
+
+/* Calendar Day Grid */
+.tav-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+  text-align: center;
+}
+
+.tav-day-header {
+  font-size: 0.82rem;
+  font-weight: 750;
+  color: #6B7280;
+  padding: 8px 0;
+}
+
+.tav-day-cell {
+  aspect-ratio: 1;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  background: #FFFFFF;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #111827;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.15s ease;
+}
+
+.tav-day-cell:hover:not(.disabled) {
+  background: #FAF8F5;
+  border-color: #E5E7EB;
+}
+
+.tav-day-cell.selected {
+  background: #078B87 !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 4px 12px rgba(7, 139, 135, 0.3);
+}
+
+.tav-day-cell.blocked {
+  background: #FEE2E2;
+  color: #EF4444;
+  border-color: #FECACA;
+}
+
+.tav-day-cell.disabled {
+  opacity: 0.25;
+  cursor: default;
+}
+
+.tav-dot-indicator {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #078B87;
+  margin-top: 2px;
+}
+
+.tav-day-cell.selected .tav-dot-indicator {
+  background: #FFFFFF;
+}
+
+/* Save Availability Button */
+.tav-btn-save {
+  background: #078B87;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 12px;
+  padding: 14px 28px;
+  font-size: 0.98rem;
+  font-weight: 800;
+  cursor: pointer;
+  width: 100%;
+  box-shadow: 0 2px 8px rgba(7, 139, 135, 0.25);
+  transition: all 0.15s ease;
+  margin-top: 10px;
+}
+
+.tav-btn-save:hover {
+  background: #06726F;
+  transform: translateY(-1px);
+}
+
+/* --------------------------------------------------------------------------
+   Right Column (Slots & Blocked Dates)
+   -------------------------------------------------------------------------- */
+.tav-right-col {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.tav-slots-card {
+  background: #FFFFFF;
+  border: 1px solid #EAE6DF;
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.tav-card-label {
+  font-size: 0.8rem;
+  font-weight: 750;
+  color: #6B7280;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 0 0 4px;
+}
+
+.tav-selected-date-title {
+  font-size: 1.25rem;
+  font-weight: 850;
+  color: #111827;
+  margin: 0 0 18px;
+}
+
+.tav-section-subhead {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #111827;
+  margin: 0 0 14px;
+}
+
+/* Slots List */
+.tav-slots-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.tav-slot-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #FAF8F5;
+  border: 1px solid #EAE6DF;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #1F2937;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tav-slot-item.active {
+  background: #F0FDFA;
+  border-color: #99F6E4;
+  color: #0F766E;
+}
+
+.tav-btn-add-slot {
+  background: transparent;
+  border: none;
+  color: #078B87;
+  font-size: 0.88rem;
+  font-weight: 750;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+  transition: color 0.15s ease;
+}
+
+.tav-btn-add-slot:hover {
+  color: #056360;
+  text-decoration: underline;
+}
+
+/* Blocked Dates Card */
+.tav-blocked-card {
+  background: #FFFFFF;
+  border: 1px solid #EAE6DF;
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.tav-blocked-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.tav-blocked-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #FEF2F2;
+  border: 1px solid #FEE2E2;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #991B1B;
+}
+
+.tav-btn-unblock {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #EF4444;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+}
+
+.tav-btn-unblock:hover {
+  color: #B91C1C;
+}
+
+@media (max-width: 860px) {
+  .tav-grid {
+    grid-template-columns: 1fr;
+  }
+}
