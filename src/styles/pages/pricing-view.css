@@ -1,0 +1,386 @@
+/* ==========================================================================
+   AI Platform Pricing & Subscriptions Styles - Sui Dhāga
+   ========================================================================== */
+
+.prc-container {
+  min-height: 100vh;
+  background-color: #FAF8F5;
+  color: #111827;
+  font-family: inherit;
+  padding: 100px 24px 80px;
+}
+
+.prc-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Breadcrumb */
+.prc-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: #6B7280;
+  margin-bottom: 20px;
+}
+
+.prc-breadcrumb a {
+  color: #6B7280;
+  text-decoration: none;
+}
+
+.prc-breadcrumb a:hover {
+  color: #078B87;
+}
+
+/* Hero Section */
+.prc-hero {
+  text-align: center;
+  margin-bottom: 40px;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.prc-hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #F0FDFA;
+  border: 1px solid #CCFBF1;
+  color: #0F766E;
+  font-size: 0.84rem;
+  font-weight: 750;
+  padding: 6px 16px;
+  border-radius: 20px;
+  margin-bottom: 16px;
+}
+
+.prc-hero-title {
+  font-size: 2.85rem;
+  font-weight: 900;
+  color: #111827;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  margin: 0 0 14px;
+}
+
+.prc-hero-title span {
+  color: #078B87;
+}
+
+.prc-hero-subtitle {
+  font-size: 1.1rem;
+  line-height: 1.6;
+  color: #4B5563;
+  margin: 0;
+}
+
+/* Billing Toggle (Monthly / Annual) */
+.prc-toggle-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 48px;
+}
+
+.prc-toggle-btn-group {
+  background: #FFFFFF;
+  border: 1.5px solid #EAE6DF;
+  border-radius: 30px;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+}
+
+.prc-toggle-pill {
+  padding: 8px 20px;
+  border-radius: 24px;
+  font-size: 0.9rem;
+  font-weight: 750;
+  color: #6B7280;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.prc-toggle-pill.active {
+  background: #078B87;
+  color: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(7, 139, 135, 0.25);
+}
+
+.prc-discount-tag {
+  background: #DCFCE7;
+  color: #15803D;
+  font-size: 0.76rem;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 12px;
+}
+
+/* --------------------------------------------------------------------------
+   3-Tier Pricing Cards Grid
+   -------------------------------------------------------------------------- */
+.prc-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 28px;
+  margin-bottom: 64px;
+  align-items: stretch;
+}
+
+.prc-card {
+  background: #FFFFFF;
+  border: 1.5px solid #EAE6DF;
+  border-radius: 24px;
+  padding: 36px 30px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+  position: relative;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.prc-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.08);
+}
+
+.prc-card.featured {
+  border-color: #078B87;
+  background: #FFFFFF;
+  box-shadow: 0 8px 30px rgba(7, 139, 135, 0.14);
+}
+
+.prc-popular-badge {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, #078B87 0%, #056360 100%);
+  color: #FFFFFF;
+  font-size: 0.78rem;
+  font-weight: 850;
+  padding: 5px 18px;
+  border-radius: 20px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  box-shadow: 0 4px 12px rgba(7, 139, 135, 0.3);
+}
+
+.prc-plan-name {
+  font-size: 1.35rem;
+  font-weight: 850;
+  color: #111827;
+  margin: 0 0 6px;
+}
+
+.prc-plan-desc {
+  font-size: 0.88rem;
+  color: #6B7280;
+  margin: 0 0 22px;
+  min-height: 42px;
+  line-height: 1.5;
+}
+
+.prc-price-wrap {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin-bottom: 24px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid #F3F4F6;
+}
+
+.prc-price-val {
+  font-size: 2.6rem;
+  font-weight: 900;
+  color: #111827;
+  letter-spacing: -0.03em;
+}
+
+.prc-price-unit {
+  font-size: 0.88rem;
+  color: #6B7280;
+  font-weight: 600;
+}
+
+.prc-features-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 32px;
+  flex: 1;
+}
+
+.prc-feature-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.9rem;
+  color: #374151;
+  line-height: 1.4;
+}
+
+.prc-feature-item svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.prc-btn-action {
+  border-radius: 12px;
+  padding: 13px 20px;
+  font-size: 0.95rem;
+  font-weight: 800;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: block;
+  border: 1.5px solid transparent;
+}
+
+.prc-btn-action.outline {
+  background: #FAF8F5;
+  border-color: #EAE6DF;
+  color: #111827;
+}
+
+.prc-btn-action.outline:hover {
+  background: #111827;
+  color: #FFFFFF;
+  border-color: #111827;
+}
+
+.prc-btn-action.primary {
+  background: #078B87;
+  color: #FFFFFF;
+  border-color: #078B87;
+  box-shadow: 0 4px 14px rgba(7, 139, 135, 0.28);
+}
+
+.prc-btn-action.primary:hover {
+  background: #06726F;
+  transform: translateY(-2px);
+}
+
+/* --------------------------------------------------------------------------
+   Feature Comparison Matrix Table
+   -------------------------------------------------------------------------- */
+.prc-matrix-card {
+  background: #FFFFFF;
+  border: 1px solid #EAE6DF;
+  border-radius: 24px;
+  padding: 36px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+  margin-bottom: 56px;
+}
+
+.prc-matrix-title {
+  font-size: 1.7rem;
+  font-weight: 850;
+  color: #111827;
+  margin: 0 0 6px;
+  text-align: center;
+}
+
+.prc-matrix-sub {
+  font-size: 0.92rem;
+  color: #6B7280;
+  text-align: center;
+  margin: 0 0 32px;
+}
+
+.prc-table-scroll {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.prc-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.prc-th {
+  padding: 16px 20px;
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: #111827;
+  border-bottom: 2px solid #EAE6DF;
+  white-space: nowrap;
+}
+
+.prc-td {
+  padding: 16px 20px;
+  font-size: 0.9rem;
+  color: #374151;
+  border-bottom: 1px solid #F3F4F6;
+  vertical-align: middle;
+}
+
+.prc-table tbody tr:hover {
+  background-color: #FAF8F5;
+}
+
+/* --------------------------------------------------------------------------
+   Subscribe Checkout Modal
+   -------------------------------------------------------------------------- */
+.prc-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  z-index: 100000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.prc-modal-card {
+  background: #FFFFFF;
+  border-radius: 24px;
+  width: 100%;
+  max-width: 520px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+}
+
+.prc-modal-header {
+  padding: 22px 26px;
+  border-bottom: 1px solid #EAE6DF;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.prc-modal-body {
+  padding: 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.prc-modal-footer {
+  padding: 18px 26px;
+  border-top: 1px solid #EAE6DF;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  background: #FAF8F5;
+  border-bottom-left-radius: 24px;
+  border-bottom-right-radius: 24px;
+}
+
+@media (max-width: 960px) {
+  .prc-grid {
+    grid-template-columns: 1fr;
+  }
+}

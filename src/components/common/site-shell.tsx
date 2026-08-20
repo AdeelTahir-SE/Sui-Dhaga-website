@@ -11,8 +11,8 @@ const animeNavItems = [
   { name: "Find a Tailor", url: "/tailors", icon: Scissors },
   { name: "AI Design Studio", url: "/design-studio", icon: Wand2 },
   { name: "Community", url: "/community", icon: Users },
-  { name: "How It Works", url: "/faqs", icon: HelpCircle },
-  { name: "Pricing", url: "/checkout", icon: CreditCard },
+  { name: "How It Works", url: "/how-it-works", icon: HelpCircle },
+  { name: "Pricing", url: "/pricing", icon: CreditCard },
 ];
 
 export function PublicNav() {
@@ -249,8 +249,8 @@ function FooterColumn({ title, links }: { title: string; links: string[] }) {
   const footerHref: Record<string, string> = {
     "Find a Tailor": "/tailors",
     "AI Design Studio": "/design-studio",
-    "How It Works": "/faqs",
-    Pricing: "/checkout",
+    "How It Works": "/how-it-works",
+    Pricing: "/pricing",
     "About Us": "/about",
     "Contact Us": "/contact",
     Blog: "/blog",

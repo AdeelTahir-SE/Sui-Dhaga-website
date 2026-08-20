@@ -2,8 +2,8 @@ export const navItems = [
   { label: "Find a Tailor", href: "/tailors" },
   { label: "AI Design Studio", href: "/design-studio" },
   { label: "Community", href: "/community" },
-  { label: "How It Works", href: "/faqs" },
-  { label: "Pricing", href: "/checkout" },
+  { label: "How It Works", href: "/how-it-works" },
+  { label: "Pricing", href: "/pricing" },
 ];
 
 export const tailors = [

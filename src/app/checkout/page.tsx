@@ -1,5 +1,6 @@
-import { CustomerPage } from "@/components/common/pages";
+import { CheckoutPage } from "@/components/common/checkout-page";
 
 export default function Page() {
-  return <CustomerPage view="checkout" />;
+  return <CheckoutPage />;
 }
+
