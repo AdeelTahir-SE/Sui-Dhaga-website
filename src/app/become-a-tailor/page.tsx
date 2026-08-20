@@ -1,5 +1,6 @@
-import { PublicInfoPage } from "@/components/common/pages";
+import { BecomeATailorPage } from "@/components/tailors/become-a-tailor-page";
 
 export default function Page() {
-  return <PublicInfoPage type="become" />;
+  return <BecomeATailorPage />;
 }
+
