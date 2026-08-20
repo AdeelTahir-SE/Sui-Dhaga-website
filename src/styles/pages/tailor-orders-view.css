@@ -1,0 +1,280 @@
+/* ==========================================================================
+   Tailor Orders Management Page Styles - Sui Dhāga
+   ========================================================================== */
+
+.tor-layout-wrapper {
+  min-height: 100vh;
+  background-color: #FAF8F5;
+  color: #111827;
+  font-family: inherit;
+  padding-top: 76px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.tor-body-container {
+  display: flex;
+  width: 100%;
+  max-width: 1420px;
+  margin: 0 auto;
+  min-height: calc(100vh - 76px);
+  background-color: #FAF8F5;
+}
+
+.tor-main-content {
+  flex: 1;
+  padding: 32px 36px 64px;
+  background-color: #FAF8F5;
+  min-width: 0;
+  max-width: 1060px;
+}
+
+/* Page Header */
+.tor-header {
+  margin-bottom: 24px;
+}
+
+.tor-title {
+  font-size: 2rem;
+  font-weight: 850;
+  color: #111827;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Order Filter Tabs
+   -------------------------------------------------------------------------- */
+.tor-tabs-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.tor-tab-btn {
+  background: #FFFFFF;
+  border: 1px solid #EAE6DF;
+  border-radius: 12px;
+  padding: 9px 20px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #4B5563;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.tor-tab-btn:hover {
+  background: #F9FAFB;
+  color: #111827;
+}
+
+.tor-tab-btn.active {
+  background: #FFFFFF;
+  border-color: #078B87;
+  color: #078B87;
+  box-shadow: 0 0 0 2px rgba(7, 139, 135, 0.15);
+  font-weight: 800;
+}
+
+/* --------------------------------------------------------------------------
+   Order Cards List
+   -------------------------------------------------------------------------- */
+.tor-orders-container {
+  background: #FFFFFF;
+  border: 1px solid #EAE6DF;
+  border-radius: 20px;
+  padding: 8px 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.tor-order-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 12px;
+  border-bottom: 1px solid #F3F4F6;
+  gap: 16px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  border-radius: 12px;
+}
+
+.tor-order-row:hover {
+  background-color: #FAF8F5;
+}
+
+.tor-order-row:last-child {
+  border-bottom: none;
+}
+
+/* Left Group (Avatar + Order ID + Customer) */
+.tor-order-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 220px;
+}
+
+.tor-avatar {
+  width: 54px;
+  height: 54px;
+  border-radius: 12px;
+  object-fit: cover;
+  border: 1px solid #EAE6DF;
+  flex-shrink: 0;
+}
+
+.tor-id-name {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.tor-order-number {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #111827;
+  margin: 0;
+}
+
+.tor-customer-name {
+  font-size: 0.85rem;
+  color: #6B7280;
+  font-weight: 550;
+  margin: 0;
+}
+
+/* Garment Name */
+.tor-garment-title {
+  font-size: 0.9rem;
+  color: #374151;
+  font-weight: 600;
+  min-width: 160px;
+  margin: 0;
+}
+
+/* Price */
+.tor-price {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #111827;
+  min-width: 80px;
+  margin: 0;
+}
+
+/* Date */
+.tor-date {
+  font-size: 0.85rem;
+  color: #6B7280;
+  font-weight: 500;
+  min-width: 100px;
+  margin: 0;
+}
+
+/* Status Badges */
+.tor-badge-in-progress {
+  background: #FEF3C7;
+  color: #D97706;
+  font-size: 0.8rem;
+  font-weight: 750;
+  padding: 4px 14px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+.tor-badge-new {
+  background: #EDE9FE;
+  color: #7C3AED;
+  font-size: 0.8rem;
+  font-weight: 750;
+  padding: 4px 14px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+.tor-badge-completed {
+  background: #DCFCE7;
+  color: #15803D;
+  font-size: 0.8rem;
+  font-weight: 750;
+  padding: 4px 14px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+.tor-badge-cancelled {
+  background: #F3F4F6;
+  color: #6B7280;
+  font-size: 0.8rem;
+  font-weight: 750;
+  padding: 4px 14px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+/* --------------------------------------------------------------------------
+   Order Details Modal
+   -------------------------------------------------------------------------- */
+.tor-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(6px);
+  z-index: 100000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.tor-modal-card {
+  background: #FFFFFF;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 620px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+}
+
+.tor-modal-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid #EAE6DF;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tor-modal-body {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.tor-modal-footer {
+  padding: 16px 24px;
+  border-top: 1px solid #EAE6DF;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #FAF8F5;
+  border-bottom-left-radius: 20px;
+  border-bottom-right-radius: 20px;
+}
+
+@media (max-width: 768px) {
+  .tor-order-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+}

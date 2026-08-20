@@ -1,5 +1,6 @@
-import { TailorPage } from "@/components/common/pages";
+import { TailorOrderDetailPage } from "@/components/tailors/tailor-order-detail-page";
 
 export default function Page() {
-  return <TailorPage view="order-detail" />;
+  return <TailorOrderDetailPage />;
 }
+

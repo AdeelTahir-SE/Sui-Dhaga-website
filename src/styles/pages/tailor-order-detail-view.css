@@ -1,0 +1,403 @@
+/* ==========================================================================
+   Tailor Order Detail Page Styles - Sui Dhāga
+   ========================================================================== */
+
+.tod-container {
+  min-height: 100vh;
+  background-color: #FAF8F5;
+  color: #111827;
+  font-family: inherit;
+  padding: 100px 24px 64px;
+}
+
+.tod-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Breadcrumb */
+.tod-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: #6B7280;
+  font-weight: 500;
+  margin-bottom: 16px;
+}
+
+.tod-breadcrumb a {
+  color: #6B7280;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.tod-breadcrumb a:hover {
+  color: #078B87;
+}
+
+/* Header Area */
+.tod-page-header {
+  margin-bottom: 28px;
+}
+
+.tod-title-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+
+.tod-title {
+  font-size: 2.2rem;
+  font-weight: 850;
+  color: #111827;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.tod-status-pill {
+  background: #FEF3C7;
+  color: #D97706;
+  font-size: 0.82rem;
+  font-weight: 750;
+  padding: 4px 14px;
+  border-radius: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tod-subtitle {
+  font-size: 0.92rem;
+  color: #6B7280;
+  margin: 0;
+}
+
+/* --------------------------------------------------------------------------
+   2-Column Layout Grid
+   -------------------------------------------------------------------------- */
+.tod-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 28px;
+  align-items: start;
+}
+
+/* Column Cards */
+.tod-col {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.tod-card {
+  background: #FFFFFF;
+  border: 1px solid #EAE6DF;
+  border-radius: 20px;
+  padding: 26px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.tod-card-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #111827;
+  margin: 0 0 18px;
+}
+
+/* Customer Card */
+.tod-customer-wrap {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.tod-customer-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 14px;
+  object-fit: cover;
+  border: 1px solid #EAE6DF;
+  flex-shrink: 0;
+}
+
+.tod-customer-details {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.tod-customer-name {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #111827;
+  margin: 0;
+}
+
+.tod-customer-email {
+  font-size: 0.85rem;
+  color: #6B7280;
+  margin: 0;
+}
+
+.tod-customer-phone {
+  font-size: 0.85rem;
+  color: #6B7280;
+  margin: 0;
+}
+
+.tod-view-profile-link {
+  font-size: 0.84rem;
+  font-weight: 750;
+  color: #078B87;
+  text-decoration: none;
+  margin-top: 4px;
+  display: inline-block;
+}
+
+.tod-view-profile-link:hover {
+  text-decoration: underline;
+}
+
+/* Order Item Row */
+.tod-item-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid #F3F4F6;
+  margin-bottom: 18px;
+}
+
+.tod-item-thumb {
+  width: 72px;
+  height: 96px;
+  border-radius: 12px;
+  object-fit: cover;
+  border: 1px solid #EAE6DF;
+  flex-shrink: 0;
+}
+
+.tod-item-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tod-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tod-item-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #111827;
+  margin: 0;
+}
+
+.tod-item-price {
+  font-size: 1.05rem;
+  font-weight: 850;
+  color: #111827;
+}
+
+.tod-item-spec {
+  font-size: 0.85rem;
+  color: #4B5563;
+  margin: 0;
+}
+
+/* Measurements Sub-block */
+.tod-measurements-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  background: #FAF8F5;
+  border: 1px solid #EAE6DF;
+  border-radius: 12px;
+  padding: 14px;
+}
+
+.tod-m-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tod-m-label {
+  font-size: 0.75rem;
+  color: #6B7280;
+  font-weight: 600;
+}
+
+.tod-m-val {
+  font-size: 0.9rem;
+  color: #111827;
+  font-weight: 750;
+}
+
+/* Design Reference Gallery */
+.tod-gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.tod-gallery-thumb {
+  width: 100%;
+  aspect-ratio: 0.75;
+  border-radius: 12px;
+  object-fit: cover;
+  border: 1px solid #EAE6DF;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.tod-gallery-thumb:hover {
+  transform: scale(1.03);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* Payment Summary */
+.tod-pay-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  font-size: 0.9rem;
+  color: #4B5563;
+}
+
+.tod-pay-row-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 14px;
+  margin-top: 10px;
+  border-top: 1px solid #F3F4F6;
+  font-size: 1rem;
+  font-weight: 800;
+  color: #111827;
+}
+
+.tod-pay-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+  padding-top: 10px;
+}
+
+.tod-paid-badge {
+  background: #DCFCE7;
+  color: #15803D;
+  font-size: 0.8rem;
+  font-weight: 750;
+  padding: 3px 12px;
+  border-radius: 12px;
+}
+
+.tod-paid-amount {
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: #15803D;
+}
+
+/* Tracking Timeline */
+.tod-timeline {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  gap: 20px;
+}
+
+.tod-timeline-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  position: relative;
+}
+
+.tod-timeline-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  z-index: 2;
+}
+
+.tod-timeline-icon.completed {
+  background: #078B87;
+  color: #FFFFFF;
+}
+
+.tod-timeline-icon.pending {
+  background: #FFFFFF;
+  border: 2px solid #D1D5DB;
+  color: #9CA3AF;
+}
+
+.tod-timeline-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tod-timeline-title {
+  font-size: 0.9rem;
+  font-weight: 750;
+  color: #111827;
+  margin: 0;
+}
+
+.tod-timeline-time {
+  font-size: 0.82rem;
+  color: #6B7280;
+  margin: 0;
+}
+
+/* Bottom Action Buttons */
+.tod-actions-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-top: 6px;
+}
+
+.tod-btn-primary {
+  background: #078B87;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 10px;
+  padding: 12px 18px;
+  font-size: 0.92rem;
+  font-weight: 750;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-decoration: none;
+  box-shadow: 0 2px 6px rgba(7, 139, 135, 0.2);
+  transition: all 0.15s ease;
+}
+
+.tod-btn-primary:hover {
+  background: #06726F;
+  transform: translateY(-1px);
+}
+
+@media (max-width: 900px) {
+  .tod-grid {
+    grid-template-columns: 1fr;
+  }
+}
