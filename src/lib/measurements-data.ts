@@ -126,25 +126,63 @@ export const MEASURING_INSTRUCTIONS_STEPS = [
   }
 ];
 
+import { measurementService } from "./api/measurement-service";
+import { MeasurementProfile as ApiMeasurementProfile } from "./api/types";
+
+function mapApiToMeasurementProfile(apiProf: ApiMeasurementProfile): MeasurementProfile {
+  return {
+    id: apiProf.id,
+    name: apiProf.profile_name || apiProf.profileName || "My Profile",
+    lastUpdated: apiProf.updated_at
+      ? new Date(apiProf.updated_at).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" })
+      : "Just now",
+    unit: apiProf.unit === "cm" ? "Centimeters (cm)" : "Inches",
+    standardSize: "Custom",
+    values: {
+      bust: apiProf.chest || 36,
+      waist: apiProf.waist || 30,
+      hip: apiProf.hips || 39,
+      shoulder: apiProf.shoulder || 15,
+      armLength: apiProf.sleeve_length || apiProf.sleeveLength || 22,
+      sleeveLength: apiProf.sleeve_length || apiProf.sleeveLength || 18,
+      topLength: apiProf.height || 54,
+      neck: apiProf.neck || 14.5,
+      inseam: apiProf.inseam || 38,
+      waistToAnkle: 40
+    },
+    notes: apiProf.notes || ""
+  };
+}
+
+function mapProfileToApiPayload(prof: MeasurementProfile) {
+  return {
+    title: prof.name,
+    profile_name: prof.name,
+    gender: "women" as const,
+    unit: prof.unit === "Centimeters (cm)" ? ("cm" as const) : ("in" as const),
+    chest: prof.values.bust,
+    waist: prof.values.waist,
+    hips: prof.values.hip,
+    shoulder: prof.values.shoulder,
+    sleeve_length: prof.values.sleeveLength,
+    inseam: prof.values.inseam,
+    neck: prof.values.neck,
+    height: prof.values.topLength,
+    notes: prof.notes
+  };
+}
+
 /**
  * Fetch all measurement profiles
  */
 export async function fetchMeasurementProfilesApi(): Promise<MeasurementProfile[]> {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_BACKEND_URL;
-
-  if (apiUrl) {
-    try {
-      const res = await fetch(`${apiUrl}/api/customer/measurements`, {
-        headers: { "Content-Type": "application/json" },
-        cache: "no-store"
-      });
-      if (res.ok) {
-        const data = await res.json();
-        return data.profiles || data.data || [];
-      }
-    } catch (err) {
-      console.warn("[Measurements API] Backend unavailable, using local store:", err);
+  try {
+    const res = await measurementService.getMeasurements();
+    if (res?.data && Array.isArray(res.data) && res.data.length > 0) {
+      return res.data.map(mapApiToMeasurementProfile);
     }
+  } catch (err) {
+    console.warn("[Measurements API] Backend unavailable, using local store:", err);
   }
 
   // Local storage sync
@@ -170,22 +208,31 @@ export async function fetchMeasurementProfilesApi(): Promise<MeasurementProfile[
 export async function saveMeasurementProfileApi(
   profile: MeasurementProfile
 ): Promise<{ success: boolean; profile?: MeasurementProfile }> {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_BACKEND_URL;
-
-  if (apiUrl) {
-    try {
-      const res = await fetch(`${apiUrl}/api/customer/measurements`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(profile)
-      });
-      if (res.ok) {
-        const data = await res.json();
-        return { success: true, profile: data.profile || data };
-      }
-    } catch (err) {
-      console.warn("[Measurements API] Save failed on backend, updating locally:", err);
+  try {
+    const payload = mapProfileToApiPayload(profile);
+    let res;
+    if (profile.id && !profile.id.startsWith("prof-")) {
+      res = await measurementService.updateMeasurement(profile.id, payload);
+    } else {
+      res = await measurementService.createMeasurement(payload);
     }
+    if (res?.data) {
+      const mapped = mapApiToMeasurementProfile(res.data);
+      // Sync to local
+      try {
+        if (typeof window !== "undefined") {
+          const storedJson = localStorage.getItem("sui_dhaga_measurements");
+          let list = storedJson ? JSON.parse(storedJson) : [...initialMeasurementProfiles];
+          const idx = list.findIndex((p: any) => p.id === profile.id || p.id === mapped.id);
+          if (idx >= 0) list[idx] = mapped;
+          else list.push(mapped);
+          localStorage.setItem("sui_dhaga_measurements", JSON.stringify(list));
+        }
+      } catch (e) {}
+      return { success: true, profile: mapped };
+    }
+  } catch (err) {
+    console.warn("[Measurements API] Save failed on backend, updating locally:", err);
   }
 
   // Update in localStorage
@@ -206,4 +253,32 @@ export async function saveMeasurementProfileApi(
   }
 
   return { success: true, profile };
+}
+
+/**
+ * Delete a measurement profile
+ */
+export async function deleteMeasurementProfileApi(profileId: string): Promise<{ success: boolean }> {
+  try {
+    if (!profileId.startsWith("prof-")) {
+      await measurementService.deleteMeasurement(profileId);
+    }
+  } catch (err) {
+    console.warn("[Measurements API] Delete failed on backend, deleting locally:", err);
+  }
+
+  try {
+    if (typeof window !== "undefined") {
+      const storedJson = localStorage.getItem("sui_dhaga_measurements");
+      if (storedJson) {
+        let list = JSON.parse(storedJson);
+        list = list.filter((p: any) => p.id !== profileId);
+        localStorage.setItem("sui_dhaga_measurements", JSON.stringify(list));
+      }
+    }
+  } catch (e) {
+    // ignore
+  }
+
+  return { success: true };
 }
