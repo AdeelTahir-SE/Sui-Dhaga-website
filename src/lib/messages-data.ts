@@ -177,51 +177,95 @@ export const initialConversations: ConversationItem[] = [
   }
 ];
 
+import { conversationService } from "./api/conversation-service";
+import { Conversation as ApiConversation, ChatMessage as ApiChatMessage } from "./api/types";
+
+export function mapBackendMessageToChat(msg: ApiChatMessage, currentUserId?: string): ChatMessage {
+  const isUserSender = currentUserId ? msg.sender_id === currentUserId || msg.senderId === currentUserId : true;
+  return {
+    id: msg.id,
+    sender: isUserSender ? "user" : "tailor",
+    text: msg.text || msg.message || "",
+    timestamp: msg.created_at
+      ? new Date(msg.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+      : "Just now",
+    images: msg.attachments?.map((a) => (typeof a === "string" ? a : a.url)) || [],
+    readStatus: msg.read_status || msg.is_read || msg.isRead
+  };
+}
+
+export function mapBackendConversationToItem(conv: ApiConversation): ConversationItem {
+  const tailorName = conv.tailor?.shopName || conv.participant?.full_name || conv.participant?.name || conv.tailor?.name || "Master Tailor";
+  const avatar = conv.tailor?.avatar_url || conv.participant?.avatar_url || "/images/home/tailor-rekha.png";
+  const lastMsgRaw = conv.last_message ?? conv.lastMessage;
+  const lastMsg = typeof lastMsgRaw === "string" ? lastMsgRaw : lastMsgRaw?.text || lastMsgRaw?.message || "Started conversation";
+  const timestamp = conv.updated_at
+    ? new Date(conv.updated_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+    : "Recently";
+
+  return {
+    id: conv.id,
+    tailorName,
+    handle: `@${tailorName.toLowerCase().replace(/\s+/g, "")}`,
+    avatar,
+    rating: conv.tailor?.rating || 4.8,
+    reviewsCount: conv.tailor?.reviewsCount || 120,
+    isOnline: true,
+    isTyping: false,
+    lastMessage: lastMsg,
+    timestamp,
+    unreadCount: conv.unread_count || conv.unreadCount || 0,
+    orderNumber: "#SD1256",
+    outfitTitle: "Custom Stitching",
+    outfitImage: "/images/home/hero-float-pastel-anarkali.png",
+    orderStatus: "In Progress",
+    messages: conv.messages ? conv.messages.map((m) => mapBackendMessageToChat(m)) : []
+  };
+}
+
 export function getConversationById(id: string): ConversationItem | undefined {
   return initialConversations.find((c) => c.id === id) || initialConversations[0];
 }
 
 export async function fetchConversationsApi(): Promise<ConversationItem[]> {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_BACKEND_URL;
-
-  if (apiUrl) {
-    try {
-      const res = await fetch(`${apiUrl}/api/messages/conversations`, {
-        headers: { "Content-Type": "application/json" },
-        cache: "no-store"
-      });
-      if (res.ok) {
-        const data = await res.json();
-        return data.conversations ?? data.data ?? [];
-      }
-    } catch (err) {
-      console.warn("[Messages API] Backend conversations unavailable, fallback to mock:", err);
+  try {
+    const res = await conversationService.getConversations();
+    if (res?.data && Array.isArray(res.data) && res.data.length > 0) {
+      return res.data.map(mapBackendConversationToItem);
     }
+  } catch (err) {
+    console.warn("[Messages API] Backend conversations unavailable, fallback to mock:", err);
   }
 
   return initialConversations;
+}
+
+export async function fetchMessagesForConversationApi(conversationId: string): Promise<ChatMessage[]> {
+  try {
+    const res = await conversationService.getMessages(conversationId);
+    if (res?.data && Array.isArray(res.data)) {
+      return res.data.map((m) => mapBackendMessageToChat(m));
+    }
+  } catch (err) {
+    console.warn("[Messages API] Fetch messages failed, falling back locally:", err);
+  }
+
+  const conv = getConversationById(conversationId);
+  return conv?.messages || [];
 }
 
 export async function sendChatMessageApi(
   conversationId: string,
   text: string
 ): Promise<{ success: boolean; message?: ChatMessage }> {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_BACKEND_URL;
-
-  if (apiUrl) {
-    try {
-      const res = await fetch(`${apiUrl}/api/messages/conversations/${encodeURIComponent(conversationId)}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        return { success: true, message: data.message ?? data };
-      }
-    } catch (err) {
-      console.warn("[Messages API] Send message failed:", err);
+  try {
+    const res = await conversationService.sendMessage(conversationId, { text });
+    if (res?.data) {
+      const chatMsg = mapBackendMessageToChat(res.data);
+      return { success: true, message: chatMsg };
     }
+  } catch (err) {
+    console.warn("[Messages API] Send message on backend failed, updating local state:", err);
   }
 
   const newMsg: ChatMessage = {
