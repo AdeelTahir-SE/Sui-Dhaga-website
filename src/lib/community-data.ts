@@ -204,6 +204,46 @@ export const initialFollowingUsers: FollowingUser[] = [
   }
 ];
 
+import { communityService } from "./api/community-service";
+import { CommunityPost as ApiPost, CommunityComment as ApiComment } from "./api/types";
+
+export function mapBackendCommentToItem(c: ApiComment): PostComment {
+  return {
+    id: c.id,
+    author: c.user?.full_name || c.user?.name || c.user?.email?.split("@")[0] || "Community Member",
+    avatar: c.user?.avatar_url || "/images/home/tailor-rekha.png",
+    text: c.content,
+    timestamp: c.created_at
+      ? new Date(c.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+      : "Just now"
+  };
+}
+
+export function mapBackendPostToItem(p: ApiPost): CommunityPost {
+  const authorName = p.author?.full_name || p.author?.name || p.author?.email?.split("@")[0] || "Sui Dhāga Creator";
+  const avatar = p.author?.avatar_url || "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=120&auto=format&fit=crop&q=80";
+  const images = p.images && p.images.length > 0 ? p.images : ["/images/home/community_1.png"];
+
+  return {
+    id: p.id,
+    author: authorName,
+    avatar,
+    timestamp: p.created_at
+      ? new Date(p.created_at).toLocaleDateString("en-US", { day: "numeric", month: "short" })
+      : "Recently",
+    isVerified: p.author?.role === "tailor",
+    content: p.content || p.title || "",
+    images,
+    tags: p.tags || ["CustomDesign", "Fashion"],
+    likesCount: p.likes_count ?? p.likesCount ?? 0,
+    isLiked: p.is_liked ?? p.isLiked ?? false,
+    commentsCount: p.comments_count ?? p.commentsCount ?? (p.comments?.length || 0),
+    savesCount: p.saves_count ?? p.savesCount ?? 0,
+    isSaved: p.is_saved ?? p.isSaved ?? false,
+    comments: p.comments?.map(mapBackendCommentToItem) || []
+  };
+}
+
 export function getCommunityPostById(id: string): CommunityPost | undefined {
   const post = initialPosts.find((p) => p.id === id) || initialPosts[0];
   if (!post) return undefined;
@@ -238,20 +278,13 @@ export function getCommunityPostById(id: string): CommunityPost | undefined {
 }
 
 export async function fetchCommunityPostByIdApi(id: string): Promise<CommunityPost | undefined> {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_BACKEND_URL;
-
-  if (apiUrl) {
-    try {
-      const res = await fetch(`${apiUrl}/api/community/posts/${encodeURIComponent(id)}`, {
-        headers: { "Content-Type": "application/json" }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        return data.post ?? data;
-      }
-    } catch (err) {
-      console.warn("[Community API] Fetch post detail failed, fallback to mock:", err);
+  try {
+    const res = await communityService.getPostById(id);
+    if (res?.data) {
+      return mapBackendPostToItem(res.data);
     }
+  } catch (err) {
+    console.warn("[Community API] Fetch post detail failed, fallback to mock:", err);
   }
 
   return getCommunityPostById(id);
@@ -259,82 +292,57 @@ export async function fetchCommunityPostByIdApi(id: string): Promise<CommunityPo
 
 /**
  * Async API fetcher for community feed posts.
- * Connects to process.env.NEXT_PUBLIC_API_URL if defined, with mock fallback.
  */
 export async function fetchCommunityPostsApi(tab = "for-you"): Promise<CommunityPost[]> {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_BACKEND_URL;
-
-  if (apiUrl) {
-    try {
-      const res = await fetch(`${apiUrl}/api/community/feed?tab=${encodeURIComponent(tab)}`, {
-        headers: { "Content-Type": "application/json" },
-        cache: "no-store"
-      });
-      if (res.ok) {
-        const data = await res.json();
-        return data.posts ?? data.data ?? [];
-      }
-    } catch (err) {
-      console.warn("[Community API] Backend feed endpoint unavailable, fallback to mock:", err);
+  try {
+    const res = await communityService.getPosts();
+    if (res?.data && Array.isArray(res.data) && res.data.length > 0) {
+      return res.data.map(mapBackendPostToItem);
     }
+  } catch (err) {
+    console.warn("[Community API] Backend feed endpoint unavailable, fallback to mock:", err);
   }
 
   return initialPosts;
 }
 
 export async function togglePostLikeApi(postId: string, isLiked: boolean): Promise<boolean> {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_BACKEND_URL;
-
-  if (apiUrl) {
-    try {
-      const res = await fetch(`${apiUrl}/api/community/posts/${encodeURIComponent(postId)}/like`, {
-        method: isLiked ? "POST" : "DELETE",
-        headers: { "Content-Type": "application/json" }
-      });
-      return res.ok;
-    } catch (err) {
-      console.warn("[Community API] Toggle like failed:", err);
-    }
+  try {
+    await communityService.toggleLike(postId);
+    return true;
+  } catch (err) {
+    console.warn("[Community API] Toggle like failed:", err);
   }
 
   return true;
 }
 
 export async function togglePostSaveApi(postId: string, isSaved: boolean): Promise<boolean> {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_BACKEND_URL;
-
-  if (apiUrl) {
-    try {
-      const res = await fetch(`${apiUrl}/api/community/posts/${encodeURIComponent(postId)}/save`, {
-        method: isSaved ? "POST" : "DELETE",
-        headers: { "Content-Type": "application/json" }
-      });
-      return res.ok;
-    } catch (err) {
-      console.warn("[Community API] Toggle save failed:", err);
-    }
+  try {
+    await communityService.toggleSave(postId);
+    return true;
+  } catch (err) {
+    console.warn("[Community API] Toggle save failed:", err);
   }
 
   return true;
 }
 
 export async function createCommunityPostApi(postData: Partial<CommunityPost>): Promise<{ success: boolean; post?: CommunityPost }> {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_BACKEND_URL;
-
-  if (apiUrl) {
-    try {
-      const res = await fetch(`${apiUrl}/api/community/posts`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(postData)
-      });
-      if (res.ok) {
-        const data = await res.json();
-        return { success: true, post: data.post ?? data };
-      }
-    } catch (err) {
-      console.warn("[Community API] Create post failed:", err);
+  try {
+    const res = await communityService.createPost({
+      title: postData.content?.slice(0, 50) || "Community Post",
+      content: postData.content || "",
+      images: postData.images || [],
+      tags: postData.tags || ["CustomDesign"]
+    });
+    if (res?.data) {
+      const mapped = mapBackendPostToItem(res.data);
+      initialPosts.unshift(mapped);
+      return { success: true, post: mapped };
     }
+  } catch (err) {
+    console.warn("[Community API] Create post on backend failed, saving locally:", err);
   }
 
   const newPost: CommunityPost = {

@@ -116,30 +116,42 @@ export const initialSavedDesignsData: SavedDesignItem[] = [
   }
 ];
 
+import { designService } from "./api/design-service";
+import { Design as ApiDesign } from "./api/types";
+
+export function mapBackendDesignToItem(des: ApiDesign): SavedDesignItem {
+  const cat = (des.category as any) || "Outfits";
+  return {
+    id: des.id,
+    title: des.title || "Custom AI Outfit",
+    category: ["Outfits", "Blouses", "Lehengas", "Kurti", "Sarees"].includes(cat) ? cat : "Outfits",
+    savedDate: des.created_at
+      ? new Date(des.created_at).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" })
+      : "Recently",
+    image: des.preview_url || des.previewUrl || des.image_url || "/images/booking/ref-gold-anarkali.jpg",
+    prompt: des.prompt || "Luxury customized garment design",
+    fabric: des.fabric_type || "Silk & Chiffon",
+    estimatedCost: "Rs. 15,000 - Rs. 20,000",
+    tags: des.tags || ["Custom", "AI Studio"],
+    isFavorite: false
+  };
+}
+
 /**
  * Fetch all saved designs with optional category filtering
  */
 export async function fetchCustomerSavedDesignsApi(
   category: string = "All"
 ): Promise<SavedDesignItem[]> {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_BACKEND_URL;
-
-  if (apiUrl) {
-    try {
-      const res = await fetch(
-        `${apiUrl}/api/customer/saved-designs?category=${encodeURIComponent(category)}`,
-        {
-          headers: { "Content-Type": "application/json" },
-          cache: "no-store"
-        }
-      );
-      if (res.ok) {
-        const data = await res.json();
-        return data.designs || data.data || [];
-      }
-    } catch (err) {
-      console.warn("[Saved Designs API] Backend unavailable, using local store:", err);
+  try {
+    const res = await designService.getDesigns();
+    if (res?.data && Array.isArray(res.data) && res.data.length > 0) {
+      const mapped = res.data.map(mapBackendDesignToItem);
+      if (category === "All") return mapped;
+      return mapped.filter((item) => item.category.toLowerCase() === category.toLowerCase());
     }
+  } catch (err) {
+    console.warn("[Saved Designs API] Backend unavailable, using local store:", err);
   }
 
   // Local storage sync
@@ -163,19 +175,6 @@ export async function fetchCustomerSavedDesignsApi(
  * Remove a design from saved list
  */
 export async function removeSavedDesignApi(designId: string): Promise<boolean> {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_BACKEND_URL;
-
-  if (apiUrl) {
-    try {
-      await fetch(`${apiUrl}/api/customer/saved-designs/${encodeURIComponent(designId)}`, {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" }
-      });
-    } catch (err) {
-      console.warn("[Saved Designs API] Delete failed on backend, updating locally:", err);
-    }
-  }
-
   try {
     if (typeof window !== "undefined") {
       const storedJson = localStorage.getItem("sui_dhaga_saved_designs");
