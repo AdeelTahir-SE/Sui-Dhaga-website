@@ -307,30 +307,61 @@ export const initialAppointmentsData: AppointmentItem[] = [
   }
 ];
 
+import { appointmentService } from "./api/appointment-service";
+import { Appointment } from "./api/types";
+
+export function mapBackendAppointmentToItem(apt: Appointment): AppointmentItem {
+  const statusMap: Record<string, "Upcoming" | "Completed" | "Cancelled"> = {
+    pending: "Upcoming",
+    confirmed: "Upcoming",
+    completed: "Completed",
+    cancelled: "Cancelled",
+  };
+
+  const status = statusMap[apt.status] || "Upcoming";
+  const ref = `APT${apt.id.replace(/[^a-zA-Z0-9]/g, "").slice(-4).toUpperCase() || "1200"}`;
+
+  return {
+    id: apt.id,
+    referenceNo: ref,
+    tailorId: apt.tailor_id || apt.tailorId || apt.tailor?.id || "rekha-tailors",
+    tailorName: apt.tailor?.shopName || apt.tailor?.name || "Master Tailor",
+    tailorAvatar: apt.tailor?.avatar_url || "/images/home/tailor-rekha.png",
+    tailorRating: apt.tailor?.rating || 4.8,
+    tailorReviewsCount: apt.tailor?.reviewsCount || apt.tailor?.review_count || 120,
+    tailorAddress: apt.tailor?.address || "Commercial Area, Faisalabad",
+    distance: "1.2 km away",
+    serviceId: apt.service_id || apt.serviceId || "srv-custom-stitching",
+    serviceName: apt.service?.title || apt.service?.name || "Custom Stitching",
+    serviceCategory: apt.service?.category || "Women's Wear",
+    price: apt.service?.price ? `Rs. ${apt.service.price.toLocaleString()}` : "Rs. 2,000",
+    priceValue: apt.service?.price || 2000,
+    date: apt.appointment_date,
+    time: apt.appointment_time,
+    duration: "45 mins",
+    deliveryTime: "7-10 days",
+    status,
+    notes: apt.notes || "",
+    referenceImages: [],
+    createdAt: apt.created_at || new Date().toISOString()
+  };
+}
+
 /**
  * Fetch all appointments with optional tab filtering
  */
 export async function fetchCustomerAppointmentsApi(
   tab: "Upcoming" | "Completed" | "Cancelled" | "All" = "Upcoming"
 ): Promise<AppointmentItem[]> {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_BACKEND_URL;
-
-  if (apiUrl) {
-    try {
-      const res = await fetch(
-        `${apiUrl}/api/customer/appointments?status=${encodeURIComponent(tab)}`,
-        {
-          headers: { "Content-Type": "application/json" },
-          cache: "no-store"
-        }
-      );
-      if (res.ok) {
-        const data = await res.json();
-        return data.appointments || data.data || [];
-      }
-    } catch (err) {
-      console.warn("[Appointments API] Backend unavailable, using local store:", err);
+  try {
+    const res = await appointmentService.getAppointments();
+    if (res?.data && Array.isArray(res.data) && res.data.length > 0) {
+      const mapped = res.data.map(mapBackendAppointmentToItem);
+      if (tab === "All") return mapped;
+      return mapped.filter((a) => a.status === tab);
     }
+  } catch (err) {
+    console.warn("[Appointments API] Backend unavailable, using local store:", err);
   }
 
   // Local storage sync
@@ -390,21 +421,13 @@ export async function fetchCustomerAppointmentsApi(
  * Fetch a single appointment by ID
  */
 export async function fetchAppointmentByIdApi(appointmentId: string): Promise<AppointmentItem | null> {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_BACKEND_URL;
-
-  if (apiUrl) {
-    try {
-      const res = await fetch(`${apiUrl}/api/customer/appointments/${encodeURIComponent(appointmentId)}`, {
-        headers: { "Content-Type": "application/json" },
-        cache: "no-store"
-      });
-      if (res.ok) {
-        const data = await res.json();
-        return data.appointment || data;
-      }
-    } catch (err) {
-      console.warn("[Appointments API] Fetch by ID failed, falling back locally:", err);
+  try {
+    const res = await appointmentService.getAppointmentById(appointmentId);
+    if (res?.data) {
+      return mapBackendAppointmentToItem(res.data);
     }
+  } catch (err) {
+    console.warn("[Appointments API] Fetch by ID failed, falling back locally:", err);
   }
 
   const all = await fetchCustomerAppointmentsApi("All");
@@ -425,22 +448,13 @@ export async function rescheduleCustomerAppointmentApi(
   newDate: string,
   newTime: string
 ): Promise<{ success: boolean; appointment?: AppointmentItem; error?: string }> {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_BACKEND_URL;
-
-  if (apiUrl) {
-    try {
-      const res = await fetch(`${apiUrl}/api/customer/appointments/${encodeURIComponent(appointmentId)}/reschedule`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ date: newDate, time: newTime })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        return { success: true, appointment: data.appointment || data };
-      }
-    } catch (err) {
-      console.warn("[Appointments API] Reschedule failed on backend, updating locally:", err);
+  try {
+    const res = await appointmentService.reschedule(appointmentId, newDate, newTime);
+    if (res?.data) {
+      return { success: true, appointment: mapBackendAppointmentToItem(res.data) };
     }
+  } catch (err: any) {
+    console.warn("[Appointments API] Reschedule failed on backend, updating locally:", err);
   }
 
   // Update in localStorage
@@ -471,19 +485,11 @@ export async function cancelCustomerAppointmentApi(
   appointmentId: string,
   reason: string
 ): Promise<{ success: boolean; error?: string }> {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_BACKEND_URL;
-
-  if (apiUrl) {
-    try {
-      const res = await fetch(`${apiUrl}/api/customer/appointments/${encodeURIComponent(appointmentId)}/cancel`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reason })
-      });
-      if (res.ok) return { success: true };
-    } catch (err) {
-      console.warn("[Appointments API] Cancel failed on backend, updating locally:", err);
-    }
+  try {
+    await appointmentService.cancelAppointment(appointmentId);
+    return { success: true };
+  } catch (err) {
+    console.warn("[Appointments API] Cancel failed on backend, updating locally:", err);
   }
 
   // Update in localStorage
