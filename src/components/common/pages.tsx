@@ -1,9 +1,15 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AccountRoleChoice } from "./account-role-choice";
 import { adminUsers, appointments, designs, orders, tailors } from "./data";
 import { CountryCodeSelect } from "./country-code-select";
 import { DashboardShell, DecorativeFrame, FigureCard, PageHero, PublicShell, StatusPill } from "./site-shell";
 import { HomePageRevamped } from "@/components/home/home-page-revamped";
+import { authService } from "@/lib/api";
+import { AuthFormCard } from "@/components/auth/auth-form-card";
 
 export function HomePage() {
   return (
@@ -169,7 +175,7 @@ export function AuthPage({ mode }: { mode: "login" | "register" | "forgot" | "re
               />
             </div>
           </div>
-          <FormCard
+          <AuthFormCard
             title={copy[3]}
             intro={mode === "register" ? "Join Sui Dhaga and discover the perfect custom tailoring experience." : mode === "login" ? "Welcome back! Please enter your details." : mode === "forgot" ? "Enter the email address associated with your account." : "Choose a strong password for your account."}
             fields={mode === "login" ? ["Email Address", "Password"] : mode === "forgot" ? ["Email Address"] : mode === "reset" ? ["New Password", "Confirm Password"] : ["Full Name", "Email", "Phone Number", "Password", "Confirm Password"]}

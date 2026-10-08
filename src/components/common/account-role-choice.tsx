@@ -8,17 +8,37 @@ const roles = [
   ["Designer", "Create designs & get discovered", "/images/auth/role-designer.png"],
 ];
 
-export function AccountRoleChoice() {
-  const [selectedRole, setSelectedRole] = useState(roles[0][0]);
+interface AccountRoleChoiceProps {
+  value?: string;
+  onChange?: (role: string) => void;
+}
+
+export function AccountRoleChoice({ value, onChange }: AccountRoleChoiceProps) {
+  const [internalRole, setInternalRole] = useState(roles[0][0]);
+  const currentRole = value || internalRole;
+
+  const handleSelect = (role: string) => {
+    if (onChange) {
+      onChange(role);
+    } else {
+      setInternalRole(role);
+    }
+  };
 
   return (
     <div className="role-choice" aria-label="Choose account type">
-      <input type="hidden" name="role" value={selectedRole} />
+      <input type="hidden" name="role" value={currentRole.toLowerCase()} />
       {roles.map(([role, description, image]) => {
-        const selected = selectedRole === role;
+        const selected = currentRole.toLowerCase() === role.toLowerCase();
 
         return (
-          <button type="button" className={`role-btn ${selected ? "active" : ""}`} aria-pressed={selected} key={role} onClick={() => setSelectedRole(role)}>
+          <button
+            type="button"
+            className={`role-btn ${selected ? "active" : ""}`}
+            aria-pressed={selected}
+            key={role}
+            onClick={() => handleSelect(role)}
+          >
             {selected ? <span className="role-check" aria-hidden="true">&#10003;</span> : null}
             <span className="role-icon">
               <img src={image} alt="" aria-hidden="true" />
