@@ -7,6 +7,7 @@
  */
 
 import { apiClient } from "./client";
+import { ApiResponse } from "./types";
 import {
   AdminStats,
   RevenueDataPoint,
@@ -33,8 +34,7 @@ import {
   AdminCMSContent,
   AdminPlatformSettings,
   UpdateSettingsPayload,
-  PaginatedResponse,
-  ApiResponse
+  PaginatedResponse
 } from "./admin-types";
 import { mockAdminStore, simulateDelay } from "../admin-data";
 
