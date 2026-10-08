@@ -15,10 +15,11 @@ const animeNavItems = [
   { name: "Pricing", url: "/pricing", icon: CreditCard },
 ];
 
-export function PublicNav() {
+export function PublicNav({ navTheme }: { navTheme?: "default" | "velvet-gold" } = {}) {
   const pathname = usePathname();
   const [hidden, setHidden] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const isVelvetGold = navTheme === "velvet-gold" || pathname === "/download" || pathname === "/download-app" || pathname === "/sun-drop";
 
   useEffect(() => {
     let lastScrollY = window.scrollY;
@@ -56,11 +57,16 @@ export function PublicNav() {
       alignItems: 'center', 
       justifyContent: 'space-between', 
       padding: '16px 48px',
-      backgroundColor: scrolled ? 'rgba(250, 248, 245, 0.62)' : '#FAF8F5',
+      backgroundColor: isVelvetGold 
+        ? (scrolled ? 'rgba(18, 4, 30, 0.92)' : 'rgba(14, 2, 24, 0.95)')
+        : (scrolled ? 'rgba(250, 248, 245, 0.62)' : '#FAF8F5'),
       boxSizing: 'border-box',
       border: 'none',
+      borderBottom: isVelvetGold ? '1px solid rgba(251, 191, 36, 0.25)' : 'none',
       borderRadius: 0,
-      backdropFilter: scrolled ? 'blur(18px) saturate(1.2)' : 'none',
+      backdropFilter: isVelvetGold 
+        ? 'blur(20px) saturate(1.4)' 
+        : (scrolled ? 'blur(18px) saturate(1.2)' : 'none'),
       transform: hidden ? 'translateY(-110%)' : 'translateY(0)',
       transition: 'transform 280ms ease, background-color 240ms ease, color 240ms ease',
       boxShadow: 'none'
@@ -68,7 +74,7 @@ export function PublicNav() {
       <Link href="/" style={{ 
         fontSize: '26px', 
         fontWeight: 900, 
-        color: scrolled ? '#078b87' : '#000', 
+        color: isVelvetGold ? '#FCD34D' : (scrolled ? '#078b87' : '#000'), 
         textDecoration: 'none', 
         letterSpacing: '-0.5px',
         fontFamily: 'system-ui, -apple-system, sans-serif'
@@ -84,7 +90,7 @@ export function PublicNav() {
             style={{ 
               fontSize: '16px', 
               fontWeight: 600, 
-              color: scrolled ? '#078b87' : '#111',
+              color: isVelvetGold ? '#FDE68A' : (scrolled ? '#078b87' : '#111'),
               textDecoration: 'none',
               fontFamily: 'system-ui, -apple-system, sans-serif'
             }}
@@ -95,15 +101,15 @@ export function PublicNav() {
       </nav>
 
       <div className="hidden md:flex" style={{ alignItems: 'center', gap: '24px' }}>
-        <button aria-label="Search" style={{ background: 'none', border: 'none', cursor: 'pointer', color: scrolled ? '#078b87' : '#111', padding: 0, display: 'flex' }}>
+        <button aria-label="Search" style={{ background: 'none', border: 'none', cursor: 'pointer', color: isVelvetGold ? '#FDE68A' : (scrolled ? '#078b87' : '#111'), padding: 0, display: 'flex' }}>
           <Search size={22} strokeWidth={2} />
         </button>
-        <button aria-label="Alerts" style={{ background: 'none', border: 'none', cursor: 'pointer', color: scrolled ? '#078b87' : '#111', padding: 0, display: 'flex' }}>
+        <button aria-label="Alerts" style={{ background: 'none', border: 'none', cursor: 'pointer', color: isVelvetGold ? '#FDE68A' : (scrolled ? '#078b87' : '#111'), padding: 0, display: 'flex' }}>
           <Bell size={22} strokeWidth={2} />
         </button>
         <Link href="/auth/login" aria-label="Profile" style={{ 
-          background: '#14919b', 
-          border: 'none', 
+          background: isVelvetGold ? 'linear-gradient(135deg, #B45309 0%, #78350F 100%)' : '#14919b', 
+          border: isVelvetGold ? '1px solid #FCD34D' : 'none', 
           cursor: 'pointer', 
           color: '#fff', 
           width: '38px', 
@@ -118,26 +124,37 @@ export function PublicNav() {
         </Link>
       </div>
 
-      <button className="md:hidden flex" aria-label="Menu" style={{ background: 'none', border: 'none', cursor: 'pointer', color: scrolled ? '#078b87' : '#111', padding: 0, alignItems: 'center' }}>
+      <button className="md:hidden flex" aria-label="Menu" style={{ background: 'none', border: 'none', cursor: 'pointer', color: isVelvetGold ? '#FDE68A' : (scrolled ? '#078b87' : '#111'), padding: 0, alignItems: 'center' }}>
         <Menu size={28} strokeWidth={2} />
       </button>
     </header>
   );
 }
 
-export function PublicFooter() {
+export function PublicFooter({ footerTheme }: { footerTheme?: "default" | "velvet-gold" } = {}) {
+  const pathname = usePathname();
+  const isVelvetGold = footerTheme === "velvet-gold" || pathname === "/download" || pathname === "/download-app" || pathname === "/sun-drop";
   return (
-    <footer style={{ backgroundColor: '#0F172A', color: '#fff', padding: '60px 48px 24px', position: 'relative', overflow: 'hidden', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+    <footer style={{ 
+      backgroundColor: isVelvetGold ? '#07000C' : '#0F172A', 
+      backgroundImage: isVelvetGold ? 'radial-gradient(ellipse at 50% -20%, #220636 0%, #08000F 70%)' : 'none',
+      borderTop: isVelvetGold ? '1px solid rgba(251, 191, 36, 0.25)' : 'none',
+      color: '#fff', 
+      padding: '60px 48px 24px', 
+      position: 'relative', 
+      overflow: 'hidden', 
+      fontFamily: 'system-ui, -apple-system, sans-serif' 
+    }}>
       <style dangerouslySetInnerHTML={{__html: `
         .footer-link {
-          color: #94A3B8;
+          color: ${isVelvetGold ? '#EDE9FE' : '#94A3B8'};
           text-decoration: none;
           font-size: 16px;
           transition: color 0.2s ease, transform 0.2s ease;
           display: inline-block;
         }
         .footer-link:hover {
-          color: #14919b;
+          color: ${isVelvetGold ? '#FCD34D' : '#14919b'};
           transform: translateX(4px);
         }
         .footer-social-link {
@@ -153,7 +170,8 @@ export function PublicFooter() {
         }
         .footer-app-btn:hover {
           transform: translateY(-4px);
-          background-color: #1e293b !important;
+          background-color: ${isVelvetGold ? '#2A0944 !important' : '#1e293b !important'};
+          border-color: ${isVelvetGold ? '#FCD34D !important' : '#334155'};
         }
       `}} />
 
@@ -164,11 +182,11 @@ export function PublicFooter() {
         xmlns="http://www.w3.org/2000/svg"
       >
         <path 
-          fill="#14919b" 
+          fill={isVelvetGold ? "#2A0944" : "#14919b"} 
           d="M300,0 C270,30 250,50 260,90 C270,130 230,160 220,190 C210,220 230,250 180,270 C130,290 80,280 40,300 L300,300 Z" 
         />
         {/* Constellation of dots */}
-        <g fill="#fff" opacity="0.6">
+        <g fill={isVelvetGold ? "#FCD34D" : "#fff"} opacity={isVelvetGold ? "0.45" : "0.6"}>
           <circle cx="80" cy="220" r="1.5" />
           <circle cx="110" cy="190" r="2" />
           <circle cx="140" cy="210" r="1" />
@@ -187,8 +205,8 @@ export function PublicFooter() {
         
         {/* Brand Block */}
         <div style={{ flex: '1 1 240px' }}>
-          <Link href="/" style={{ fontSize: '26px', fontWeight: 800, color: '#fff', textDecoration: 'none', display: 'block', marginBottom: '16px' }}>Sui Dhāga</Link>
-          <p style={{ fontSize: '16px', color: '#94A3B8', marginBottom: '32px' }}>Tailored for you. Made by experts.</p>
+          <Link href="/" style={{ fontSize: '26px', fontWeight: 800, color: isVelvetGold ? '#FCD34D' : '#fff', textDecoration: 'none', display: 'block', marginBottom: '16px' }}>Sui Dhāga</Link>
+          <p style={{ fontSize: '16px', color: isVelvetGold ? '#EDE9FE' : '#94A3B8', marginBottom: '32px' }}>Tailored for you. Made by experts.</p>
           <div style={{ display: 'flex', gap: '16px' }}>
             <a href="#" className="footer-social-link">
               <img src="/icons/footer/facebook.png" alt="Facebook" style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
@@ -206,29 +224,29 @@ export function PublicFooter() {
         </div>
 
         {/* Explore Links */}
-        <FooterColumn title="Explore" links={["Find a Tailor", "AI Design Studio", "How It Works", "Pricing"]} />
+        <FooterColumn title="Explore" links={["Find a Tailor", "AI Design Studio", "How It Works", "Pricing"]} isVelvetGold={isVelvetGold} />
         
         {/* Company Links */}
-        <FooterColumn title="Company" links={["About Us", "Contact Us", "Blog", "Careers"]} />
+        <FooterColumn title="Company" links={["About Us", "Contact Us", "Blog", "Careers"]} isVelvetGold={isVelvetGold} />
         
         {/* Support Links */}
-        <FooterColumn title="Support" links={["FAQs", "Privacy Policy", "Terms & Conditions", "Refund Policy"]} />
+        <FooterColumn title="Support" links={["FAQs", "Privacy Policy", "Terms & Conditions", "Refund Policy"]} isVelvetGold={isVelvetGold} />
 
         {/* App Download */}
         <div style={{ flex: '1 1 200px' }}>
-          <h4 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '20px', color: '#F8FAFC' }}>Download App</h4>
+          <h4 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '20px', color: isVelvetGold ? '#FCD34D' : '#F8FAFC' }}>Download App</h4>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <a href="https://play.google.com/store" target="_blank" rel="noreferrer" className="footer-app-btn" style={{ backgroundColor: '#000', color: '#fff', border: '1px solid #334155', borderRadius: '8px', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', textAlign: 'left', textDecoration: 'none' }}>
+            <a href="https://play.google.com/store" target="_blank" rel="noreferrer" className="footer-app-btn" style={{ backgroundColor: isVelvetGold ? 'rgba(26, 6, 42, 0.85)' : '#000', color: '#fff', border: isVelvetGold ? '1px solid rgba(251, 191, 36, 0.35)' : '1px solid #334155', borderRadius: '8px', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', textAlign: 'left', textDecoration: 'none' }}>
               <img src="/icons/footer/google-play.png" alt="Google Play" style={{ width: '26px', height: '26px', objectFit: 'contain' }} />
               <div>
-                <div style={{ fontSize: '11px', color: '#94A3B8', lineHeight: 1 }}>GET IT ON</div>
+                <div style={{ fontSize: '11px', color: isVelvetGold ? '#FDE68A' : '#94A3B8', lineHeight: 1 }}>GET IT ON</div>
                 <div style={{ fontSize: '15px', fontWeight: 600, lineHeight: 1, marginTop: '4px' }}>Google Play</div>
               </div>
             </a>
-            <a href="https://www.apple.com/app-store/" target="_blank" rel="noreferrer" className="footer-app-btn" style={{ backgroundColor: '#000', color: '#fff', border: '1px solid #334155', borderRadius: '8px', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', textAlign: 'left', textDecoration: 'none' }}>
+            <a href="https://www.apple.com/app-store/" target="_blank" rel="noreferrer" className="footer-app-btn" style={{ backgroundColor: isVelvetGold ? 'rgba(26, 6, 42, 0.85)' : '#000', color: '#fff', border: isVelvetGold ? '1px solid rgba(251, 191, 36, 0.35)' : '1px solid #334155', borderRadius: '8px', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', textAlign: 'left', textDecoration: 'none' }}>
               <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71,19.5C17.88,20.74 17,21.95 15.66,21.97C14.32,22 13.89,21.18 12.37,21.18C10.84,21.18 10.37,21.95 9.1,22C7.79,22.05 6.8,20.68 5.96,19.47C4.25,17 2.94,12.45 4.7,9.39C5.57,7.87 7.13,6.91 8.82,6.88C10.1,6.86 11.32,7.75 12.11,7.75C12.89,7.75 14.37,6.68 15.92,6.84C16.57,6.87 18.39,7.1 19.56,8.82C19.47,8.88 17.39,10.1 17.41,12.63C17.44,15.65 20.06,16.66 20.09,16.69C20.06,16.76 19.6,18.23 18.71,19.5M12,6.11C13.11,6.11 14.39,5.2 15.11,4.07C15.75,3.15 16.25,1.84 16.14,0.5C14.93,0.55 13.56,1.31 12.8,2.23C12.16,3 11.59,4.32 11.73,5.64C13.06,5.75 14.41,4.96 15.17,4C14.5,4.96 13.25,5.75 12,5.64V6.11Z" /></svg>
               <div>
-                <div style={{ fontSize: '11px', color: '#94A3B8', lineHeight: 1 }}>Download on the</div>
+                <div style={{ fontSize: '11px', color: isVelvetGold ? '#FDE68A' : '#94A3B8', lineHeight: 1 }}>Download on the</div>
                 <div style={{ fontSize: '15px', fontWeight: 600, lineHeight: 1, marginTop: '4px' }}>App Store</div>
               </div>
             </a>
@@ -238,14 +256,14 @@ export function PublicFooter() {
       </div>
 
       {/* Footer Bottom */}
-      <div style={{ position: 'relative', zIndex: 1, borderTop: '1px solid #1E293B', paddingTop: '24px', display: 'flex', justifyContent: 'space-between', color: '#94A3B8', fontSize: '16px' }}>
+      <div style={{ position: 'relative', zIndex: 1, borderTop: isVelvetGold ? '1px solid rgba(251, 191, 36, 0.18)' : '1px solid #1E293B', paddingTop: '24px', display: 'flex', justifyContent: 'space-between', color: isVelvetGold ? '#FDE68A' : '#94A3B8', fontSize: '16px' }}>
         <span>© 2024 Sui Dhāga. All rights reserved.</span>
       </div>
     </footer>
   );
 }
 
-function FooterColumn({ title, links }: { title: string; links: string[] }) {
+function FooterColumn({ title, links, isVelvetGold }: { title: string; links: string[]; isVelvetGold?: boolean }) {
   const footerHref: Record<string, string> = {
     "Find a Tailor": "/tailors",
     "AI Design Studio": "/design-studio",
@@ -263,7 +281,7 @@ function FooterColumn({ title, links }: { title: string; links: string[] }) {
 
   return (
     <div style={{ flex: '1 1 140px' }}>
-      <h4 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '20px', color: '#F8FAFC' }}>{title}</h4>
+      <h4 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '20px', color: isVelvetGold ? '#FCD34D' : '#F8FAFC' }}>{title}</h4>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
         {links.map((link) => (
           <Link key={link} href={footerHref[link] ?? "/"} className="footer-link">{link}</Link>
@@ -273,13 +291,13 @@ function FooterColumn({ title, links }: { title: string; links: string[] }) {
   );
 }
 
-export function PublicShell({ children, footer = true }: { children: React.ReactNode; footer?: boolean }) {
+export function PublicShell({ children, footer = true, navTheme, footerTheme }: { children: React.ReactNode; footer?: boolean; navTheme?: "default" | "velvet-gold"; footerTheme?: "default" | "velvet-gold" }) {
   return (
     <div className="brand-page">
       <div className="ambient-layer" aria-hidden="true" />
-      <PublicNav />
+      <PublicNav navTheme={navTheme} />
       <main>{children}</main>
-      {footer ? <PublicFooter /> : null}
+      {footer ? <PublicFooter footerTheme={footerTheme || navTheme} /> : null}
     </div>
   );
 }
