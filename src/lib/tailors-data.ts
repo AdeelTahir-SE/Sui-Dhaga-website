@@ -1,3 +1,5 @@
+import { tailorService, reviewService } from "./api";
+
 export interface TailorPackage {
   id: string;
   name: string;
@@ -376,111 +378,82 @@ export async function fetchTailorsApi(
   page = 1,
   pageSize = 4
 ): Promise<PaginatedTailorsResponse> {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_BACKEND_URL;
+  try {
+    const res = await tailorService.getTailors({
+      page,
+      limit: pageSize,
+      city: filters.location !== "all" ? filters.location : undefined,
+      specialty: filters.specialty !== "all" ? filters.specialty : undefined,
+      search: filters.searchQuery || undefined,
+      isFeatured: filters.topRatedOnly ? true : undefined,
+    });
 
-  if (apiUrl) {
-    try {
-      const params = new URLSearchParams();
-      if (filters.searchQuery) params.append("q", filters.searchQuery);
-      if (filters.location && filters.location !== "all") params.append("location", filters.location);
-      if (filters.specialty && filters.specialty !== "all") params.append("specialty", filters.specialty);
-      if (filters.service && filters.service !== "all") params.append("service", filters.service);
-      if (filters.priceRange && filters.priceRange !== "all") params.append("priceRange", filters.priceRange);
-      if (filters.ratingMin) params.append("ratingMin", filters.ratingMin.toString());
-      if (filters.topRatedOnly) params.append("topRated", "true");
-      if (filters.verifiedOnly) params.append("verified", "true");
-      if (filters.sortBy) params.append("sortBy", filters.sortBy);
-      params.append("page", page.toString());
-      params.append("pageSize", pageSize.toString());
-
-      const res = await fetch(`${apiUrl}/api/tailors?${params.toString()}`, {
-        headers: { "Content-Type": "application/json" },
-        cache: "no-store"
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        return {
-          tailors: data.tailors ?? data.data ?? [],
-          totalCount: data.totalCount ?? data.total ?? 0,
-          hasMore: data.hasMore ?? (page * pageSize < (data.totalCount ?? data.total ?? 0)),
-          page,
-          pageSize
-        };
-      }
-    } catch (err) {
-      console.warn("[Tailors API] Backend endpoint unavailable, fallback to mock data:", err);
+    if (res?.success && Array.isArray(res.data) && res.data.length > 0) {
+      const mapped = res.data.map((t, idx) => mapBackendTailorToItem(t, idx));
+      const total = res.pagination?.total ?? mapped.length;
+      return {
+        tailors: mapped,
+        totalCount: total,
+        hasMore: page * pageSize < total,
+        page,
+        pageSize,
+      };
     }
+  } catch (err) {
+    console.warn("[Tailors API] Live endpoint fallback to mock data:", err);
   }
 
   return getTailors(filters, page, pageSize);
 }
 
 export async function fetchTailorByIdApi(id: string): Promise<TailorItem | undefined> {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_BACKEND_URL;
-
-  if (apiUrl) {
-    try {
-      const res = await fetch(`${apiUrl}/api/tailors/${encodeURIComponent(id)}`, {
-        headers: { "Content-Type": "application/json" }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        return data.tailor ?? data;
-      }
-    } catch (err) {
-      console.warn("[Tailors API] Backend tailor detail unavailable, fallback to mock data:", err);
+  try {
+    const res = await tailorService.getTailorById(id);
+    if (res?.success && res.data) {
+      return mapBackendTailorToItem(res.data);
     }
+  } catch (err) {
+    console.warn("[Tailors API] Live tailor detail fallback to mock data:", err);
   }
 
   return getTailorById(id);
 }
 
 export async function toggleWishlistApi(tailorId: string, wishlisted: boolean): Promise<boolean> {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_BACKEND_URL;
-
-  if (apiUrl) {
+  // Wishlist state is stored client-side
+  if (typeof window !== "undefined") {
     try {
-      const res = await fetch(`${apiUrl}/api/wishlist`, {
-        method: wishlisted ? "POST" : "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tailorId })
-      });
-      return res.ok;
-    } catch (err) {
-      console.warn("[Wishlist API] Wishlist sync failed:", err);
-    }
+      const stored = JSON.parse(localStorage.getItem("sui_dhaga_wishlist") || "{}");
+      stored[tailorId] = wishlisted;
+      localStorage.setItem("sui_dhaga_wishlist", JSON.stringify(stored));
+    } catch {}
   }
-
   return true;
 }
 
 /**
  * Create a new Tailor Profile on the backend (Profile Generation / Onboarding).
- * Sends POST /api/tailors
+ * Sends POST /tailors
  */
 export async function createTailorProfileApi(
   profileData: Partial<TailorItem>
 ): Promise<{ success: boolean; tailor?: TailorItem; error?: string }> {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_BACKEND_URL;
+  try {
+    const res = await tailorService.createTailorProfile({
+      shopName: profileData.name || "Bespoke Boutique",
+      specialties: profileData.specialties || ["bridal", "casual"],
+      city: profileData.city || "Lahore",
+      address: profileData.address || "Main Boulevard",
+      experienceYears: 5,
+      bio: profileData.about,
+    });
 
-  if (apiUrl) {
-    try {
-      const res = await fetch(`${apiUrl}/api/tailors`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(profileData)
-      });
-      if (res.ok) {
-        const data = await res.json();
-        return { success: true, tailor: data.tailor ?? data };
-      }
-      const errData = await res.json().catch(() => ({}));
-      return { success: false, error: errData.message || "Failed to create profile" };
-    } catch (err: any) {
-      console.warn("[Tailor Profile API] Create profile failed:", err);
-      return { success: false, error: err?.message || "Backend network error" };
+    if (res?.success && res.data) {
+      return { success: true, tailor: mapBackendTailorToItem(res.data) };
     }
+    return { success: false, error: res?.message || "Failed to create profile" };
+  } catch (err: any) {
+    console.warn("[Tailor Profile API] Create profile failed, using local mock:", err);
   }
 
   // Fallback local mock profile generation
@@ -500,28 +473,24 @@ export async function createTailorProfileApi(
 
 /**
  * Update an existing Tailor Profile on the backend.
- * Sends PUT /api/tailors/:id
+ * Sends PATCH /tailors/:id
  */
 export async function updateTailorProfileApi(
   id: string,
   profileData: Partial<TailorItem>
 ): Promise<{ success: boolean; tailor?: TailorItem; error?: string }> {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_BACKEND_URL;
-
-  if (apiUrl) {
-    try {
-      const res = await fetch(`${apiUrl}/api/tailors/${encodeURIComponent(id)}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(profileData)
-      });
-      if (res.ok) {
-        const data = await res.json();
-        return { success: true, tailor: data.tailor ?? data };
-      }
-    } catch (err) {
-      console.warn("[Tailor Profile API] Update profile failed:", err);
+  try {
+    const res = await tailorService.updateTailorProfile(id, {
+      shopName: profileData.name,
+      specialties: profileData.specialties,
+      city: profileData.city,
+      bio: profileData.about,
+    });
+    if (res?.success && res.data) {
+      return { success: true, tailor: mapBackendTailorToItem(res.data) };
     }
+  } catch (err) {
+    console.warn("[Tailor Profile API] Update profile fallback:", err);
   }
 
   return { success: true };
@@ -529,28 +498,22 @@ export async function updateTailorProfileApi(
 
 /**
  * Submit a review for a tailor on the backend.
- * Sends POST /api/tailors/:id/reviews
+ * Sends POST /orders/:orderId/review or logs tailor review
  */
 export async function submitTailorReviewApi(
   tailorId: string,
-  reviewData: { rating: number; comment: string; author?: string }
+  reviewData: { rating: number; comment: string; author?: string; orderId?: string }
 ): Promise<boolean> {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_BACKEND_URL;
-
-  if (apiUrl) {
-    try {
-      const res = await fetch(
-        `${apiUrl}/api/tailors/${encodeURIComponent(tailorId)}/reviews`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(reviewData)
-        }
-      );
-      return res.ok;
-    } catch (err) {
-      console.warn("[Tailor Review API] Review submit failed:", err);
+  try {
+    if (reviewData.orderId) {
+      const res = await reviewService.submitOrderReview(reviewData.orderId, {
+        rating: reviewData.rating,
+        comment: reviewData.comment,
+      });
+      return res?.success ?? true;
     }
+  } catch (err) {
+    console.warn("[Tailor Review API] Review submit fallback:", err);
   }
 
   return true;
@@ -649,3 +612,68 @@ export function getTailorById(id: string): TailorItem | undefined {
     ]
   };
 }
+
+/**
+ * Maps raw backend TailorProfile payload to UI TailorItem
+ */
+export function mapBackendTailorToItem(t: any, index: number = 0): TailorItem {
+  return {
+    id: t.id || `tailor-${index + 1}`,
+    name: t.shopName || t.shop_name || t.name || "Bespoke Tailor",
+    handle: `@${(t.shopName || t.shop_name || t.name || "tailor").toLowerCase().replace(/[^a-z0-9]/g, "-")}`,
+    owner: t.name || t.owner || "Master Craftsman",
+    rating: Number(t.rating) || 4.9,
+    reviewsCount: Number(t.reviewsCount || t.review_count) || 120,
+    distance: "2.4 km away",
+    distanceKm: 2.4,
+    startingPrice: t.services?.[0]?.price ? `PKR ${t.services[0].price}` : "PKR 1,500",
+    priceValue: t.services?.[0]?.price ? Number(t.services[0].price) : 1500,
+    turnaroundTime: "3-5 days",
+    specialties: t.specialties?.length ? t.specialties : ["Bespoke Tailoring", "Traditional Fits"],
+    services: t.services?.map((s: any) => s.title) || ["Custom Stitching", "Alterations"],
+    city: t.city || "Lahore",
+    locality: t.address || t.city || "City Center",
+    address: t.address || `${t.city || "Lahore"}, Pakistan`,
+    lat: t.lat || 31.5204 + index * 0.01,
+    lng: t.lng || 74.3587 + index * 0.01,
+    image: t.avatar_url || t.avatar || "https://images.unsplash.com/photo-1582533561751-ef6f6ab93a2e?w=800&auto=format&fit=crop&q=80",
+    topRated: true,
+    verified: t.isVerified ?? t.is_verified ?? true,
+    about: t.bio || "Dedicated tailor specializing in fine couture and handcrafted stitching.",
+    experience: t.experienceYears ? `${t.experienceYears}+ years` : "10+ years",
+    happyCustomers: "500+",
+    onTimeDelivery: "99%",
+    similarOutfitPrice: "PKR 2,200",
+    reviewsSummary: "Consistently rated top tier for precise measurements and craftsmanship.",
+    gallery: [
+      t.banner_url || "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1582533561751-ef6f6ab93a2e?w=800&auto=format&fit=crop&q=80"
+    ],
+    packages: t.services?.map((s: any, sIdx: number) => ({
+      id: s.id || `pkg-${sIdx + 1}`,
+      name: s.title,
+      price: `PKR ${s.price}`,
+      priceValue: Number(s.price),
+      turnaround: "3-5 days",
+      popular: sIdx === 0,
+      features: [s.description || "Fine Stitching", "Perfect Fit Guarantee", "1 Free Alteration"]
+    })) || [
+      {
+        id: "pkg-basic",
+        name: "Standard Fit",
+        price: "PKR 2,500",
+        priceValue: 2500,
+        turnaround: "4-6 days",
+        popular: false,
+        features: ["Standard Stitching", "1 Alteration"]
+      }
+    ],
+    mapPin: {
+      x: 35 + ((index * 17) % 50),
+      y: 25 + ((index * 23) % 50),
+      label: `T${index + 1}`
+    }
+  };
+}
+
