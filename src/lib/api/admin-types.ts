@@ -5,13 +5,9 @@
  * Matches standard REST/JSON APIs for all administration modules.
  */
 
-// Generic API Response Wrappers
-export interface ApiResponse<T = any> {
-  success: boolean;
-  data: T;
-  message?: string;
-  timestamp?: string;
-}
+import { ApiResponse, ApiErrorResponse, PaginationMeta, UserRole } from "./types";
+
+export type { UserRole };
 
 export interface PaginatedResponse<T = any> {
   success: boolean;
@@ -20,15 +16,6 @@ export interface PaginatedResponse<T = any> {
   page: number;
   limit: number;
   totalPages: number;
-}
-
-export interface ApiErrorResponse {
-  success: false;
-  error: {
-    code: string;
-    message: string;
-    details?: any;
-  };
 }
 
 // ---------------------------------------------------------------------------
@@ -73,7 +60,6 @@ export interface AdminActivityItem {
 // ---------------------------------------------------------------------------
 // 2. User Management Types
 // ---------------------------------------------------------------------------
-export type UserRole = "customer" | "tailor" | "admin" | "moderator";
 export type UserStatus = "active" | "blocked" | "suspended" | "pending" | "banned";
 
 export interface AdminUser {
