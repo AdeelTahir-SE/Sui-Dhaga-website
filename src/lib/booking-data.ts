@@ -250,30 +250,65 @@ export async function fetchAvailableSlotsApi(tailorId: string, date: string): Pr
   return defaultAvailableTimeSlots;
 }
 
+import { appointmentService } from "./api/appointment-service";
+
 /**
  * Submit appointment booking to backend or local store
  */
 export async function createBookingAppointmentApi(
   payload: BookingAppointmentRequest
 ): Promise<{ success: boolean; appointment?: BookingAppointmentResponse; error?: string }> {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_BACKEND_URL;
+  try {
+    const res = await appointmentService.bookAppointment({
+      tailorId: payload.tailorId,
+      serviceId: payload.serviceId,
+      appointment_date: payload.date,
+      appointment_time: payload.timeSlot,
+      notes: payload.notes
+    });
 
-  if (apiUrl) {
-    try {
-      const res = await fetch(`${apiUrl}/api/appointments`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-      if (res.ok) {
-        const data = await res.json();
-        return { success: true, appointment: data.appointment || data.data || data };
+    if (res?.data) {
+      const created = res.data;
+      const tailor = getTailorById(payload.tailorId);
+      const services = getTailorServices(payload.tailorId);
+      const selectedService = services.find((s) => s.id === payload.serviceId) || services[0];
+
+      const appointment: BookingAppointmentResponse = {
+        id: created.id,
+        referenceNo: `SD-APT-${created.id.replace(/[^a-zA-Z0-9]/g, "").slice(-5).toUpperCase() || "10001"}`,
+        tailorId: payload.tailorId,
+        tailorName: tailor?.name || payload.tailorName || "Rekha Tailors",
+        tailorOwner: tailor?.owner || "Tailor Master",
+        tailorImage: tailor?.image || "/images/home/tailor-rekha.png",
+        tailorAddress: tailor?.address || "Commercial Area, Faisalabad",
+        serviceId: payload.serviceId,
+        serviceName: selectedService?.name || payload.serviceName || "Custom Stitching",
+        date: payload.date,
+        timeSlot: payload.timeSlot,
+        price: selectedService?.price || payload.price || "Rs. 2,000",
+        priceValue: selectedService?.priceValue || payload.priceValue || 2000,
+        deliveryTime: selectedService?.deliveryTime || "7-10 days",
+        notes: payload.notes || "",
+        referenceImages: payload.referenceImages || [],
+        status: "Confirmed",
+        createdAt: created.created_at || new Date().toISOString()
+      };
+
+      try {
+        if (typeof window !== "undefined") {
+          const existingJson = localStorage.getItem("sui_dhaga_appointments");
+          const existing = existingJson ? JSON.parse(existingJson) : [];
+          existing.unshift(appointment);
+          localStorage.setItem("sui_dhaga_appointments", JSON.stringify(existing));
+        }
+      } catch (e) {
+        // ignore
       }
-      const err = await res.json().catch(() => ({}));
-      return { success: false, error: err.message || "Failed to confirm appointment" };
-    } catch (err: any) {
-      console.warn("[Booking API] Backend booking error, saving locally:", err);
+
+      return { success: true, appointment };
     }
+  } catch (err: any) {
+    console.warn("[Booking API] Backend booking error, saving locally:", err);
   }
 
   // Local storage / mock fallback
