@@ -1,9 +1,9 @@
 /**
- * Sui Dhāga Admin API Client
- * --------------------------
+ * Sui Dhāga Universal API Client
+ * ------------------------------
  * Universal HTTP client for communicating with backend REST APIs.
- * Supports configurable base URL, authentication headers, error wrapping,
- * and JSON serialization.
+ * Supports configurable base URL, automatic authentication headers,
+ * FormData upload handling, error wrapping, query serialization, and JSON decoding.
  */
 
 export interface RequestOptions extends Omit<RequestInit, "body"> {
@@ -12,45 +12,58 @@ export interface RequestOptions extends Omit<RequestInit, "body"> {
   token?: string;
 }
 
-const API_BASE_URL =
+export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ||
   process.env.NEXT_PUBLIC_BACKEND_URL ||
-  "";
+  "https://sui-dhaga-backend.vercel.app/api/v1";
 
 /**
- * Retrieves the currently active auth token from memory / localStorage / cookie.
+ * Retrieves the currently active auth token from memory / localStorage.
  */
-export function getAdminAuthToken(): string | null {
+export function getAuthToken(): string | null {
   if (typeof window === "undefined") return null;
   return (
-    localStorage.getItem("sui_dhaga_admin_token") ||
     localStorage.getItem("sui_dhaga_auth_token") ||
+    localStorage.getItem("sui_dhaga_admin_token") ||
+    localStorage.getItem("supabase_auth_token") ||
     null
   );
 }
 
 /**
- * Sets the active auth token.
+ * Sets the active auth token and user profile in storage.
  */
-export function setAdminAuthToken(token: string): void {
+export function setAuthSession(token: string, user?: any): void {
   if (typeof window !== "undefined") {
+    localStorage.setItem("sui_dhaga_auth_token", token);
     localStorage.setItem("sui_dhaga_admin_token", token);
+    if (user) {
+      localStorage.setItem("sui_dhaga_user", JSON.stringify(user));
+    }
   }
 }
 
 /**
- * Clears the active auth token.
+ * Clears the active auth session.
  */
-export function clearAdminAuthToken(): void {
+export function clearAuthSession(): void {
   if (typeof window !== "undefined") {
+    localStorage.removeItem("sui_dhaga_auth_token");
     localStorage.removeItem("sui_dhaga_admin_token");
+    localStorage.removeItem("sui_dhaga_user");
+    localStorage.removeItem("supabase_auth_token");
   }
 }
+
+// Backward compatibility alias functions for admin modules
+export const getAdminAuthToken = getAuthToken;
+export const setAdminAuthToken = (token: string) => setAuthSession(token);
+export const clearAdminAuthToken = clearAuthSession;
 
 /**
  * Builds a query string from key-value parameters.
  */
-function buildQueryString(params?: Record<string, string | number | boolean | undefined | null>): string {
+export function buildQueryString(params?: Record<string, string | number | boolean | undefined | null>): string {
   if (!params) return "";
   const searchParams = new URLSearchParams();
   Object.entries(params).forEach(([key, value]) => {
@@ -71,18 +84,28 @@ export async function apiRequest<T = any>(
 ): Promise<T> {
   const { params, body, headers = {}, token, ...customConfig } = options;
 
-  const authToken = token || getAdminAuthToken();
+  const authToken = token || getAuthToken();
   const queryString = buildQueryString(params);
 
-  // If endpoint is already a full URL or relative to same domain
-  const url = endpoint.startsWith("http")
-    ? `${endpoint}${queryString}`
-    : `${API_BASE_URL}${endpoint}${queryString}`;
+  // Normalize endpoint URL
+  let url = endpoint;
+  if (!url.startsWith("http")) {
+    const cleanBase = API_BASE_URL.replace(/\/+$/, "");
+    const cleanPath = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
+    url = `${cleanBase}${cleanPath}${queryString}`;
+  } else {
+    url = `${url}${queryString}`;
+  }
+
+  const isFormData = typeof FormData !== "undefined" && body instanceof FormData;
 
   const defaultHeaders: Record<string, string> = {
-    "Content-Type": "application/json",
-    Accept: "application/json"
+    Accept: "application/json",
   };
+
+  if (!isFormData) {
+    defaultHeaders["Content-Type"] = "application/json";
+  }
 
   if (authToken) {
     defaultHeaders["Authorization"] = `Bearer ${authToken}`;
@@ -91,13 +114,17 @@ export async function apiRequest<T = any>(
   const config: RequestInit = {
     headers: {
       ...defaultHeaders,
-      ...headers
+      ...headers,
     },
-    ...customConfig
+    ...customConfig,
   };
 
   if (body !== undefined) {
-    config.body = typeof body === "string" ? body : JSON.stringify(body);
+    if (isFormData) {
+      config.body = body;
+    } else {
+      config.body = typeof body === "string" ? body : JSON.stringify(body);
+    }
   }
 
   const response = await fetch(url, config);
@@ -110,17 +137,17 @@ export async function apiRequest<T = any>(
       errorDetails = { message: response.statusText };
     }
 
-    const error = new Error(
+    const errorMessage =
+      errorDetails?.message ||
       errorDetails?.error?.message ||
-        errorDetails?.message ||
-        `API request failed with status ${response.status}`
-    );
+      `API request failed with status ${response.status}`;
+
+    const error = new Error(errorMessage);
     (error as any).status = response.status;
     (error as any).details = errorDetails;
     throw error;
   }
 
-  // If 204 No Content
   if (response.status === 204) {
     return {} as T;
   }
@@ -142,5 +169,5 @@ export const apiClient = {
     apiRequest<T>(endpoint, { ...options, method: "PATCH", body }),
 
   delete: <T = any>(endpoint: string, options?: RequestOptions) =>
-    apiRequest<T>(endpoint, { ...options, method: "DELETE" })
+    apiRequest<T>(endpoint, { ...options, method: "DELETE" }),
 };
