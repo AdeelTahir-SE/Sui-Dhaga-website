@@ -281,30 +281,102 @@ export const initialOrdersData: OrderItem[] = [
   }
 ];
 
+import { orderService } from "./api/order-service";
+import { Order as ApiOrder } from "./api/types";
+
+export function mapBackendOrderToItem(ord: ApiOrder): OrderItem {
+  const statusMap: Record<string, "Processing" | "In Progress" | "Delivered" | "Cancelled"> = {
+    pending: "Processing",
+    confirmed: "Processing",
+    in_progress: "In Progress",
+    cutting: "In Progress",
+    stitching: "In Progress",
+    quality_check: "In Progress",
+    ready: "In Progress",
+    shipped: "In Progress",
+    out_for_delivery: "In Progress",
+    completed: "Delivered",
+    cancelled: "Cancelled"
+  };
+
+  const status = statusMap[ord.status] || "Processing";
+  const num = ord.id.replace(/[^a-zA-Z0-9]/g, "").slice(-4).toUpperCase() || "1200";
+
+  const timelineEvents: OrderTimelineEvent[] = [
+    {
+      title: "Order Placed & Confirmed",
+      subtitle: ord.created_at ? new Date(ord.created_at).toLocaleDateString() : "Confirmed",
+      complete: true
+    },
+    {
+      title: "Fabric Cut & Measurements Taken",
+      subtitle: ["in_progress", "cutting", "stitching", "quality_check", "ready", "shipped", "completed"].includes(ord.status)
+        ? "Completed"
+        : "Pending",
+      complete: ["in_progress", "cutting", "stitching", "quality_check", "ready", "shipped", "completed"].includes(ord.status)
+    },
+    {
+      title: "In Production / Stitching",
+      subtitle: ["stitching", "quality_check", "ready", "shipped", "completed"].includes(ord.status)
+        ? "Completed"
+        : ["in_progress", "cutting"].includes(ord.status)
+        ? "In Progress"
+        : "Pending",
+      complete: ["stitching", "quality_check", "ready", "shipped", "completed"].includes(ord.status)
+    },
+    {
+      title: "Quality Check & Finishing",
+      subtitle: ["quality_check", "ready", "shipped", "completed"].includes(ord.status)
+        ? "Completed"
+        : "Pending",
+      complete: ["ready", "shipped", "completed"].includes(ord.status)
+    },
+    {
+      title: "Delivered",
+      subtitle: ord.status === "completed" ? "Delivered" : "Pending",
+      complete: ord.status === "completed"
+    }
+  ];
+
+  const priceVal = ord.total_price || ord.totalPrice || ord.total_amount || 2500;
+
+  return {
+    id: ord.id,
+    orderNumber: `Order #SD${num}`,
+    tailorId: ord.tailor_id || ord.tailorId || ord.tailor?.id || "rekha-tailors",
+    tailorName: ord.tailor?.shopName || ord.tailor?.name || "Master Tailor",
+    tailorAvatar: ord.tailor?.avatar_url || "/images/home/tailor-rekha.png",
+    tailorRating: ord.tailor?.rating || 4.8,
+    tailorReviewsCount: ord.tailor?.reviewsCount || 120,
+    tailorAddress: ord.tailor?.address || "Commercial Area, Faisalabad",
+    itemTitle: ord.service?.title || ord.service?.name || "Custom Stitching",
+    serviceCategory: ord.service?.category || "Bespoke Wear",
+    garmentImage: "/images/booking/ref-gold-anarkali.jpg",
+    placedDate: ord.created_at ? new Date(ord.created_at).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" }) : "20 May, 2024",
+    estimatedDelivery: ord.estimated_delivery_date || ord.delivery_date || "28 May, 2024",
+    amount: `Rs. ${priceVal.toLocaleString()}`,
+    amountValue: priceVal,
+    status,
+    notes: ord.notes || "",
+    timeline: timelineEvents
+  };
+}
+
 /**
  * Fetch all customer orders with optional tab filtering
  */
 export async function fetchCustomerOrdersApi(
   tab: "All" | "Processing" | "In Progress" | "Delivered" | "Cancelled" = "All"
 ): Promise<OrderItem[]> {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_BACKEND_URL;
-
-  if (apiUrl) {
-    try {
-      const res = await fetch(
-        `${apiUrl}/api/customer/orders?status=${encodeURIComponent(tab)}`,
-        {
-          headers: { "Content-Type": "application/json" },
-          cache: "no-store"
-        }
-      );
-      if (res.ok) {
-        const data = await res.json();
-        return data.orders || data.data || [];
-      }
-    } catch (err) {
-      console.warn("[Orders API] Backend unavailable, using local store:", err);
+  try {
+    const res = await orderService.getOrders();
+    if (res?.data && Array.isArray(res.data) && res.data.length > 0) {
+      const mapped = res.data.map(mapBackendOrderToItem);
+      if (tab === "All") return mapped;
+      return mapped.filter((o) => o.status === tab);
     }
+  } catch (err) {
+    console.warn("[Orders API] Backend unavailable, using local store:", err);
   }
 
   // Local storage sync
@@ -329,21 +401,13 @@ export async function fetchCustomerOrdersApi(
  * Fetch a single order by ID
  */
 export async function fetchOrderByIdApi(orderId: string): Promise<OrderItem | null> {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_BACKEND_URL;
-
-  if (apiUrl) {
-    try {
-      const res = await fetch(`${apiUrl}/api/customer/orders/${encodeURIComponent(orderId)}`, {
-        headers: { "Content-Type": "application/json" },
-        cache: "no-store"
-      });
-      if (res.ok) {
-        const data = await res.json();
-        return data.order || data;
-      }
-    } catch (err) {
-      console.warn("[Orders API] Fetch by ID failed, falling back locally:", err);
+  try {
+    const res = await orderService.getOrderById(orderId);
+    if (res?.data) {
+      return mapBackendOrderToItem(res.data);
     }
+  } catch (err) {
+    console.warn("[Orders API] Fetch by ID failed, falling back locally:", err);
   }
 
   const all = await fetchCustomerOrdersApi("All");
