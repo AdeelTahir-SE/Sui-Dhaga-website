@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
@@ -36,8 +36,9 @@ import {
 // ==========================================
 // CONFIGURATION: APK FILE LINK & METADATA
 // ==========================================
-export const DEFAULT_APK_URL = "#download-apk"; // Replace with your direct APK URL
-export const APK_VERSION = "v2.4.0";
+export const APP_VERSION_API_URL = "https://sui-dhaga-backend.vercel.app/api/v1/app-version/latest?platform=android&clientVersion=1";
+export const DEFAULT_APK_URL = "https://sui-dhaga-backend.vercel.app/api/v1/app-version/latest?platform=android&clientVersion=1";
+export const APK_VERSION = "v1.0.0";
 export const APK_FILE_SIZE = "28.6 MB";
 export const APK_MIN_ANDROID = "Android 8.0+";
 
@@ -87,6 +88,69 @@ export function ApkDownloadPage({ apkDownloadUrl = DEFAULT_APK_URL }: { apkDownl
   const [downloadDone,     setDownloadDone]     = useState(false);
   const [pageUrl,          setPageUrl]          = useState("");
   const [stepsOpen,        setStepsOpen]        = useState(false);
+  const [phoneScreen,      setPhoneScreen]      = useState<"dashboard" | "tailors">("dashboard");
+  const [isPaused,         setIsPaused]         = useState(false);
+  const [simulatedTap,     setSimulatedTap]     = useState(false);
+
+  // Dynamic API state for latest app version
+  const [latestVersion,    setLatestVersion]    = useState(APK_VERSION);
+  const [activeDownloadUrl,setActiveDownloadUrl]= useState(apkDownloadUrl);
+  const [releaseNotes,     setReleaseNotes]     = useState<string | null>(null);
+
+  // Fetch latest version and download URL from backend API
+  useEffect(() => {
+    let isMounted = true;
+    async function fetchAppVersion() {
+      try {
+        const res = await fetch(APP_VERSION_API_URL, {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+        });
+        if (!res.ok) return;
+        const json = await res.json();
+        if (isMounted && json?.success && json?.data) {
+          if (json.data.downloadUrl) {
+            setActiveDownloadUrl(json.data.downloadUrl);
+          }
+          if (json.data.latestVersion) {
+            setLatestVersion(`v${json.data.latestVersion}`);
+          }
+          if (json.data.releaseNotes) {
+            setReleaseNotes(json.data.releaseNotes);
+          }
+        }
+      } catch (err) {
+        console.warn("Could not fetch app version, using defaults:", err);
+      }
+    }
+
+    fetchAppVersion();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Auto-playing interactive app preview loop
+  useEffect(() => {
+    if (isPaused) return;
+
+    const timer = setInterval(() => {
+      setPhoneScreen((prev) => {
+        if (prev === "dashboard") {
+          setSimulatedTap(true);
+          setTimeout(() => {
+            setSimulatedTap(false);
+            setPhoneScreen("tailors");
+          }, 450);
+          return "dashboard";
+        } else {
+          return "dashboard";
+        }
+      });
+    }, 4500);
+
+    return () => clearInterval(timer);
+  }, [isPaused]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -119,10 +183,10 @@ export function ApkDownloadPage({ apkDownloadUrl = DEFAULT_APK_URL }: { apkDownl
   };
 
   const triggerDownload = (e?: React.MouseEvent) => {
-    if (apkDownloadUrl && apkDownloadUrl !== "#" && apkDownloadUrl !== "#download-apk") {
-      return;
+    const targetUrl = activeDownloadUrl || apkDownloadUrl;
+    if (e && (!targetUrl || targetUrl.startsWith("#"))) {
+      e.preventDefault();
     }
-    if (e) e.preventDefault();
     setDownloading(true);
     setDownloadProgress(0);
     setDownloadDone(false);
@@ -137,6 +201,9 @@ export function ApkDownloadPage({ apkDownloadUrl = DEFAULT_APK_URL }: { apkDownl
         setTimeout(() => {
           setDownloading(false);
           setDownloadDone(true);
+          if (targetUrl && !targetUrl.startsWith("#") && typeof window !== "undefined") {
+            window.open(targetUrl, "_blank", "noopener,noreferrer");
+          }
         }, 400);
       } else {
         setDownloadProgress(current);
@@ -152,147 +219,213 @@ export function ApkDownloadPage({ apkDownloadUrl = DEFAULT_APK_URL }: { apkDownl
 
         <section className="relative z-10 max-w-7xl mx-auto px-6 sm:px-10 lg:px-12 w-full my-auto">
 
-          {/* Collab Logo Placeholder Row */}
-          <div className="flex items-center justify-center gap-5 mb-12">
-            <div className="logo-placeholder-box">
-              <span className="text-amber-300/70 text-[10px] font-bold uppercase tracking-widest">Sui Dhaga</span>
-              <span className="text-amber-400/40 text-[8px] mt-0.5">Logo here</span>
-            </div>
-            <div className="flex items-center gap-2.5">
-              <span className="w-8 h-px bg-gradient-to-r from-transparent to-amber-400/40" />
-              <span className="text-amber-400/60 text-lg font-thin">x</span>
-              <span className="w-8 h-px bg-gradient-to-l from-transparent to-amber-400/40" />
-            </div>
-            <div className="logo-placeholder-box">
-              <span className="text-amber-300/70 text-[10px] font-bold uppercase tracking-widest">Sundrop</span>
-              <span className="text-amber-400/40 text-[8px] mt-0.5">Logo here</span>
+          {/* Collab Brand Banner */}
+          <div className="flex items-center justify-center mb-10 md:mb-14">
+            <div className="relative w-full max-w-3xl sm:max-w-4xl lg:max-w-5xl rounded-2xl md:rounded-3xl overflow-hidden border border-amber-400/30 shadow-2xl shadow-purple-950/90 bg-[#0A0111]">
+              <Image
+                src="/images/collab/sundrop.png"
+                alt="Sui Dhaga x Sundrop Collaboration"
+                width={1600}
+                height={600}
+                priority
+                unoptimized
+                className="w-full h-auto block object-cover"
+                sizes="(max-width: 1024px) 100vw, 1200px"
+              />
             </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
 
             {/* Left: Phone Mockup */}
-            <div className="lg:col-span-5 flex justify-center lg:justify-end order-2 lg:order-1">
-              <div className="opal-phone-perspective-stage w-full max-w-[320px] sm:max-w-[340px]">
+            <div
+              className="lg:col-span-5 flex justify-center lg:justify-end order-2 lg:order-1"
+              onMouseEnter={() => setIsPaused(true)}
+              onMouseLeave={() => setIsPaused(false)}
+            >
+              <div className="opal-phone-perspective-stage w-full max-w-[330px] sm:max-w-[355px] lg:max-w-[365px]">
                 <div className="opal-phone-3d w-full">
-                  <div className="phone-screen-velvet relative w-full bg-slate-50 text-stone-900 overflow-hidden">
+                  <div className="phone-screen-velvet relative w-full bg-[#0D0216] overflow-hidden">
 
-                    <div className="pt-2 pb-1 bg-white">
-                      <div className="phone-notch-pill-compact" />
-                    </div>
-
-                    <div className="px-4 pt-2.5 pb-2.5 bg-white border-b border-stone-100 flex items-center justify-between">
-                      <div>
-                        <h3 className="text-sm font-black text-stone-900 flex items-center gap-1">
-                          Hello, there <span className="text-base">&#128075;</span>
-                        </h3>
-                        <p className="text-[10px] text-stone-500 font-medium">Ready to look your best today?</p>
-                      </div>
-                      <div className="w-8 h-8 rounded-xl border border-stone-200 flex items-center justify-center text-amber-800 relative bg-amber-50/50">
-                        <Bell className="w-3.5 h-3.5" />
-                        <span className="w-2 h-2 rounded-full bg-amber-500 absolute top-1.5 right-1.5 ring-2 ring-white" />
-                      </div>
-                    </div>
-
-                    <div className="p-3.5 space-y-3">
-
-                      <div className="royal-collab-banner rounded-2xl p-3.5 text-white relative">
-                        <div className="absolute inset-0 opacity-40 mix-blend-overlay rounded-2xl overflow-hidden">
-                          <Image src="/images/collab/sundrop-purple-banner.jpg" alt="Royal Velvet Banner" fill className="object-cover" />
+                    <div className="relative w-full h-[590px] sm:h-[620px] overflow-hidden rounded-[35px]">
+                      {phoneScreen === "tailors" ? (
+                        <div key="tailors-screen" className="phone-screen-anim relative w-full h-full bg-[#0A0111] overflow-hidden rounded-[35px] flex flex-col">
+                          <Image
+                            src="/images/collab/sundrop-tailors-screen.jpeg"
+                            alt="Sundrop Tailor Directory Mobile App Screen"
+                            fill
+                            priority
+                            unoptimized
+                            className="object-cover object-top phone-screenshot-crisp rounded-[35px]"
+                            sizes="(max-width: 640px) 100vw, 400px"
+                          />
                         </div>
-                        <div className="relative z-10 flex items-center justify-between">
-                          <div className="max-w-[170px]">
-                            <div className="flex items-center gap-1 mb-1">
-                              <span className="w-3 h-[1px] bg-amber-400/80" />
-                              <span className="text-[8px] font-bold uppercase tracking-wider text-amber-300">Exclusive Collaboration</span>
-                              <span className="w-3 h-[1px] bg-amber-400/80" />
-                            </div>
-                            <h4 className="text-sm font-bold text-amber-100 font-serif leading-tight">
-                              Sundrop <span className="text-amber-400 font-sans font-normal">x</span> Sui Dhaga
-                            </h4>
-                            <p className="text-[9.5px] text-purple-200 mt-0.5">Traditional Craft. Modern You.</p>
-                            <div className="mt-2">
-                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-semibold border border-amber-400/80 text-amber-200 bg-black/25">
-                                See Our Tailors <ArrowRight className="w-2.5 h-2.5" />
-                              </span>
-                            </div>
-                          </div>
-                          <div className="shrink-0 w-12 h-12 rounded-full border border-amber-400 flex flex-col items-center justify-center text-center shadow-md bg-gradient-to-tr from-amber-700 via-amber-500 to-amber-300">
-                            <span className="text-[7px] font-black tracking-wider text-[#2A0845]">SUNDROP</span>
-                            <span className="text-xs text-[#2A0845] leading-none">&#9728;</span>
-                          </div>
-                        </div>
-                        <div className="flex items-center justify-center gap-1.5 mt-2.5 pt-1.5 border-t border-purple-400/20">
-                          <span className="w-3.5 h-1 rounded-full bg-amber-400" />
-                          <span className="w-1 h-1 rounded-full bg-purple-300/40" />
-                        </div>
-                      </div>
-
-                      <div>
-                        <div className="flex items-center justify-between mb-1.5 px-0.5">
-                          <h4 className="text-[11px] font-extrabold text-stone-900">Quick Actions</h4>
-                          <span className="text-[10px] font-bold text-amber-700">View All</span>
-                        </div>
-                        <div className="grid grid-cols-4 gap-1.5">
-                          {QUICK_ACTIONS.map((action) => {
-                            const Icon = action.icon;
-                            return (
-                              <div key={action.id} className="app-quick-action-tile p-1.5 flex flex-col items-center justify-center text-center">
-                                <div className={`w-7 h-7 rounded-lg ${action.bg} flex items-center justify-center ${action.color} mb-1`}>
-                                  <Icon className="w-3.5 h-3.5" />
-                                </div>
-                                <span className="text-[8.5px] font-bold text-stone-800 leading-tight">{action.label}</span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-
-                      {/* Sundrop Spotlight Card */}
-                      <div className="spotlight-design-card p-3 relative overflow-hidden">
-                        <div className="spotlight-card-glow" />
-                        <div className="flex items-center gap-2 mb-2 relative z-10">
-                          <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-[#2A0845] to-[#B45309] flex items-center justify-center shrink-0">
-                            <Sparkles className="w-3 h-3 text-amber-200" />
-                          </div>
-                          <span className="text-[9px] font-extrabold text-stone-800 uppercase tracking-wider">Sundrop Spotlight</span>
-                        </div>
-                        <div className="flex gap-2.5 items-center relative z-10">
-                          <div className="w-10 h-12 rounded-lg bg-gradient-to-b from-purple-100 to-amber-50 border border-amber-200/60 flex items-center justify-center shrink-0">
-                            <Sparkles className="w-4 h-4 text-amber-600" />
-                          </div>
+                      ) : (
+                        <div key="dashboard-screen" className="phone-screen-anim w-full h-full bg-slate-50 text-stone-900 flex flex-col justify-between overflow-hidden rounded-[35px]">
                           <div>
-                            <p className="text-[9px] font-bold text-stone-900 leading-tight">Royal Velvet Sherwani</p>
-                            <p className="text-[8px] text-stone-500 leading-tight">Sundrop x Sui Dhaga</p>
-                            <div className="flex items-center gap-1 mt-1">
-                              <span className="text-[8px] text-amber-700 font-bold">&#9733; 4.9</span>
-                              <span className="text-[7px] text-stone-400">(124 orders)</span>
+                            <div className="pt-2 pb-1 bg-white">
+                              <div className="phone-notch-pill-compact" />
+                            </div>
+
+                            <div className="px-4 pt-2.5 pb-2.5 bg-white border-b border-stone-100 flex items-center justify-between">
+                              <div>
+                                <h3 className="text-sm font-black text-stone-900 flex items-center gap-1">
+                                  Hello, there <span className="text-base">&#128075;</span>
+                                </h3>
+                                <p className="text-[10px] text-stone-500 font-medium">Ready to look your best today?</p>
+                              </div>
+                              <div className="w-8 h-8 rounded-xl border border-stone-200 flex items-center justify-center text-amber-800 relative bg-amber-50/50">
+                                <Bell className="w-3.5 h-3.5" />
+                                <span className="w-2 h-2 rounded-full bg-amber-500 absolute top-1.5 right-1.5 ring-2 ring-white" />
+                              </div>
+                            </div>
+
+                            <div className="p-3.5 space-y-3">
+                              {/* Clickable Sundrop Capsule Banner with simulated auto-tap */}
+                              <div
+                                onClick={() => {
+                                  setPhoneScreen("tailors");
+                                  setIsPaused(true);
+                                }}
+                                className={`royal-collab-banner rounded-2xl p-3.5 text-white relative cursor-pointer group transition-all duration-300 ${
+                                  simulatedTap
+                                    ? "scale-[0.98] ring-2 ring-amber-400 shadow-xl shadow-amber-500/40 brightness-110"
+                                    : "hover:shadow-lg hover:shadow-amber-500/20 active:scale-[0.98]"
+                                }`}
+                              >
+                                <div className="absolute inset-0 opacity-40 mix-blend-overlay rounded-2xl overflow-hidden">
+                                  <Image src="/images/collab/sundrop-purple-banner.jpg" alt="Royal Velvet Banner" fill sizes="(max-width: 640px) 100vw, 360px" className="object-cover" />
+                                </div>
+
+                                {simulatedTap && (
+                                  <div className="simulated-tap-ripple top-1/2 right-12 -translate-y-1/2 z-20" />
+                                )}
+
+                                <div className="relative z-10 flex items-center justify-between">
+                                  <div className="max-w-[170px]">
+                                    <div className="flex items-center gap-1 mb-1">
+                                      <span className="w-3 h-[1px] bg-amber-400/80" />
+                                      <span className="text-[8px] font-bold uppercase tracking-wider text-amber-300">Exclusive Collaboration</span>
+                                      <span className="w-3 h-[1px] bg-amber-400/80" />
+                                    </div>
+                                    <h4 className="text-sm font-bold text-amber-100 font-serif leading-tight">
+                                      Sundrop <span className="text-amber-400 font-sans font-normal">x</span> Sui Dhaga
+                                    </h4>
+                                    <p className="text-[9.5px] text-purple-200 mt-0.5">Traditional Craft. Modern You.</p>
+                                    <div className="mt-2">
+                                      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-semibold border border-amber-400/80 transition-all ${
+                                        simulatedTap
+                                          ? "bg-amber-400 text-purple-950 scale-105 shadow-md shadow-amber-400/50"
+                                          : "text-amber-200 bg-black/40 group-hover:bg-amber-400 group-hover:text-purple-950"
+                                      }`}>
+                                        See Our Tailors <ArrowRight className="w-2.5 h-2.5" />
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div className={`shrink-0 w-12 h-12 rounded-full border border-amber-400 flex flex-col items-center justify-center text-center shadow-md bg-gradient-to-tr from-amber-700 via-amber-500 to-amber-300 transition-transform ${
+                                    simulatedTap ? "scale-110 rotate-6" : "group-hover:scale-105"
+                                  }`}>
+                                    <span className="text-[7px] font-black tracking-wider text-[#2A0845]">SUNDROP</span>
+                                    <span className="text-xs text-[#2A0845] leading-none">&#9728;</span>
+                                  </div>
+                                </div>
+                                <div className="flex items-center justify-center gap-1.5 mt-2.5 pt-1.5 border-t border-purple-400/20">
+                                  <span className="text-[8px] text-amber-300 font-medium">✨ Auto-previewing Sundrop capsule (click to explore)</span>
+                                </div>
+                              </div>
+
+                              <div>
+                                <div className="flex items-center justify-between mb-1.5 px-0.5">
+                                  <h4 className="text-[11px] font-extrabold text-stone-900">Quick Actions</h4>
+                                  <span className="text-[10px] font-bold text-amber-700">View All</span>
+                                </div>
+                                <div className="grid grid-cols-4 gap-1.5">
+                                  {QUICK_ACTIONS.map((action) => {
+                                    const Icon = action.icon;
+                                    return (
+                                      <div key={action.id} className="app-quick-action-tile p-1.5 flex flex-col items-center justify-center text-center">
+                                        <div className={`w-7 h-7 rounded-lg ${action.bg} flex items-center justify-center ${action.color} mb-1`}>
+                                          <Icon className="w-3.5 h-3.5" />
+                                        </div>
+                                        <span className="text-[8.5px] font-bold text-stone-800 leading-tight">{action.label}</span>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+
+                              {/* Sundrop Spotlight Card */}
+                              <div className="spotlight-design-card p-3 relative overflow-hidden">
+                                <div className="spotlight-card-glow" />
+                                <div className="flex items-center gap-2 mb-2 relative z-10">
+                                  <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-[#2A0845] to-[#B45309] flex items-center justify-center shrink-0">
+                                    <Sparkles className="w-3 h-3 text-amber-200" />
+                                  </div>
+                                  <span className="text-[9px] font-extrabold text-stone-800 uppercase tracking-wider">Sundrop Spotlight</span>
+                                </div>
+                                <div className="flex gap-2.5 items-center relative z-10">
+                                  <div className="w-10 h-12 rounded-lg bg-gradient-to-b from-purple-100 to-amber-50 border border-amber-200/60 flex items-center justify-center shrink-0">
+                                    <Sparkles className="w-4 h-4 text-amber-600" />
+                                  </div>
+                                  <div>
+                                    <p className="text-[9px] font-bold text-stone-900 leading-tight">Royal Velvet Sherwani</p>
+                                    <p className="text-[8px] text-stone-500 leading-tight">Sundrop x Sui Dhaga</p>
+                                    <div className="flex items-center gap-1 mt-1">
+                                      <span className="text-[8px] text-amber-700 font-bold">&#9733; 4.9</span>
+                                      <span className="text-[7px] text-stone-400">(124 orders)</span>
+                                    </div>
+                                  </div>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setPhoneScreen("tailors");
+                                    setIsPaused(true);
+                                  }}
+                                  className="w-full mt-2 py-1.5 px-2 rounded-lg bg-gradient-to-r from-[#2A0845] to-[#B45309] text-white text-[9px] font-bold text-center relative z-10 cursor-pointer hover:opacity-90 transition-opacity"
+                                >
+                                  View Collection &amp; Tailors
+                                </button>
+                              </div>
+
                             </div>
                           </div>
-                        </div>
-                        <div className="w-full mt-2 py-1.5 px-2 rounded-lg bg-gradient-to-r from-[#2A0845] to-[#B45309] text-white text-[9px] font-bold text-center relative z-10">
-                          View Collection
-                        </div>
-                      </div>
 
-                    </div>
+                          {/* Bottom Navigation */}
+                          <div className="px-4 py-2.5 bg-white border-t border-stone-200 flex items-center justify-between text-[9px] text-stone-500 font-medium shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setPhoneScreen("dashboard");
+                                setIsPaused(true);
+                              }}
+                              className="flex flex-col items-center text-[#B45309] font-bold cursor-pointer"
+                            >
+                              <Home className="w-4 h-4" /><span>Home</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setPhoneScreen("tailors");
+                                setIsPaused(true);
+                              }}
+                              className="flex flex-col items-center hover:text-amber-800 cursor-pointer"
+                            >
+                              <Scissors className="w-4 h-4" /><span>Tailors</span>
+                            </button>
+                            <div className="flex flex-col items-center">
+                              <Wand2 className="w-4 h-4" /><span>AI Studio</span>
+                            </div>
+                            <div className="flex flex-col items-center">
+                              <ShoppingBag className="w-4 h-4" /><span>Orders</span>
+                            </div>
+                            <div className="flex flex-col items-center">
+                              <User className="w-4 h-4" /><span>Profile</span>
+                            </div>
+                          </div>
 
-                    <div className="px-4 py-2 bg-white border-t border-stone-200 flex items-center justify-between text-[9px] text-stone-500 font-medium">
-                      <div className="flex flex-col items-center text-[#B45309] font-bold">
-                        <Home className="w-4 h-4" /><span>Home</span>
-                      </div>
-                      <div className="flex flex-col items-center">
-                        <Scissors className="w-4 h-4" /><span>Tailors</span>
-                      </div>
-                      <div className="flex flex-col items-center">
-                        <Wand2 className="w-4 h-4" /><span>AI Studio</span>
-                      </div>
-                      <div className="flex flex-col items-center">
-                        <ShoppingBag className="w-4 h-4" /><span>Orders</span>
-                      </div>
-                      <div className="flex flex-col items-center">
-                        <User className="w-4 h-4" /><span>Profile</span>
-                      </div>
+                        </div>
+                      )}
                     </div>
 
                   </div>
@@ -343,7 +476,7 @@ export function ApkDownloadPage({ apkDownloadUrl = DEFAULT_APK_URL }: { apkDownl
                   <div className="flex items-center justify-between text-xs mb-2 text-amber-200 font-bold">
                     <span className="flex items-center gap-2">
                       <RefreshCw className="w-4 h-4 animate-spin text-amber-400" />
-                      Downloading SuiDhaga_{APK_VERSION}.apk ({APK_FILE_SIZE})...
+                      Downloading SuiDhaga_{latestVersion}.apk ({APK_FILE_SIZE})...
                     </span>
                     <span className="font-mono text-amber-400">{downloadProgress}%</span>
                   </div>
@@ -370,10 +503,10 @@ export function ApkDownloadPage({ apkDownloadUrl = DEFAULT_APK_URL }: { apkDownl
 
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center lg:justify-start gap-4 mb-6">
                 <a
-                  href={apkDownloadUrl}
+                  href={activeDownloadUrl || apkDownloadUrl}
                   onClick={triggerDownload}
                   id="apk-primary-download-btn"
-                  aria-label={`Download Sui Dhaga APK - ${APK_FILE_SIZE}, ${APK_MIN_ANDROID}`}
+                  aria-label={`Download Sui Dhaga APK ${latestVersion} - ${APK_FILE_SIZE}, ${APK_MIN_ANDROID}`}
                   className="sundrop-btn-primary inline-flex items-center justify-center gap-3 px-8 py-4 rounded-full text-base font-bold tracking-wide cursor-pointer text-center"
                 >
                   <Download className="w-5 h-5 text-amber-200" />
@@ -401,7 +534,7 @@ export function ApkDownloadPage({ apkDownloadUrl = DEFAULT_APK_URL }: { apkDownl
                   <span className="text-amber-400/40">&bull;</span>
                   <span>{APK_MIN_ANDROID}</span>
                   <span className="text-amber-400/40">&bull;</span>
-                  <span>{APK_VERSION} (Build 2026.4)</span>
+                  <span>{latestVersion} (Build 2026.4)</span>
                 </div>
                 <div className="flex items-center justify-center lg:justify-start gap-5 text-xs">
                   <button

@@ -1,4 +1,4 @@
-﻿/* ==========================================================================
+/* ==========================================================================
    Sui Dhaga Mobile App - Opal-Style Negative Space & Velvet Gold Theme
    ========================================================================== */
 
@@ -16,13 +16,54 @@
 
 /* ---- Keyframes ---- */
 @keyframes velvetFloat {
-  0%, 100% { transform: rotateY(-8deg) rotateX(4deg) rotateZ(-3deg) translateY(0px); }
-  50%       { transform: rotateY(-8deg) rotateX(4deg) rotateZ(-3deg) translateY(-10px); }
+  0%, 100% { transform: rotateY(-8deg) rotateX(6deg) rotateZ(-2.5deg) translateY(0px); }
+  50%       { transform: rotateY(-8deg) rotateX(6deg) rotateZ(-2.5deg) translateY(-10px); }
 }
 
 @keyframes apkFadeIn {
   from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes phoneScreenSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.phone-screen-anim {
+  animation: phoneScreenSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 35px;
+}
+
+@keyframes tapRipple {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+
+.simulated-tap-ripple {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(251, 191, 36, 0.55);
+  box-shadow: 0 0 12px rgba(251, 191, 36, 0.8);
+  pointer-events: none;
+  animation: tapRipple 0.6s ease-out forwards;
 }
 
 /* ---- Scoped Header ---- */
@@ -86,42 +127,67 @@
 
 /* ---- 3D Phone Container ---- */
 .opal-phone-perspective-stage {
-  perspective: 1200px;
+  perspective: 1400px;
   display: flex;
   justify-content: center;
   align-items: center;
   position: relative;
 }
 .opal-phone-3d {
-  transform: rotateY(-8deg) rotateX(4deg) rotateZ(-3deg) translateY(0px);
-  animation: velvetFloat 5s ease-in-out infinite;
+  transform: rotateY(-8deg) rotateX(6deg) rotateZ(-2.5deg) translateY(0px);
+  animation: velvetFloat 5.5s ease-in-out infinite;
   transform-style: preserve-3d;
-  transition: animation-play-state 0.3s;
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
 .opal-phone-3d:hover {
   animation-play-state: paused;
-  transform: rotateY(-2deg) rotateX(2deg) rotateZ(-1deg) translateY(-8px);
-  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: rotateY(-2deg) rotateX(2deg) rotateZ(-0.5deg) translateY(-8px);
 }
 
 .phone-screen-velvet {
-  background: #FFFFFF;
-  border: 10px solid #160424;
-  border-radius: 44px;
+  background: #0D0216;
+  border: 11px solid #E8EDF5;
+  border-radius: 46px;
   box-shadow:
-    0 30px 90px -15px rgba(0, 0, 0, 0.9),
-    0 0 0 1px rgba(251, 191, 36, 0.3),
-    0 0 60px rgba(245, 158, 11, 0.22),
-    0 0 100px rgba(147, 51, 234, 0.25);
+    0 0 0 1px rgba(255, 255, 255, 0.95),
+    0 0 0 2.5px rgba(203, 213, 225, 0.8),
+    0 0 0 4px rgba(251, 191, 36, 0.45),
+    0 30px 90px -15px rgba(0, 0, 0, 0.95),
+    0 0 60px rgba(255, 255, 255, 0.3),
+    0 0 90px rgba(245, 158, 11, 0.35);
   position: relative;
   overflow: hidden;
+  -webkit-mask-image: -webkit-radial-gradient(white, black);
+  mask-image: -webkit-radial-gradient(white, black);
+  isolation: isolate;
+  contain: paint;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.phone-screenshot-crisp {
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: high-quality;
+  border-radius: 35px;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+@media (max-width: 640px) {
+  .opal-phone-3d {
+    transform: rotateY(-3deg) rotateX(2deg) rotateZ(-1deg) translateY(0px);
+  }
 }
 .phone-notch-pill-compact {
   width: 85px;
   height: 18px;
-  background-color: #160424;
+  background-color: #0F021A;
   border-radius: 12px;
   margin: 0 auto;
+  border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 /* ---- Primary CTA Button ---- */
