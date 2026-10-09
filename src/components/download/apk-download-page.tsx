@@ -6,7 +6,6 @@ import Link from "next/link";
 import { PublicShell } from "@/components/common/site-shell";
 import {
   Download,
-  ShieldCheck,
   CheckCircle2,
   Share2,
   Copy,
@@ -19,7 +18,6 @@ import {
   ChevronDown,
   ChevronUp,
   Smartphone,
-  Lock,
   Camera,
 } from "lucide-react";
 
@@ -27,10 +25,9 @@ import {
 // CONFIGURATION: APK FILE LINK & METADATA
 // ==========================================
 export const APP_VERSION_API_URL = "https://sui-dhaga-backend.vercel.app/api/v1/app-version/latest?platform=android&clientVersion=1";
-export const DEFAULT_APK_URL = "https://sui-dhaga-backend.vercel.app/api/v1/app-version/latest?platform=android&clientVersion=1";
-export const APK_VERSION = "v1.0.0";
+export const DEFAULT_APK_URL = "https://github.com/AdeelTahir-SE/Sui-Dhaga-mobile/releases/download/v1.0.2/sui-dhaga-v1.0.2-android.apk";
+export const APK_VERSION = "v1.0.2";
 export const APK_FILE_SIZE = "28.6 MB";
-export const APK_MIN_ANDROID = "Android 8.0+";
 
 // Feature strip
 const APP_FEATURES = [
@@ -161,10 +158,11 @@ export function ApkDownloadPage({ apkDownloadUrl = DEFAULT_APK_URL }: { apkDownl
   };
 
   const triggerDownload = (e?: React.MouseEvent) => {
-    const targetUrl = activeDownloadUrl || apkDownloadUrl;
-    if (e && (!targetUrl || targetUrl.startsWith("#"))) {
+    if (e) {
       e.preventDefault();
     }
+    const targetUrl = activeDownloadUrl || apkDownloadUrl || DEFAULT_APK_URL;
+
     setDownloading(true);
     setDownloadProgress(0);
     setDownloadDone(false);
@@ -179,8 +177,15 @@ export function ApkDownloadPage({ apkDownloadUrl = DEFAULT_APK_URL }: { apkDownl
         setTimeout(() => {
           setDownloading(false);
           setDownloadDone(true);
-          if (targetUrl && !targetUrl.startsWith("#") && typeof window !== "undefined") {
-            window.open(targetUrl, "_blank", "noopener,noreferrer");
+          if (targetUrl && typeof window !== "undefined") {
+            const link = document.createElement("a");
+            link.href = targetUrl;
+            link.setAttribute("download", `SuiDhaga_${latestVersion}.apk`);
+            link.setAttribute("target", "_blank");
+            link.setAttribute("rel", "noopener noreferrer");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
           }
         }, 400);
       } else {
@@ -333,10 +338,10 @@ export function ApkDownloadPage({ apkDownloadUrl = DEFAULT_APK_URL }: { apkDownl
 
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center lg:justify-start gap-4 mb-6">
                 <a
-                  href={activeDownloadUrl || apkDownloadUrl}
+                  href={activeDownloadUrl || DEFAULT_APK_URL}
                   onClick={triggerDownload}
                   id="apk-primary-download-btn"
-                  aria-label={`Download Sui Dhaga APK ${latestVersion} - ${APK_FILE_SIZE}, ${APK_MIN_ANDROID}`}
+                  aria-label={`Download Sui Dhaga APK ${latestVersion}`}
                   className="sundrop-btn-primary inline-flex items-center justify-center gap-3 px-8 py-4 rounded-full text-base font-bold tracking-wide cursor-pointer text-center"
                 >
                   <Download className="w-5 h-5 text-amber-200" />
@@ -354,18 +359,8 @@ export function ApkDownloadPage({ apkDownloadUrl = DEFAULT_APK_URL }: { apkDownl
                 </Link>
               </div>
 
-              {/* Specs + Share - split into two rows for mobile */}
-              <div className="space-y-2.5 pt-2">
-                <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 text-xs text-amber-200/80">
-                  <span className="flex items-center gap-1.5 text-amber-300 font-medium">
-                    <ShieldCheck className="w-4 h-4 text-amber-400" />
-                    Play Protect Verified
-                  </span>
-                  <span className="text-amber-400/40">&bull;</span>
-                  <span>{APK_MIN_ANDROID}</span>
-                  <span className="text-amber-400/40">&bull;</span>
-                  <span>{latestVersion} (Build 2026.4)</span>
-                </div>
+              {/* Share & Copy Link */}
+              <div className="pt-2">
                 <div className="flex items-center justify-center lg:justify-start gap-5 text-xs">
                   <button
                     type="button"
@@ -440,12 +435,6 @@ export function ApkDownloadPage({ apkDownloadUrl = DEFAULT_APK_URL }: { apkDownl
                     </div>
                   </div>
                 ))}
-                <div className="install-security-note">
-                  <Lock className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
-                  <p className="text-[11px] text-amber-200/80 leading-relaxed">
-                    This APK is Play Protect verified and cryptographically signed. Safe to install on Android 8.0+.
-                  </p>
-                </div>
               </div>
             )}
           </div>
