@@ -175,16 +175,24 @@ export function ApkDownloadPage({ apkDownloadUrl = DEFAULT_APK_URL }: { apkDownl
           setDownloading(false);
           setDownloadDone(true);
           if (targetUrl && typeof window !== "undefined") {
-            const link = document.createElement("a");
-            link.href = targetUrl;
-            link.setAttribute("download", `SuiDhaga_${latestVersion}.apk`);
-            link.setAttribute("target", "_blank");
-            link.setAttribute("rel", "noopener noreferrer");
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            // Start direct in-page download without navigating away or opening a new tab
+            const iframe = document.createElement("iframe");
+            iframe.style.display = "none";
+            iframe.style.position = "absolute";
+            iframe.style.width = "0";
+            iframe.style.height = "0";
+            iframe.style.border = "none";
+            iframe.src = targetUrl;
+            document.body.appendChild(iframe);
+            setTimeout(() => {
+              try {
+                document.body.removeChild(iframe);
+              } catch {
+                // ignore if already removed
+              }
+            }, 30000);
           }
-        }, 400);
+        }, 300);
       } else {
         setDownloadProgress(current);
       }
