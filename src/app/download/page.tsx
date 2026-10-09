@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import { ApkDownloadPage } from "@/components/download/apk-download-page";
+import { getLatestAppVersion } from "@/lib/app-version";
+
+export const revalidate = 60; // Revalidate metadata every 60 seconds
 
 export const metadata: Metadata = {
   title: "Download Android App (APK) | Sui Dhāga × Sun Drop Collab",
@@ -21,6 +24,15 @@ export const metadata: Metadata = {
   },
 };
 
-export default function DownloadPage() {
-  return <ApkDownloadPage />;
+export default async function DownloadPage() {
+  const versionInfo = await getLatestAppVersion();
+
+  return (
+    <ApkDownloadPage
+      initialVersion={versionInfo.version}
+      initialDownloadUrl={versionInfo.downloadUrl}
+      initialReleaseNotes={versionInfo.releaseNotes}
+    />
+  );
 }
+

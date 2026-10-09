@@ -23,8 +23,8 @@ import {
 // CONFIGURATION: APK FILE LINK & METADATA
 // ==========================================
 export const APP_VERSION_API_URL = "https://sui-dhaga-backend.vercel.app/api/v1/app-version/latest?platform=android&clientVersion=1";
-export const DEFAULT_APK_URL = "https://github.com/AdeelTahir-SE/Sui-Dhaga-mobile/releases/download/v1.0.2/sui-dhaga-v1.0.2-android.apk";
-export const APK_VERSION = "v1.0.2";
+export const DEFAULT_APK_URL = "https://github.com/AdeelTahir-SE/Sui-Dhaga-mobile/releases/download/v1.0.4/sui-dhaga-v1.0.4-android.apk";
+export const APK_VERSION = "v1.0.4";
 
 // Feature strip
 const APP_FEATURES = [
@@ -53,7 +53,19 @@ const INSTALL_STEPS = [
   },
 ];
 
-export function ApkDownloadPage({ apkDownloadUrl = DEFAULT_APK_URL }: { apkDownloadUrl?: string }) {
+export interface ApkDownloadPageProps {
+  apkDownloadUrl?: string;
+  initialVersion?: string;
+  initialDownloadUrl?: string;
+  initialReleaseNotes?: string | null;
+}
+
+export function ApkDownloadPage({
+  apkDownloadUrl,
+  initialVersion,
+  initialDownloadUrl,
+  initialReleaseNotes = null,
+}: ApkDownloadPageProps) {
   const [copied,           setCopied]           = useState(false);
   const [downloading,      setDownloading]      = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
@@ -65,34 +77,47 @@ export function ApkDownloadPage({ apkDownloadUrl = DEFAULT_APK_URL }: { apkDownl
   const [simulatedTap,     setSimulatedTap]     = useState(false);
 
   // Dynamic API state for latest app version
-  const [latestVersion,    setLatestVersion]    = useState(APK_VERSION);
-  const [activeDownloadUrl,setActiveDownloadUrl]= useState(apkDownloadUrl);
-  const [releaseNotes,     setReleaseNotes]     = useState<string | null>(null);
+  const [latestVersion,    setLatestVersion]    = useState(initialVersion || APK_VERSION);
+  const [activeDownloadUrl,setActiveDownloadUrl]= useState(
+    initialDownloadUrl || apkDownloadUrl || DEFAULT_APK_URL
+  );
+  const [releaseNotes,     setReleaseNotes]     = useState<string | null>(initialReleaseNotes);
 
-  // Fetch latest version and download URL from backend API
+  // Fetch latest version and download URL from backend API (via internal proxy route to bypass CORS)
   useEffect(() => {
     let isMounted = true;
     async function fetchAppVersion() {
       try {
-        const res = await fetch(APP_VERSION_API_URL, {
+        let res = await fetch("/api/app-version", {
           method: "GET",
-          headers: { "Content-Type": "application/json" },
+          headers: { Accept: "application/json" },
         });
+
+        if (!res.ok) {
+          res = await fetch(APP_VERSION_API_URL, {
+            method: "GET",
+            headers: { Accept: "application/json" },
+          });
+        }
+
         if (!res.ok) return;
         const json = await res.json();
         if (isMounted && json?.success && json?.data) {
-          if (json.data.downloadUrl) {
-            setActiveDownloadUrl(json.data.downloadUrl);
+          const d = json.data;
+          if (d.downloadUrl) {
+            setActiveDownloadUrl(d.downloadUrl);
           }
-          if (json.data.latestVersion) {
-            setLatestVersion(`v${json.data.latestVersion}`);
+          if (d.version) {
+            setLatestVersion(d.version.startsWith("v") ? d.version : `v${d.version}`);
+          } else if (d.latestVersion) {
+            setLatestVersion(d.latestVersion.startsWith("v") ? d.latestVersion : `v${d.latestVersion}`);
           }
-          if (json.data.releaseNotes) {
-            setReleaseNotes(json.data.releaseNotes);
+          if (d.releaseNotes) {
+            setReleaseNotes(d.releaseNotes);
           }
         }
       } catch (err) {
-        console.warn("Could not fetch app version, using defaults:", err);
+        console.warn("Could not fetch app version, using current defaults:", err);
       }
     }
 
