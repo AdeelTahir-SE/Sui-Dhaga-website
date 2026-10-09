@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import { PublicShell } from "@/components/common/site-shell";
 import {
   Download,
@@ -10,7 +9,6 @@ import {
   Share2,
   Copy,
   Check,
-  ArrowRight,
   Scissors,
   Wand2,
   Sparkles,
@@ -27,7 +25,6 @@ import {
 export const APP_VERSION_API_URL = "https://sui-dhaga-backend.vercel.app/api/v1/app-version/latest?platform=android&clientVersion=1";
 export const DEFAULT_APK_URL = "https://github.com/AdeelTahir-SE/Sui-Dhaga-mobile/releases/download/v1.0.2/sui-dhaga-v1.0.2-android.apk";
 export const APK_VERSION = "v1.0.2";
-export const APK_FILE_SIZE = "28.6 MB";
 
 // Feature strip
 const APP_FEATURES = [
@@ -311,7 +308,7 @@ export function ApkDownloadPage({ apkDownloadUrl = DEFAULT_APK_URL }: { apkDownl
                   <div className="flex items-center justify-between text-xs mb-2 text-amber-200 font-bold">
                     <span className="flex items-center gap-2">
                       <RefreshCw className="w-4 h-4 animate-spin text-amber-400" />
-                      Downloading SuiDhaga_{latestVersion}.apk ({APK_FILE_SIZE})...
+                      Downloading SuiDhaga_{latestVersion}.apk...
                     </span>
                     <span className="font-mono text-amber-400">{downloadProgress}%</span>
                   </div>
@@ -346,17 +343,7 @@ export function ApkDownloadPage({ apkDownloadUrl = DEFAULT_APK_URL }: { apkDownl
                 >
                   <Download className="w-5 h-5 text-amber-200" />
                   <span>Download APK</span>
-                  <span className="text-xs bg-amber-950/50 px-2.5 py-0.5 rounded-full text-amber-200 font-mono font-normal">
-                    {APK_FILE_SIZE}
-                  </span>
                 </a>
-                <Link
-                  href="/tailors"
-                  className="velvet-btn-outline inline-flex items-center justify-center gap-2 px-7 py-4 rounded-full text-sm font-semibold text-center"
-                >
-                  <span>See Our Tailors</span>
-                  <ArrowRight className="w-4 h-4 text-amber-300" />
-                </Link>
               </div>
 
               {/* Share & Copy Link */}
