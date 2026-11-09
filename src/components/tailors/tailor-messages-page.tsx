@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   Search,
@@ -17,6 +17,7 @@ import {
 import { PublicNav } from "@/components/common/site-shell";
 import { TailorSidebar } from "@/components/tailors/tailor-sidebar";
 import { AdminToast } from "@/components/admin/admin-toast";
+import { fetchConversationsApi, sendChatMessageApi } from "@/lib/messages-data";
 import "@/styles/pages/tailor-messages-view.css";
 
 interface ChatMessage {
@@ -125,6 +126,35 @@ export function TailorMessagesPage() {
   const [messageInput, setMessageInput] = useState("");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  useEffect(() => {
+    let isSubscribed = true;
+    fetchConversationsApi().then((list) => {
+      if (isSubscribed && list && list.length > 0) {
+        const mapped: TailorConversation[] = list.map((c) => ({
+          id: c.id,
+          customerName: c.tailorName,
+          customerAvatar: c.avatar,
+          lastMessage: c.lastMessage,
+          time: c.timestamp,
+          unreadCount: c.unreadCount,
+          orderNumber: c.orderNumber,
+          outfitTitle: c.outfitTitle,
+          isOnline: c.isOnline ?? false,
+          messages: (c.messages || []).map((m) => ({
+            id: m.id,
+            sender: m.sender === "user" ? "customer" : "tailor",
+            text: m.text,
+            time: m.timestamp
+          }))
+        }));
+        setConversations(mapped);
+      }
+    });
+    return () => {
+      isSubscribed = false;
+    };
+  }, []);
+
   const activeConversation = conversations.find((c) => c.id === activeConvId);
 
   const filteredConversations = conversations.filter((c) =>
@@ -140,14 +170,17 @@ export function TailorMessagesPage() {
     );
   };
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!messageInput.trim() || !activeConvId) return;
+
+    const userText = messageInput.trim();
+    setMessageInput("");
 
     const newMsg: ChatMessage = {
       id: `msg-${Date.now()}`,
       sender: "tailor",
-      text: messageInput.trim(),
+      text: userText,
       time: "Just now"
     };
 
@@ -164,7 +197,12 @@ export function TailorMessagesPage() {
       )
     );
 
-    setMessageInput("");
+    // Sync via live endpoint
+    try {
+      await sendChatMessageApi(activeConvId, userText);
+    } catch (err) {
+      console.warn("Failed to send message via API:", err);
+    }
   };
 
   return (

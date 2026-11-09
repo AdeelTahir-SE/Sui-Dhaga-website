@@ -180,33 +180,73 @@ export const initialConversations: ConversationItem[] = [
 import { conversationService } from "./api/conversation-service";
 import { Conversation as ApiConversation, ChatMessage as ApiChatMessage } from "./api/types";
 
-export function mapBackendMessageToChat(msg: ApiChatMessage, currentUserId?: string): ChatMessage {
-  const isUserSender = currentUserId ? msg.sender_id === currentUserId || msg.senderId === currentUserId : true;
+function getCurrentUserId(): string | undefined {
+  if (typeof window === "undefined") return undefined;
+  try {
+    const raw = localStorage.getItem("sui_dhaga_user");
+    if (raw) {
+      const u = JSON.parse(raw);
+      return u.id || u.userId || u._id;
+    }
+  } catch {}
+  return undefined;
+}
+
+export function mapBackendMessageToChat(msg: any, currentUserId?: string): ChatMessage {
+  const myId = currentUserId || getCurrentUserId();
+  const senderId = msg.sender_id || msg.senderId;
+  const isUserSender = myId && senderId ? senderId === myId : (msg.sender === "user" || msg.sender_role === "client");
+
+  const rawImages = msg.attachments || msg.images || [];
+  const images = Array.isArray(rawImages)
+    ? rawImages.map((a: any) => (typeof a === "string" ? a : a.url || a.fileUrl || "")).filter(Boolean)
+    : [];
+
   return {
-    id: msg.id,
+    id: String(msg.id),
     sender: isUserSender ? "user" : "tailor",
     text: msg.text || msg.message || "",
     timestamp: msg.created_at
       ? new Date(msg.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
       : "Just now",
-    images: msg.attachments?.map((a) => (typeof a === "string" ? a : a.url)) || [],
-    readStatus: msg.read_status || msg.is_read || msg.isRead
+    images,
+    readStatus: Boolean(msg.read_status || msg.is_read || msg.isRead)
   };
 }
 
-export function mapBackendConversationToItem(conv: ApiConversation): ConversationItem {
-  const tailorName = conv.tailor?.shopName || conv.participant?.full_name || conv.participant?.name || conv.tailor?.name || "Master Tailor";
-  const avatar = conv.tailor?.avatar_url || conv.participant?.avatar_url || "/images/home/tailor-rekha.png";
+export function mapBackendConversationToItem(conv: any): ConversationItem {
+  const myId = getCurrentUserId();
+  const tailorName =
+    conv.tailor?.shopName ||
+    conv.tailor?.shop_name ||
+    conv.participant?.full_name ||
+    conv.participant?.name ||
+    conv.tailor?.name ||
+    conv.client?.full_name ||
+    conv.customer?.full_name ||
+    "Master Tailor";
+
+  const avatar =
+    conv.tailor?.avatar_url ||
+    conv.participant?.avatar_url ||
+    conv.client?.avatar_url ||
+    conv.customer?.avatar_url ||
+    "/images/home/tailor-rekha.png";
+
   const lastMsgRaw = conv.last_message ?? conv.lastMessage;
-  const lastMsg = typeof lastMsgRaw === "string" ? lastMsgRaw : lastMsgRaw?.text || lastMsgRaw?.message || "Started conversation";
-  const timestamp = conv.updated_at
-    ? new Date(conv.updated_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+  const lastMsg =
+    typeof lastMsgRaw === "string"
+      ? lastMsgRaw
+      : lastMsgRaw?.text || lastMsgRaw?.message || "Started conversation";
+
+  const timestamp = conv.updated_at || conv.created_at
+    ? new Date(conv.updated_at || conv.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
     : "Recently";
 
   return {
-    id: conv.id,
+    id: String(conv.id),
     tailorName,
-    handle: `@${tailorName.toLowerCase().replace(/\s+/g, "")}`,
+    handle: `@${tailorName.toLowerCase().replace(/[^a-z0-9]/g, "")}`,
     avatar,
     rating: conv.tailor?.rating || 4.8,
     reviewsCount: conv.tailor?.reviewsCount || 120,
@@ -215,39 +255,81 @@ export function mapBackendConversationToItem(conv: ApiConversation): Conversatio
     lastMessage: lastMsg,
     timestamp,
     unreadCount: conv.unread_count || conv.unreadCount || 0,
-    orderNumber: "#SD1256",
-    outfitTitle: "Custom Stitching",
-    outfitImage: "/images/home/hero-float-pastel-anarkali.png",
-    orderStatus: "In Progress",
-    messages: conv.messages ? conv.messages.map((m) => mapBackendMessageToChat(m)) : []
+    orderNumber: conv.order_number || conv.orderNumber || "#SD1256",
+    outfitTitle: conv.outfit_title || conv.outfitTitle || "Custom Stitching",
+    outfitImage: conv.outfit_image || conv.outfitImage || "/images/home/hero-float-pastel-anarkali.png",
+    orderStatus: conv.order_status || conv.orderStatus || "In Progress",
+    messages: conv.messages ? conv.messages.map((m: any) => mapBackendMessageToChat(m, myId)) : []
   };
 }
 
 export function getConversationById(id: string): ConversationItem | undefined {
-  return initialConversations.find((c) => c.id === id) || initialConversations[0];
+  return initialConversations.find((c) => c.id === id);
 }
 
 export async function fetchConversationsApi(): Promise<ConversationItem[]> {
+  const hasToken = typeof window !== "undefined" && !!localStorage.getItem("sui_dhaga_auth_token");
+
   try {
     const res = await conversationService.getConversations();
-    if (res?.data && Array.isArray(res.data) && res.data.length > 0) {
-      return res.data.map(mapBackendConversationToItem);
+    if (res?.data && Array.isArray(res.data)) {
+      const mapped = res.data.map(mapBackendConversationToItem);
+      // Merge with locally stored conversations if any
+      let localList: ConversationItem[] = [];
+      if (typeof window !== "undefined") {
+        try {
+          const raw = localStorage.getItem("sui_dhaga_conversations");
+          if (raw) localList = JSON.parse(raw);
+        } catch {}
+      }
+      return [...mapped, ...localList.filter((l) => !mapped.some((m) => m.id === l.id))];
     }
   } catch (err) {
-    console.warn("[Messages API] Backend conversations unavailable, fallback to mock:", err);
+    console.warn("[Messages API] Backend conversations unavailable, checking local store:", err);
   }
 
-  return initialConversations;
+  // Local storage sync
+  let list: ConversationItem[] = [];
+  try {
+    if (typeof window !== "undefined") {
+      const storedJson = localStorage.getItem("sui_dhaga_conversations");
+      if (storedJson) {
+        list = JSON.parse(storedJson);
+      }
+    }
+  } catch (e) {
+    console.warn("Error reading local conversations:", e);
+  }
+
+  // If user is authenticated, return their actual conversations (or empty list if new user)
+  if (hasToken) {
+    return list;
+  }
+
+  // Demo fallback for unauthenticated guest visitors
+  return list.length > 0 ? list : initialConversations;
 }
 
 export async function fetchMessagesForConversationApi(conversationId: string): Promise<ChatMessage[]> {
+  const myId = getCurrentUserId();
   try {
     const res = await conversationService.getMessages(conversationId);
     if (res?.data && Array.isArray(res.data)) {
-      return res.data.map((m) => mapBackendMessageToChat(m));
+      return res.data.map((m) => mapBackendMessageToChat(m, myId));
     }
   } catch (err) {
-    console.warn("[Messages API] Fetch messages failed, falling back locally:", err);
+    console.warn("[Messages API] Fetch messages failed, checking local store:", err);
+  }
+
+  // Local storage check
+  if (typeof window !== "undefined") {
+    try {
+      const raw = localStorage.getItem(`sui_dhaga_chat_${conversationId}`);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
   }
 
   const conv = getConversationById(conversationId);
@@ -256,12 +338,14 @@ export async function fetchMessagesForConversationApi(conversationId: string): P
 
 export async function sendChatMessageApi(
   conversationId: string,
-  text: string
+  text: string,
+  file?: File
 ): Promise<{ success: boolean; message?: ChatMessage }> {
+  const myId = getCurrentUserId();
   try {
-    const res = await conversationService.sendMessage(conversationId, { text });
+    const res = await conversationService.sendMessage(conversationId, { text, file });
     if (res?.data) {
-      const chatMsg = mapBackendMessageToChat(res.data);
+      const chatMsg = mapBackendMessageToChat(res.data, myId);
       return { success: true, message: chatMsg };
     }
   } catch (err) {
@@ -272,8 +356,20 @@ export async function sendChatMessageApi(
     id: `m-${Date.now()}`,
     sender: "user",
     text,
-    timestamp: "Just now"
+    timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+    readStatus: false
   };
+
+  // Sync to local storage
+  if (typeof window !== "undefined") {
+    try {
+      const key = `sui_dhaga_chat_${conversationId}`;
+      const raw = localStorage.getItem(key);
+      const list = raw ? JSON.parse(raw) : [];
+      list.push(newMsg);
+      localStorage.setItem(key, JSON.stringify(list));
+    } catch {}
+  }
 
   const conv = getConversationById(conversationId);
   if (conv) {
@@ -283,4 +379,23 @@ export async function sendChatMessageApi(
   }
 
   return { success: true, message: newMsg };
+}
+
+export async function startConversationApi(
+  tailorId: string,
+  initialMessage?: string
+): Promise<{ success: boolean; conversation?: ConversationItem; error?: string }> {
+  try {
+    const res = await conversationService.startConversation({
+      tailorId,
+      initialMessage,
+    });
+    if (res?.data) {
+      const mapped = mapBackendConversationToItem(res.data);
+      return { success: true, conversation: mapped };
+    }
+  } catch (err: any) {
+    console.warn("[Messages API] Start conversation on backend failed:", err);
+  }
+  return { success: false, error: "Failed to start conversation" };
 }

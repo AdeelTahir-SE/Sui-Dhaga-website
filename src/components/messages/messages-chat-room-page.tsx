@@ -28,6 +28,7 @@ import { PublicShell } from "@/components/common/site-shell";
 import {
   getConversationById,
   fetchConversationsApi,
+  fetchMessagesForConversationApi,
   sendChatMessageApi,
   ConversationItem,
   ChatMessage
@@ -45,20 +46,31 @@ export function MessagesChatRoomPage({ conversationId: propConvId }: MessagesCha
     getConversationById(activeConvId)
   );
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [messageInput, setMessageInput] = useState<string>("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let isSubscribed = true;
 
-    fetchConversationsApi().then((list) => {
-      if (isSubscribed) {
-        const found = list.find((c) => c.id === activeConvId) || getConversationById(activeConvId);
-        if (found) {
-          setConversation(found);
-          setMessages(found.messages || []);
-        }
+    Promise.allSettled([
+      fetchConversationsApi(),
+      fetchMessagesForConversationApi(activeConvId)
+    ]).then(([convsResult, msgsResult]) => {
+      if (!isSubscribed) return;
+
+      const list = convsResult.status === "fulfilled" ? convsResult.value : [];
+      const found = list.find((c) => c.id === activeConvId) || getConversationById(activeConvId);
+      if (found) {
+        setConversation(found);
       }
+
+      if (msgsResult.status === "fulfilled" && Array.isArray(msgsResult.value) && msgsResult.value.length > 0) {
+        setMessages(msgsResult.value);
+      } else if (found?.messages && found.messages.length > 0) {
+        setMessages(found.messages);
+      }
+      setIsLoading(false);
     });
 
     return () => {
@@ -71,13 +83,33 @@ export function MessagesChatRoomPage({ conversationId: propConvId }: MessagesCha
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  if (isLoading) {
+    return (
+      <PublicShell>
+        <div style={{ textAlign: "center", padding: "100px 20px", color: "#6b7280" }}>
+          Loading conversation...
+        </div>
+      </PublicShell>
+    );
+  }
+
   if (!conversation) {
     return (
       <PublicShell>
-        <div className="chat-room-not-found">
+        <div className="chat-room-not-found" style={{ textAlign: "center", padding: "80px 20px" }}>
           <h2>Conversation Not Found</h2>
-          <p>The requested chat conversation could not be found.</p>
-          <Link href="/messages" className="btn-primary">
+          <p style={{ color: "#6b7280", margin: "12px 0 24px" }}>
+            The requested chat conversation could not be found or you do not have permission to view it.
+          </p>
+          <Link href="/messages" className="btn-primary" style={{
+            display: "inline-flex",
+            background: "#E86A33",
+            color: "#fff",
+            padding: "10px 20px",
+            borderRadius: "8px",
+            textDecoration: "none",
+            fontWeight: 600
+          }}>
             Back to Messages
           </Link>
         </div>
@@ -93,7 +125,7 @@ export function MessagesChatRoomPage({ conversationId: propConvId }: MessagesCha
     const userText = messageInput.trim();
     setMessageInput("");
 
-    const newMsg: ChatMessage = {
+    const optimisticMsg: ChatMessage = {
       id: `m-${Date.now()}`,
       sender: "user",
       text: userText,
@@ -101,10 +133,18 @@ export function MessagesChatRoomPage({ conversationId: propConvId }: MessagesCha
       readStatus: true
     };
 
-    setMessages((prev) => [...prev, newMsg]);
+    setMessages((prev) => [...prev, optimisticMsg]);
 
-    // Sync with backend API helper
-    await sendChatMessageApi(activeConvId, userText);
+    try {
+      const res = await sendChatMessageApi(activeConvId, userText);
+      if (res?.message) {
+        setMessages((prev) =>
+          prev.map((m) => (m.id === optimisticMsg.id ? res.message! : m))
+        );
+      }
+    } catch (err) {
+      console.warn("Error sending message via API:", err);
+    }
   };
 
   return (

@@ -31,15 +31,17 @@ import {
 } from "@/lib/messages-data";
 
 export function MessagesOverviewPage() {
-  const [conversations, setConversations] = useState<ConversationItem[]>(initialConversations);
+  const [conversations, setConversations] = useState<ConversationItem[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedFilter, setSelectedFilter] = useState<"all" | "unread">("all");
 
   useEffect(() => {
     let isSubscribed = true;
     fetchConversationsApi().then((data) => {
-      if (isSubscribed && data && data.length > 0) {
-        setConversations(data);
+      if (isSubscribed) {
+        setConversations(data || []);
+        setIsLoading(false);
       }
     });
     return () => {
@@ -176,7 +178,11 @@ export function MessagesOverviewPage() {
 
               {/* Conversation Cards List */}
               <div className="conversations-list-container">
-                {filteredConversations.length > 0 ? (
+                {isLoading ? (
+                  <div style={{ textAlign: "center", padding: "48px 20px", color: "#6b7280" }}>
+                    Loading messages...
+                  </div>
+                ) : filteredConversations.length > 0 ? (
                   filteredConversations.map((conv) => (
                     <Link
                       key={conv.id}
@@ -189,6 +195,9 @@ export function MessagesOverviewPage() {
                           src={conv.avatar}
                           alt={conv.tailorName}
                           className="conv-avatar"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = "/images/home/tailor-rekha.png";
+                          }}
                         />
                         {conv.isTyping && (
                           <span className="online-indicator-dot" title="Active" />
@@ -217,9 +226,56 @@ export function MessagesOverviewPage() {
                       </div>
                     </Link>
                   ))
-                ) : (
+                ) : searchQuery ? (
                   <div className="no-conversations-found">
                     <p>No messages match your search.</p>
+                  </div>
+                ) : (
+                  <div
+                    className="no-conversations-found"
+                    style={{
+                      textAlign: "center",
+                      padding: "48px 24px",
+                      background: "#ffffff",
+                      borderRadius: "16px",
+                      border: "1px dashed #d1d5db"
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "inline-flex",
+                        padding: "16px",
+                        background: "#fff7ed",
+                        borderRadius: "50%",
+                        marginBottom: "16px"
+                      }}
+                    >
+                      <MessageSquare size={36} color="#E86A33" />
+                    </div>
+                    <h3 style={{ fontSize: "18px", fontWeight: 700, color: "#111827", marginBottom: "8px" }}>
+                      No Messages Yet
+                    </h3>
+                    <p style={{ color: "#6b7280", maxWidth: "420px", margin: "0 auto 20px", fontSize: "14px", lineHeight: 1.6 }}>
+                      You haven&apos;t started any conversations with tailors yet. Connect with expert tailors to discuss designs, custom alterations, and fabric choices.
+                    </p>
+                    <Link
+                      href="/tailors"
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        background: "#E86A33",
+                        color: "#ffffff",
+                        padding: "10px 20px",
+                        borderRadius: "8px",
+                        textDecoration: "none",
+                        fontWeight: 600,
+                        fontSize: "14px"
+                      }}
+                    >
+                      <span>Explore Verified Tailors</span>
+                      <ArrowRight size={15} />
+                    </Link>
                   </div>
                 )}
               </div>
@@ -237,41 +293,50 @@ export function MessagesOverviewPage() {
                 </div>
 
                 <div className="recent-chats-list">
-                  {recentOrderChats.map((conv) => {
-                    const statusClass =
-                      conv.orderStatus === "In Progress"
-                        ? "in-progress"
-                        : conv.orderStatus === "Delivered"
-                        ? "delivered"
-                        : conv.orderStatus === "Confirmed"
-                        ? "confirmed"
-                        : "pending";
+                  {recentOrderChats.length === 0 ? (
+                    <div style={{ padding: "24px 16px", textAlign: "center", color: "#9ca3af", fontSize: "13px" }}>
+                      No recent chats
+                    </div>
+                  ) : (
+                    recentOrderChats.map((conv) => {
+                      const statusClass =
+                        conv.orderStatus === "In Progress"
+                          ? "in-progress"
+                          : conv.orderStatus === "Delivered"
+                          ? "delivered"
+                          : conv.orderStatus === "Confirmed"
+                          ? "confirmed"
+                          : "pending";
 
-                    return (
-                      <Link
-                        key={conv.id}
-                        href={`/messages/${conv.id}`}
-                        className="recent-chat-project-card"
-                      >
-                        <img
-                          src={conv.outfitImage}
-                          alt={conv.outfitTitle}
-                          className="project-outfit-thumb"
-                        />
-                        <div className="project-info">
-                          <h5 className="project-tailor-name">{conv.tailorName}</h5>
-                          <span className="project-outfit-title">{conv.outfitTitle}</span>
-                        </div>
+                      return (
+                        <Link
+                          key={conv.id}
+                          href={`/messages/${conv.id}`}
+                          className="recent-chat-project-card"
+                        >
+                          <img
+                            src={conv.outfitImage}
+                            alt={conv.outfitTitle}
+                            className="project-outfit-thumb"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = "/images/home/hero-float-pastel-anarkali.png";
+                            }}
+                          />
+                          <div className="project-info">
+                            <h5 className="project-tailor-name">{conv.tailorName}</h5>
+                            <span className="project-outfit-title">{conv.outfitTitle}</span>
+                          </div>
 
-                        <div className="project-status-arrow">
-                          <span className={`status-badge ${statusClass}`}>
-                            {conv.orderStatus}
-                          </span>
-                          <ChevronRight size={15} className="arrow-icon" />
-                        </div>
-                      </Link>
-                    );
-                  })}
+                          <div className="project-status-arrow">
+                            <span className={`status-badge ${statusClass}`}>
+                              {conv.orderStatus}
+                            </span>
+                            <ChevronRight size={15} className="arrow-icon" />
+                          </div>
+                        </Link>
+                      );
+                    })
+                  )}
                 </div>
               </div>
 
