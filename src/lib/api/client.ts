@@ -137,10 +137,25 @@ export async function apiRequest<T = any>(
       errorDetails = { message: response.statusText };
     }
 
-    const errorMessage =
+    let errorMessage =
       errorDetails?.message ||
       errorDetails?.error?.message ||
       `API request failed with status ${response.status}`;
+
+    // Extract detailed validation field errors if returned by backend (e.g. Zod / Joi)
+    if (errorDetails?.errors?.fieldErrors) {
+      const fieldEntries = Object.entries(errorDetails.errors.fieldErrors);
+      if (fieldEntries.length > 0) {
+        const fieldDetails = fieldEntries
+          .map(([field, msgs]) => {
+            const label = field.charAt(0).toUpperCase() + field.slice(1);
+            const msgText = Array.isArray(msgs) ? msgs.join(", ") : String(msgs);
+            return `${label}: ${msgText}`;
+          })
+          .join(". ");
+        errorMessage = `${errorMessage} (${fieldDetails})`;
+      }
+    }
 
     const error = new Error(errorMessage);
     (error as any).status = response.status;

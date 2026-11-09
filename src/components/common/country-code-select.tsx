@@ -15,9 +15,21 @@ const countries = [
   { code: "AU", name: "Australia", dialCode: "+61" },
 ];
 
-export function CountryCodeSelect() {
-  const [selected, setSelected] = useState(countries[0]);
+interface CountryCodeSelectProps {
+  value?: string;
+  onChange?: (dialCode: string) => void;
+}
+
+export function CountryCodeSelect({ value, onChange }: CountryCodeSelectProps = {}) {
+  const initialCountry = countries.find((c) => c.dialCode === value) || countries[0];
+  const [selected, setSelected] = useState(initialCountry);
   const [open, setOpen] = useState(false);
+
+  const handleSelect = (country: typeof countries[0]) => {
+    setSelected(country);
+    setOpen(false);
+    onChange?.(country.dialCode);
+  };
 
   return (
     <div className="country-code-select">
@@ -35,8 +47,7 @@ export function CountryCodeSelect() {
               role="option"
               aria-selected={country.code === selected.code}
               onClick={() => {
-                setSelected(country);
-                setOpen(false);
+                handleSelect(country);
               }}
             >
               <span>{country.code} {country.dialCode}</span>

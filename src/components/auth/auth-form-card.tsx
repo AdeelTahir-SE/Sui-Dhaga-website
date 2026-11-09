@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { Eye, EyeOff } from "lucide-react";
 import { AccountRoleChoice } from "@/components/common/account-role-choice";
 import { CountryCodeSelect } from "@/components/common/country-code-select";
 import { authService } from "@/lib/api";
@@ -27,6 +28,9 @@ export function AuthFormCard({ title, intro, fields, button, mode = "login" }: F
   const [selectedRole, setSelectedRole] = useState("customer");
   const [countryCode, setCountryCode] = useState("+92");
 
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -40,12 +44,12 @@ export function AuthFormCard({ title, intro, fields, button, mode = "login" }: F
       setLoading(true);
 
       if (mode === "login") {
-        if (!email || !password) {
+        if (!email.trim() || !password) {
           setErrorMsg("Please enter both email and password.");
           setLoading(false);
           return;
         }
-        const res = await authService.login({ email: email.trim(), password });
+        const res = await authService.login({ email: email.trim().toLowerCase(), password });
         if (res?.success) {
           setSuccessMsg("Logged in successfully! Redirecting...");
           const userRole = res.data?.user?.role || "customer";
@@ -62,13 +66,29 @@ export function AuthFormCard({ title, intro, fields, button, mode = "login" }: F
           setErrorMsg(res?.message || "Invalid credentials.");
         }
       } else if (mode === "register") {
-        if (!email || !password) {
-          setErrorMsg("Please provide all required fields.");
+        if (!fullName.trim()) {
+          setErrorMsg("Please enter your full name.");
           setLoading(false);
           return;
         }
-        if (password.length < 6) {
-          setErrorMsg("Password must be at least 6 characters long.");
+        if (!email.trim()) {
+          setErrorMsg("Please enter your email address.");
+          setLoading(false);
+          return;
+        }
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email.trim())) {
+          setErrorMsg("Please enter a valid email address.");
+          setLoading(false);
+          return;
+        }
+        if (!password) {
+          setErrorMsg("Please create a password.");
+          setLoading(false);
+          return;
+        }
+        if (password.length < 8) {
+          setErrorMsg("Password must be at least 8 characters long.");
           setLoading(false);
           return;
         }
@@ -78,36 +98,59 @@ export function AuthFormCard({ title, intro, fields, button, mode = "login" }: F
           return;
         }
 
+        let fullPhone: string | undefined = undefined;
+        if (phoneNumber.trim()) {
+          const cleanDigits = phoneNumber.trim().replace(/\D/g, "").replace(/^0+/, "");
+          if (cleanDigits.length < 7 || cleanDigits.length > 15) {
+            setErrorMsg("Please enter a valid phone number (7 to 15 digits) or leave it blank.");
+            setLoading(false);
+            return;
+          }
+          fullPhone = `${countryCode}${cleanDigits}`;
+        }
+
         const role = selectedRole.toLowerCase() === "tailor" ? "tailor" : "customer";
-        const fullPhone = phoneNumber ? `${countryCode}${phoneNumber.replace(/^0+/, "")}` : undefined;
 
         const res = await authService.register({
-          name: fullName.trim() || undefined,
-          email: email.trim(),
+          name: fullName.trim(),
+          email: email.trim().toLowerCase(),
           password,
           role,
           phone: fullPhone,
         });
 
         if (res?.success) {
-          setSuccessMsg("Account created successfully! Redirecting...");
-          setTimeout(() => {
-            if (role === "tailor") {
-              router.push("/tailor/dashboard");
-            } else {
-              router.push("/customer/dashboard");
-            }
-          }, 700);
+          const hasActiveToken = !!(
+            res.data?.accessToken ||
+            res.data?.token ||
+            res.data?.session?.access_token
+          );
+
+          if (hasActiveToken) {
+            setSuccessMsg("Account created successfully! Redirecting...");
+            setTimeout(() => {
+              if (role === "tailor") {
+                router.push("/tailor/dashboard");
+              } else {
+                router.push("/customer/dashboard");
+              }
+            }, 700);
+          } else {
+            setSuccessMsg("Account registered successfully! Please check your email to verify your account, then log in.");
+            setTimeout(() => {
+              router.push("/auth/login");
+            }, 2500);
+          }
         } else {
           setErrorMsg(res?.message || "Could not complete registration.");
         }
       } else if (mode === "forgot") {
-        if (!email) {
+        if (!email.trim()) {
           setErrorMsg("Please enter your email address.");
           setLoading(false);
           return;
         }
-        const res = await authService.forgotPassword(email.trim());
+        const res = await authService.forgotPassword(email.trim().toLowerCase());
         setSuccessMsg(res?.message || "Password reset instructions have been sent to your email.");
       } else if (mode === "reset") {
         if (!password) {
@@ -115,8 +158,8 @@ export function AuthFormCard({ title, intro, fields, button, mode = "login" }: F
           setLoading(false);
           return;
         }
-        if (password.length < 6) {
-          setErrorMsg("Password must be at least 6 characters long.");
+        if (password.length < 8) {
+          setErrorMsg("Password must be at least 8 characters long.");
           setLoading(false);
           return;
         }
@@ -198,6 +241,21 @@ export function AuthFormCard({ title, intro, fields, button, mode = "login" }: F
 
       <div className="form-fields">
         {fields.map((field) => {
+          const isPasswordField = field === "Password" || field === "New Password";
+          const isConfirmPasswordField = field === "Confirm Password";
+          const isAnyPasswordField = isPasswordField || isConfirmPasswordField;
+
+          const isVisible = isPasswordField
+            ? showPassword
+            : isConfirmPasswordField
+            ? showConfirmPassword
+            : false;
+
+          const toggleVisibility = () => {
+            if (isPasswordField) setShowPassword((prev) => !prev);
+            if (isConfirmPasswordField) setShowConfirmPassword((prev) => !prev);
+          };
+
           let value = "";
           let setter = (_val: string) => {};
 
@@ -210,10 +268,10 @@ export function AuthFormCard({ title, intro, fields, button, mode = "login" }: F
           } else if (field === "Phone Number") {
             value = phoneNumber;
             setter = setPhoneNumber;
-          } else if (field === "Password" || field === "New Password") {
+          } else if (isPasswordField) {
             value = password;
             setter = setPassword;
-          } else if (field === "Confirm Password") {
+          } else if (isConfirmPasswordField) {
             value = confirmPassword;
             setter = setConfirmPassword;
           }
@@ -224,12 +282,14 @@ export function AuthFormCard({ title, intro, fields, button, mode = "login" }: F
                 <span className="field-label">{field}</span>
                 <div className={`input-wrap ${field === "Phone Number" ? "phone-input-wrap" : ""}`}>
                   {field === "Phone Number" && (
-                    <CountryCodeSelect />
+                    <CountryCodeSelect value={countryCode} onChange={setCountryCode} />
                   )}
                   <input
                     type={
-                      field.toLowerCase().includes("password")
-                        ? "password"
+                      isAnyPasswordField
+                        ? isVisible
+                          ? "text"
+                          : "password"
                         : field.toLowerCase().includes("email")
                         ? "email"
                         : field === "Phone Number"
@@ -237,28 +297,49 @@ export function AuthFormCard({ title, intro, fields, button, mode = "login" }: F
                         : "text"
                     }
                     placeholder={
-                      field.toLowerCase().includes("password")
-                        ? field.includes("Confirm")
-                          ? "Confirm new password"
-                          : field.includes("New")
-                          ? "Enter new password"
-                          : "Create a password"
+                      isPasswordField
+                        ? field.includes("New")
+                          ? "Enter new password (min 8 chars)"
+                          : mode === "login"
+                          ? "Enter your password"
+                          : "Create a password (min 8 chars)"
+                        : isConfirmPasswordField
+                        ? "Confirm your password"
                         : field.toLowerCase().includes("email")
                         ? "Enter your email"
                         : field === "Phone Number"
-                        ? "Enter phone number"
+                        ? "300 1234567"
                         : "Enter your full name"
                     }
                     value={value}
                     onChange={(e) => setter(e.target.value)}
-                    required={field !== "Phone Number" && field !== "Full Name"}
+                    required={field !== "Phone Number"}
                   />
-                  {field.toLowerCase().includes("password") && (
-                    <span className="eye-icon">
-                      <svg viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
-                      </svg>
-                    </span>
+                  {isAnyPasswordField && (
+                    <button
+                      type="button"
+                      className="eye-icon"
+                      onClick={toggleVisibility}
+                      aria-label={isVisible ? `Hide ${field}` : `Show ${field}`}
+                      title={isVisible ? `Hide ${field}` : `Show ${field}`}
+                      tabIndex={0}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        padding: 0,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        zIndex: 5,
+                      }}
+                    >
+                      {isVisible ? (
+                        <EyeOff size={18} strokeWidth={2} color="#078B87" />
+                      ) : (
+                        <Eye size={18} strokeWidth={2} color="#8A8378" />
+                      )}
+                    </button>
                   )}
                 </div>
               </label>
