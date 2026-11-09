@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   Search,
   Star,
@@ -26,9 +27,20 @@ import {
 import { TailorsGoogleMap } from "./tailors-google-map";
 
 export function TailorsMarketplacePage() {
+  const searchParams = useSearchParams();
+  const urlQuery = searchParams?.get("q") || searchParams?.get("search") || "";
+
   // Search and Filter State
-  const [searchInput, setSearchInput] = useState<string>("");
-  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [searchInput, setSearchInput] = useState<string>(urlQuery);
+  const [searchQuery, setSearchQuery] = useState<string>(urlQuery);
+
+  useEffect(() => {
+    if (urlQuery !== searchQuery) {
+      setSearchInput(urlQuery);
+      setSearchQuery(urlQuery);
+      setPage(1);
+    }
+  }, [urlQuery]);
   const [location, setLocation] = useState<string>("all");
   const [specialty, setSpecialty] = useState<string>("all");
   const [service, setService] = useState<string>("all");

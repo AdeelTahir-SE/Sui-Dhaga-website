@@ -1,11 +1,28 @@
 "use client"
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import Link from "next/link";
+import { useRouter, usePathname } from "next/navigation";
 import { navItems } from "./data";
 import { AnimeNavBar, AnimeMascot } from "@/components/ui/anime-navbar";
-import { Scissors, Wand2, Users, HelpCircle, CreditCard, Search, Bell, User, Menu } from "lucide-react";
-import { usePathname } from "next/navigation";
+import {
+  Scissors,
+  Wand2,
+  Users,
+  HelpCircle,
+  CreditCard,
+  Search,
+  Bell,
+  User,
+  Menu,
+  X,
+  ArrowRight,
+  Sparkles,
+  Star,
+  ChevronRight,
+  MapPin
+} from "lucide-react";
+import { initialTailors } from "@/lib/tailors-data";
 
 const animeNavItems = [
   { name: "Find a Tailor", url: "/tailors", icon: Scissors },
@@ -17,11 +34,79 @@ const animeNavItems = [
 
 export function PublicNav({ navTheme }: { navTheme?: "default" | "velvet-gold" } = {}) {
   const pathname = usePathname();
+  const router = useRouter();
   const [hidden, setHidden] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [profileUrl, setProfileUrl] = useState("/auth/login");
   const [userInitials, setUserInitials] = useState<string | null>(null);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const isVelvetGold = navTheme === "velvet-gold" || pathname === "/download" || pathname === "/download-app" || pathname === "/sun-drop";
+
+  // Close search modal when navigating
+  useEffect(() => {
+    setIsSearchOpen(false);
+  }, [pathname]);
+
+  // Global Ctrl+K / Cmd+K and Esc keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setIsSearchOpen((prev) => !prev);
+      }
+      if (e.key === "Escape" && isSearchOpen) {
+        setIsSearchOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isSearchOpen]);
+
+  // Focus search input whenever modal opens
+  useEffect(() => {
+    if (isSearchOpen) {
+      const timer = setTimeout(() => {
+        searchInputRef.current?.focus();
+      }, 60);
+      return () => clearTimeout(timer);
+    }
+  }, [isSearchOpen]);
+
+  // Filter matching tailors for instant search dropdown
+  const matchingTailors = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return [];
+    return initialTailors.filter((t) => {
+      const matchName = t.name.toLowerCase().includes(q);
+      const matchCity = t.city.toLowerCase().includes(q) || t.locality.toLowerCase().includes(q);
+      const matchSpecialty = t.specialties.some((s) => s.toLowerCase().includes(q));
+      const matchServices = t.services.some((s) => s.toLowerCase().includes(q));
+      return matchName || matchCity || matchSpecialty || matchServices;
+    });
+  }, [searchQuery]);
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchQuery.trim()) return;
+    const q = searchQuery.trim();
+    setIsSearchOpen(false);
+    setSearchQuery("");
+    router.push(`/tailors?q=${encodeURIComponent(q)}`);
+  };
+
+  const handleSelectChip = (chip: string) => {
+    setIsSearchOpen(false);
+    setSearchQuery("");
+    router.push(`/tailors?q=${encodeURIComponent(chip)}`);
+  };
+
+  const handleSelectTailor = (tailorId: string) => {
+    setIsSearchOpen(false);
+    setSearchQuery("");
+    router.push(`/tailors/${tailorId}`);
+  };
 
   useEffect(() => {
     try {
@@ -130,7 +215,23 @@ export function PublicNav({ navTheme }: { navTheme?: "default" | "velvet-gold" }
       </nav>
 
       <div className="hidden md:flex" style={{ alignItems: 'center', gap: '24px' }}>
-        <button aria-label="Search" style={{ background: 'none', border: 'none', cursor: 'pointer', color: isVelvetGold ? '#FDE68A' : (scrolled ? '#078b87' : '#111'), padding: 0, display: 'flex' }}>
+        <button
+          type="button"
+          onClick={() => setIsSearchOpen(true)}
+          aria-label="Search tailors and designs"
+          title="Search tailors and designs (Ctrl+K)"
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            color: isVelvetGold ? '#FDE68A' : (scrolled ? '#078b87' : '#111'),
+            padding: 0,
+            display: 'flex',
+            transition: 'transform 0.15s ease'
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.1)')}
+          onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+        >
           <Search size={22} strokeWidth={2} />
         </button>
         <Link href="/notifications" aria-label="Notifications" style={{ background: 'none', border: 'none', cursor: 'pointer', color: isVelvetGold ? '#FDE68A' : (scrolled ? '#078b87' : '#111'), padding: 0, display: 'flex' }}>
@@ -155,9 +256,393 @@ export function PublicNav({ navTheme }: { navTheme?: "default" | "velvet-gold" }
         </Link>
       </div>
 
-      <button className="md:hidden flex" aria-label="Menu" style={{ background: 'none', border: 'none', cursor: 'pointer', color: isVelvetGold ? '#FDE68A' : (scrolled ? '#078b87' : '#111'), padding: 0, alignItems: 'center' }}>
-        <Menu size={28} strokeWidth={2} />
-      </button>
+      <div className="md:hidden flex" style={{ alignItems: 'center', gap: '16px' }}>
+        <button
+          type="button"
+          onClick={() => setIsSearchOpen(true)}
+          aria-label="Search"
+          style={{ background: 'none', border: 'none', cursor: 'pointer', color: isVelvetGold ? '#FDE68A' : (scrolled ? '#078b87' : '#111'), padding: 0, display: 'flex' }}
+        >
+          <Search size={22} strokeWidth={2} />
+        </button>
+        <button className="flex" aria-label="Menu" style={{ background: 'none', border: 'none', cursor: 'pointer', color: isVelvetGold ? '#FDE68A' : (scrolled ? '#078b87' : '#111'), padding: 0, alignItems: 'center' }}>
+          <Menu size={28} strokeWidth={2} />
+        </button>
+      </div>
+
+      {/* Global Header Search Modal Overlay */}
+      {isSearchOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.65)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+            zIndex: 999999,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            padding: '70px 16px 30px',
+            overflowY: 'auto'
+          }}
+          onClick={() => setIsSearchOpen(false)}
+        >
+          <div
+            style={{
+              background: '#ffffff',
+              borderRadius: '24px',
+              width: '100%',
+              maxWidth: '680px',
+              boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(0, 0, 0, 0.05)',
+              overflow: 'hidden',
+              border: '1px solid #e2e8f0',
+              color: '#1e293b'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Search Input Field */}
+            <form
+              onSubmit={handleSearchSubmit}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                padding: '16px 20px',
+                borderBottom: '1px solid #e2e8f0',
+                background: '#f8fafc'
+              }}
+            >
+              <Search size={22} color="#078b87" style={{ flexShrink: 0 }} />
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search tailors, styles (e.g. Lehenga, Kurti), fabrics, or cities..."
+                style={{
+                  flex: 1,
+                  border: 'none',
+                  outline: 'none',
+                  background: 'transparent',
+                  fontSize: '16px',
+                  color: '#1e293b',
+                  fontWeight: 500
+                }}
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  style={{
+                    background: '#e2e8f0',
+                    border: 'none',
+                    borderRadius: '50%',
+                    width: '24px',
+                    height: '24px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    color: '#64748b'
+                  }}
+                  title="Clear input"
+                >
+                  <X size={14} />
+                </button>
+              )}
+              <button
+                type="submit"
+                style={{
+                  background: '#078b87',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '12px',
+                  padding: '9px 18px',
+                  fontSize: '13.5px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                <span>Search</span>
+                <ArrowRight size={14} />
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsSearchOpen(false)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#94a3b8',
+                  cursor: 'pointer',
+                  padding: '6px',
+                  borderRadius: '8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+                title="Close (Esc)"
+              >
+                <X size={20} />
+              </button>
+            </form>
+
+            {/* Live Search Suggestions & Instant Results */}
+            <div style={{ maxHeight: '440px', overflowY: 'auto', padding: '18px 20px' }}>
+              {matchingTailors.length > 0 ? (
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                      Tailors &amp; Boutiques ({matchingTailors.length})
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleSearchSubmit}
+                      style={{ background: 'none', border: 'none', color: '#078b87', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer' }}
+                    >
+                      View all in Marketplace &rarr;
+                    </button>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {matchingTailors.slice(0, 5).map((t) => (
+                      <div
+                        key={t.id}
+                        onClick={() => handleSelectTailor(t.id)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '14px',
+                          padding: '10px 14px',
+                          borderRadius: '14px',
+                          cursor: 'pointer',
+                          transition: 'background 0.15s ease',
+                          background: '#ffffff',
+                          border: '1px solid #f1f5f9'
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = '#f8fafc')}
+                        onMouseLeave={(e) => (e.currentTarget.style.background = '#ffffff')}
+                      >
+                        <img
+                          src={t.image || '/images/home/tailor-rekha.png'}
+                          alt={t.name}
+                          style={{ width: '44px', height: '44px', borderRadius: '12px', objectFit: 'cover' }}
+                        />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ fontSize: '14.5px', fontWeight: 700, color: '#1e293b' }}>{t.name}</span>
+                            {t.verified && (
+                              <span style={{ fontSize: '11px', fontWeight: 700, color: '#078b87', background: '#f0fdfa', border: '1px solid #ccfbf1', padding: '1px 6px', borderRadius: '4px' }}>
+                                Verified
+                              </span>
+                            )}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '3px', marginLeft: 'auto', fontSize: '12.5px', fontWeight: 700, color: '#d97706' }}>
+                              <Star size={13} fill="#d97706" color="#d97706" />
+                              <span>{t.rating}</span>
+                            </div>
+                          </div>
+                          <p style={{ fontSize: '12.5px', color: '#64748b', margin: '2px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {t.locality}, {t.city} · {t.specialties.join(', ')}
+                          </p>
+                        </div>
+                        <ChevronRight size={16} color="#94a3b8" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : searchQuery.trim().length > 0 ? (
+                <div style={{ textAlign: 'center', padding: '36px 16px' }}>
+                  <p style={{ fontSize: '15px', fontWeight: 650, color: '#1e293b', margin: '0 0 6px' }}>
+                    No exact tailor match for &ldquo;{searchQuery}&rdquo;
+                  </p>
+                  <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 16px' }}>
+                    Search across all listings, specialties, and cities in the Tailor Marketplace.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleSearchSubmit}
+                    style={{
+                      background: '#078b87',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '10px',
+                      padding: '8px 18px',
+                      fontSize: '13px',
+                      fontWeight: 650,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Search Marketplace for &ldquo;{searchQuery}&rdquo;
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  {/* Popular Search Suggestions */}
+                  <div style={{ marginBottom: '22px' }}>
+                    <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '10px' }}>
+                      Popular Searches
+                    </span>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                      {[
+                        'Bridal Lehenga',
+                        'Custom Anarkali',
+                        'Rekha Tailors',
+                        'Designer Blouse',
+                        "Men's Sherwani",
+                        'Faisalabad',
+                        'Lahore',
+                        'Raw Silk & Chiffon'
+                      ].map((chip) => (
+                        <button
+                          key={chip}
+                          type="button"
+                          onClick={() => handleSelectChip(chip)}
+                          style={{
+                            background: '#f1f5f9',
+                            border: '1px solid #e2e8f0',
+                            borderRadius: '20px',
+                            padding: '6px 14px',
+                            fontSize: '12.5px',
+                            fontWeight: 600,
+                            color: '#334155',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = '#078b87';
+                            e.currentTarget.style.color = '#ffffff';
+                            e.currentTarget.style.borderColor = '#078b87';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = '#f1f5f9';
+                            e.currentTarget.style.color = '#334155';
+                            e.currentTarget.style.borderColor = '#e2e8f0';
+                          }}
+                        >
+                          {chip}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Quick Hub Links */}
+                  <div>
+                    <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '10px' }}>
+                      Quick Destinations
+                    </span>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
+                      <Link
+                        href="/tailors"
+                        onClick={() => setIsSearchOpen(false)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px',
+                          padding: '11px 14px',
+                          borderRadius: '12px',
+                          background: '#f8fafc',
+                          border: '1px solid #e2e8f0',
+                          textDecoration: 'none',
+                          color: '#1e293b',
+                          fontSize: '13px',
+                          fontWeight: 650
+                        }}
+                      >
+                        <Scissors size={16} color="#078b87" />
+                        <span>Find a Tailor</span>
+                      </Link>
+
+                      <Link
+                        href="/design-studio"
+                        onClick={() => setIsSearchOpen(false)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px',
+                          padding: '11px 14px',
+                          borderRadius: '12px',
+                          background: '#f8fafc',
+                          border: '1px solid #e2e8f0',
+                          textDecoration: 'none',
+                          color: '#1e293b',
+                          fontSize: '13px',
+                          fontWeight: 650
+                        }}
+                      >
+                        <Wand2 size={16} color="#E86A33" />
+                        <span>AI Design Studio</span>
+                      </Link>
+
+                      <Link
+                        href="/community"
+                        onClick={() => setIsSearchOpen(false)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px',
+                          padding: '11px 14px',
+                          borderRadius: '12px',
+                          background: '#f8fafc',
+                          border: '1px solid #e2e8f0',
+                          textDecoration: 'none',
+                          color: '#1e293b',
+                          fontSize: '13px',
+                          fontWeight: 650
+                        }}
+                      >
+                        <Users size={16} color="#2563eb" />
+                        <span>Community Feed</span>
+                      </Link>
+
+                      <Link
+                        href="/customer/wishlist"
+                        onClick={() => setIsSearchOpen(false)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px',
+                          padding: '11px 14px',
+                          borderRadius: '12px',
+                          background: '#f8fafc',
+                          border: '1px solid #e2e8f0',
+                          textDecoration: 'none',
+                          color: '#1e293b',
+                          fontSize: '13px',
+                          fontWeight: 650
+                        }}
+                      >
+                        <Sparkles size={16} color="#9333ea" />
+                        <span>Saved Wishlist</span>
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer keyboard hints */}
+            <div
+              style={{
+                padding: '10px 20px',
+                background: '#f8fafc',
+                borderTop: '1px solid #f1f5f9',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                fontSize: '11.5px',
+                color: '#94a3b8'
+              }}
+            >
+              <span>Press <kbd style={{ background: '#e2e8f0', padding: '2px 6px', borderRadius: '4px', color: '#475569', fontWeight: 700 }}>Enter</kbd> to search</span>
+              <span>Press <kbd style={{ background: '#e2e8f0', padding: '2px 6px', borderRadius: '4px', color: '#475569', fontWeight: 700 }}>Esc</kbd> to close</span>
+            </div>
+          </div>
+        </div>
+      )}
     </header>
   );
 }
