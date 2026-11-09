@@ -1,0 +1,221 @@
+/* ==========================================================================
+   Sui Dhāga - Customer Account Views Stylesheet
+   (Addresses, Settings, Wishlist, Payments, Notifications)
+   ========================================================================== */
+
+.customer-page-root {
+  position: relative;
+  min-height: 100vh;
+  background-color: #faf7f2;
+  overflow-x: hidden;
+  padding-bottom: 80px;
+}
+
+.customer-page-container {
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: 32px 24px;
+  position: relative;
+  z-index: 2;
+}
+
+.customer-page-layout-grid {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 32px;
+  align-items: start;
+}
+
+/* Breadcrumb Navigation */
+.customer-breadcrumb-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #64748b;
+  margin-bottom: 16px;
+}
+
+.customer-breadcrumb-nav a {
+  color: #64748b;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.customer-breadcrumb-nav a:hover {
+  color: #078b87;
+}
+
+.customer-breadcrumb-nav .crumb-current {
+  color: #078b87;
+  font-weight: 600;
+}
+
+/* Header Banner */
+.customer-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 28px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.customer-page-title {
+  font-size: 28px;
+  font-weight: 800;
+  color: #1e293b;
+  margin: 0 0 6px 0;
+  letter-spacing: -0.02em;
+}
+
+.customer-page-subtitle {
+  font-size: 14.5px;
+  color: #64748b;
+  margin: 0;
+}
+
+/* Common Section Cards */
+.customer-section-card {
+  background: #ffffff;
+  border-radius: 20px;
+  border: 1px solid #e2e8f0;
+  padding: 24px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
+  margin-bottom: 24px;
+}
+
+.customer-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.customer-card-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Primary and Outline Action Buttons */
+.btn-primary-sd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #078b87;
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 10px 20px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(7, 139, 135, 0.25);
+}
+
+.btn-primary-sd:hover {
+  background: #06726f;
+  transform: translateY(-1px);
+}
+
+.btn-accent-sd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #E86A33;
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 10px 20px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(232, 106, 51, 0.25);
+}
+
+.btn-accent-sd:hover {
+  background: #d45924;
+  transform: translateY(-1px);
+}
+
+.btn-outline-sd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #ffffff;
+  color: #475569;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 9px 18px;
+  border-radius: 12px;
+  border: 1px solid #cbd5e1;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.btn-outline-sd:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+  color: #1e293b;
+}
+
+/* Empty State Box */
+.customer-empty-state-box {
+  background: #ffffff;
+  border-radius: 20px;
+  border: 1px dashed #cbd5e1;
+  padding: 56px 24px;
+  text-align: center;
+  margin: 16px 0;
+}
+
+.customer-empty-state-icon {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: #fff7ed;
+  color: #E86A33;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.customer-empty-state-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 8px 0;
+}
+
+.customer-empty-state-desc {
+  font-size: 14px;
+  color: #64748b;
+  max-width: 440px;
+  margin: 0 auto 24px auto;
+  line-height: 1.6;
+}
+
+/* Responsive adjustments */
+@media (max-width: 992px) {
+  .customer-page-layout-grid {
+    grid-template-columns: 1fr;
+  }
+  .customer-sidebar-nav {
+    position: static;
+  }
+}
+

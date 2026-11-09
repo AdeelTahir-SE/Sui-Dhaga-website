@@ -11,13 +11,15 @@ import {
   Heart,
   MessageSquare,
   Sparkles,
-  Info,
-  Clock,
-  ArrowRight
+  ChevronRight,
+  ExternalLink
 } from "lucide-react";
 import { PublicShell } from "@/components/common/site-shell";
+import { CustomerSidebar } from "@/components/customer/customer-sidebar";
 import { notificationService } from "@/lib/api/notification-service";
 import { AppNotification } from "@/lib/api/types";
+import "@/styles/pages/customer-dashboard.css";
+import "@/styles/pages/customer-account-views.css";
 
 export interface DisplayNotification {
   id: string;
@@ -27,7 +29,6 @@ export interface DisplayNotification {
   timestamp: string;
   isRead: boolean;
   linkUrl?: string;
-  actorAvatar?: string;
 }
 
 export const initialMockNotifications: DisplayNotification[] = [
@@ -65,7 +66,7 @@ export const initialMockNotifications: DisplayNotification[] = [
     message: "Zainab Malik and 14 others liked your Pastel Anarkali design post.",
     timestamp: "1 day ago",
     isRead: true,
-    linkUrl: "/community/post/post-1"
+    linkUrl: "/community"
   },
   {
     id: "notif-5",
@@ -79,31 +80,42 @@ export const initialMockNotifications: DisplayNotification[] = [
 ];
 
 export function CustomerNotificationsPage() {
-  const [notifications, setNotifications] = useState<DisplayNotification[]>(initialMockNotifications);
+  const [notifications, setNotifications] = useState<DisplayNotification[]>([]);
   const [activeTab, setActiveTab] = useState<"all" | "unread" | "order" | "appointment" | "community">("all");
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
     let isSubscribed = true;
+    const hasToken = typeof window !== "undefined" && !!localStorage.getItem("sui_dhaga_auth_token");
 
     notificationService
       .getNotifications()
       .then((res) => {
-        if (isSubscribed && res?.data && Array.isArray(res.data) && res.data.length > 0) {
+        if (!isSubscribed) return;
+        if (res?.data && Array.isArray(res.data)) {
           const mapped: DisplayNotification[] = res.data.map((n: AppNotification) => ({
             id: n.id,
             type: (n.type as any) || "system",
             title: n.title,
             message: n.message,
-            timestamp: n.created_at ? new Date(n.created_at).toLocaleTimeString() : "Recently",
+            timestamp: n.created_at ? new Date(n.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "Recently",
             isRead: n.is_read ?? n.isRead ?? false,
             linkUrl: n.link_url || n.linkUrl || "/customer/dashboard"
           }));
           setNotifications(mapped);
+        } else if (hasToken) {
+          setNotifications([]);
+        } else {
+          setNotifications(initialMockNotifications);
         }
       })
       .catch((err) => {
-        console.warn("[Notifications Page] Fetch failed, using local notifications:", err);
+        console.warn("[Notifications Page] Fetch fallback:", err);
+        if (hasToken) {
+          setNotifications([]);
+        } else {
+          setNotifications(initialMockNotifications);
+        }
       })
       .finally(() => {
         if (isSubscribed) setIsLoading(false);
@@ -117,21 +129,21 @@ export function CustomerNotificationsPage() {
   const handleMarkAllRead = async () => {
     try {
       await notificationService.markAllAsRead();
-    } catch (e) {}
+    } catch {}
     setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
   };
 
   const handleMarkSingleRead = async (id: string) => {
     try {
       await notificationService.markAsRead(id);
-    } catch (e) {}
+    } catch {}
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)));
   };
 
   const handleDelete = async (id: string) => {
     try {
       await notificationService.deleteNotification(id);
-    } catch (e) {}
+    } catch {}
     setNotifications((prev) => prev.filter((n) => n.id !== id));
   };
 
@@ -146,228 +158,205 @@ export function CustomerNotificationsPage() {
   const getIcon = (type: DisplayNotification["type"]) => {
     switch (type) {
       case "order":
-        return <Package size={18} className="text-amber-500" />;
+        return <Package size={18} style={{ color: "#d97706" }} />;
       case "appointment":
-        return <Calendar size={18} className="text-teal-600" />;
+        return <Calendar size={18} style={{ color: "#0d9488" }} />;
       case "message":
-        return <MessageSquare size={18} className="text-blue-500" />;
+        return <MessageSquare size={18} style={{ color: "#2563eb" }} />;
       case "community":
-        return <Heart size={18} className="text-rose-500" />;
+        return <Heart size={18} style={{ color: "#e11d48" }} />;
       case "system":
       default:
-        return <Sparkles size={18} className="text-purple-500" />;
+        return <Sparkles size={18} style={{ color: "#9333ea" }} />;
     }
   };
 
   return (
     <PublicShell>
-      <div className="notifications-container" style={{ maxWidth: "860px", margin: "40px auto", padding: "0 20px" }}>
-        {/* Header */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "28px" }}>
-          <div>
-            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <div
-                style={{
-                  width: "40px",
-                  height: "40px",
-                  borderRadius: "12px",
-                  background: "linear-gradient(135deg, #078b87 0%, #0d9488 100%)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "#fff"
-                }}
-              >
-                <Bell size={22} />
-              </div>
-              <h1 style={{ fontSize: "28px", fontWeight: "800", color: "#1e293b", margin: 0 }}>
-                Notifications
-              </h1>
-            </div>
-            <p style={{ color: "#64748b", fontSize: "14px", marginTop: "6px" }}>
-              Stay updated on your custom orders, tailor appointments, and community activity.
-            </p>
-          </div>
-
-          {unreadCount > 0 && (
-            <button
-              onClick={handleMarkAllRead}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "8px",
-                padding: "10px 16px",
-                borderRadius: "10px",
-                background: "#f0fdfa",
-                border: "1px solid #ccfbf1",
-                color: "#078b87",
-                fontSize: "13.5px",
-                fontWeight: "700",
-                cursor: "pointer"
-              }}
-            >
-              <CheckCheck size={16} />
-              Mark all as read
-            </button>
-          )}
+      <div className="customer-page-root">
+        {/* Ribbon Accent */}
+        <div className="measurements-hero-ribbon" aria-hidden="true">
+          <img src="/images/tailors/hero-ribbon.png" alt="" className="ribbon-img" />
         </div>
 
-        {/* Tab Filter Navigation */}
-        <div
-          style={{
-            display: "flex",
-            gap: "8px",
-            borderBottom: "1px solid #e2e8f0",
-            paddingBottom: "12px",
-            marginBottom: "24px",
-            overflowX: "auto"
-          }}
-        >
-          {[
-            { id: "all", label: "All" },
-            { id: "unread", label: `Unread (${unreadCount})` },
-            { id: "order", label: "Orders" },
-            { id: "appointment", label: "Appointments" },
-            { id: "community", label: "Community" }
-          ].map((t) => (
-            <button
-              key={t.id}
-              onClick={() => setActiveTab(t.id as any)}
-              style={{
-                padding: "8px 18px",
-                borderRadius: "20px",
-                border: "none",
-                fontSize: "13.5px",
-                fontWeight: activeTab === t.id ? "700" : "500",
-                background: activeTab === t.id ? "#078b87" : "#f1f5f9",
-                color: activeTab === t.id ? "#ffffff" : "#475569",
-                cursor: "pointer",
-                whiteSpace: "nowrap",
-                transition: "all 0.15s ease"
-              }}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
+        <div className="customer-page-container">
+          <div className="customer-page-layout-grid">
+            <CustomerSidebar active="notifications" />
 
-        {/* Notifications List */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-          {filteredNotifications.length === 0 ? (
-            <div
-              style={{
-                padding: "60px 20px",
-                textAlign: "center",
-                background: "#ffffff",
-                borderRadius: "16px",
-                border: "1px dashed #cbd5e1"
-              }}
-            >
-              <Bell size={40} style={{ color: "#94a3b8", margin: "0 auto 12px" }} />
-              <h3 style={{ fontSize: "17px", fontWeight: "700", color: "#334155" }}>No notifications</h3>
-              <p style={{ color: "#64748b", fontSize: "14px" }}>
-                You&apos;re completely caught up! We will notify you when there are updates.
-              </p>
-            </div>
-          ) : (
-            filteredNotifications.map((notif) => (
-              <div
-                key={notif.id}
-                style={{
-                  display: "flex",
-                  alignItems: "flex-start",
-                  gap: "16px",
-                  padding: "18px 20px",
-                  background: notif.isRead ? "#ffffff" : "#f8fafc",
-                  borderRadius: "14px",
-                  border: notif.isRead ? "1px solid #e2e8f0" : "1px solid #99f6e4",
-                  boxShadow: notif.isRead ? "none" : "0 2px 10px rgba(7, 139, 135, 0.05)",
-                  transition: "all 0.2s ease"
-                }}
-              >
-                <div
-                  style={{
-                    width: "36px",
-                    height: "36px",
-                    borderRadius: "10px",
-                    background: "#f1f5f9",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexShrink: 0
-                  }}
-                >
-                  {getIcon(notif.type)}
-                </div>
+            <main className="customer-main-feed-area">
+              {/* Breadcrumb */}
+              <nav className="customer-breadcrumb-nav" aria-label="Breadcrumb">
+                <Link href="/">Home</Link>
+                <ChevronRight size={14} />
+                <Link href="/customer/dashboard">Dashboard</Link>
+                <ChevronRight size={14} />
+                <span className="crumb-current">Notifications</span>
+              </nav>
 
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "4px" }}>
-                    <h4 style={{ fontSize: "15px", fontWeight: notif.isRead ? "600" : "800", color: "#0f172a", margin: 0 }}>
-                      {notif.title}
-                    </h4>
-                    <span style={{ fontSize: "12px", color: "#94a3b8" }}>{notif.timestamp}</span>
-                  </div>
-
-                  <p style={{ fontSize: "13.5px", color: "#475569", margin: "0 0 12px 0", lineHeight: "1.5" }}>
-                    {notif.message}
+              {/* Header */}
+              <div className="customer-header-row">
+                <div>
+                  <h1 className="customer-page-title">Notifications</h1>
+                  <p className="customer-page-subtitle">
+                    Stay updated on your custom orders, tailor appointments, and community activity.
                   </p>
-
-                  <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-                    {notif.linkUrl && (
-                      <Link
-                        href={notif.linkUrl}
-                        onClick={() => handleMarkSingleRead(notif.id)}
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "6px",
-                          fontSize: "13px",
-                          fontWeight: "700",
-                          color: "#078b87",
-                          textDecoration: "none"
-                        }}
-                      >
-                        View details
-                        <ArrowRight size={14} />
-                      </Link>
-                    )}
-
-                    {!notif.isRead && (
-                      <button
-                        onClick={() => handleMarkSingleRead(notif.id)}
-                        style={{
-                          background: "none",
-                          border: "none",
-                          color: "#64748b",
-                          fontSize: "12.5px",
-                          fontWeight: "600",
-                          cursor: "pointer",
-                          padding: 0
-                        }}
-                      >
-                        Mark as read
-                      </button>
-                    )}
-
-                    <button
-                      onClick={() => handleDelete(notif.id)}
-                      style={{
-                        background: "none",
-                        border: "none",
-                        color: "#94a3b8",
-                        cursor: "pointer",
-                        padding: 0,
-                        marginLeft: "auto"
-                      }}
-                      title="Delete notification"
-                    >
-                      <Trash2 size={15} />
-                    </button>
-                  </div>
                 </div>
+
+                {unreadCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleMarkAllRead}
+                    className="btn-outline-sd"
+                  >
+                    <CheckCheck size={16} />
+                    <span>Mark all as read</span>
+                  </button>
+                )}
               </div>
-            ))
-          )}
+
+              {/* Segmented Filter Bar */}
+              <div
+                style={{
+                  display: "flex",
+                  gap: "8px",
+                  overflowX: "auto",
+                  paddingBottom: "8px",
+                  marginBottom: "20px"
+                }}
+              >
+                {[
+                  { key: "all", label: `All (${notifications.length})` },
+                  { key: "unread", label: `Unread (${unreadCount})` },
+                  { key: "order", label: "Orders" },
+                  { key: "appointment", label: "Appointments" },
+                  { key: "community", label: "Community" }
+                ].map((tab) => (
+                  <button
+                    key={tab.key}
+                    type="button"
+                    onClick={() => setActiveTab(tab.key as any)}
+                    style={{
+                      padding: "8px 16px",
+                      borderRadius: "20px",
+                      border: "1px solid",
+                      borderColor: activeTab === tab.key ? "#078b87" : "#e2e8f0",
+                      background: activeTab === tab.key ? "#078b87" : "#ffffff",
+                      color: activeTab === tab.key ? "#ffffff" : "#475569",
+                      fontSize: "13px",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      whiteSpace: "nowrap"
+                    }}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Notifications List */}
+              {!isLoading && filteredNotifications.length === 0 ? (
+                <div className="customer-empty-state-box">
+                  <div className="customer-empty-state-icon">
+                    <Bell size={36} />
+                  </div>
+                  <h2 className="customer-empty-state-title">You&apos;re All Caught Up!</h2>
+                  <p className="customer-empty-state-desc">
+                    No new alerts right now. When tailors update your stitching progress or fitting schedules, you&apos;ll be notified here.
+                  </p>
+                  <Link href="/customer/dashboard" className="btn-primary-sd">
+                    <span>Back to Dashboard</span>
+                  </Link>
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                  {filteredNotifications.map((notif) => (
+                    <article
+                      key={notif.id}
+                      onClick={() => handleMarkSingleRead(notif.id)}
+                      className="customer-section-card"
+                      style={{
+                        margin: 0,
+                        padding: "16px 20px",
+                        display: "flex",
+                        alignItems: "flex-start",
+                        gap: "16px",
+                        borderLeft: notif.isRead ? "1px solid #e2e8f0" : "4px solid #078b87",
+                        background: notif.isRead ? "#ffffff" : "#f0fdfa",
+                        cursor: "pointer"
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: "36px",
+                          height: "36px",
+                          borderRadius: "10px",
+                          background: "#ffffff",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          boxShadow: "0 2px 6px rgba(0,0,0,0.06)",
+                          flexShrink: 0
+                        }}
+                      >
+                        {getIcon(notif.type)}
+                      </div>
+
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "4px" }}>
+                          <h3 style={{ fontSize: "15px", fontWeight: 700, color: notif.isRead ? "#334155" : "#0f172a", margin: 0 }}>
+                            {notif.title}
+                          </h3>
+                          <span style={{ fontSize: "12px", color: "#94a3b8" }}>{notif.timestamp}</span>
+                        </div>
+                        <p style={{ fontSize: "13.5px", color: "#475569", margin: "0 0 8px 0", lineHeight: 1.5 }}>
+                          {notif.message}
+                        </p>
+
+                        <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+                          {notif.linkUrl && (
+                            <Link
+                              href={notif.linkUrl}
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "4px",
+                                fontSize: "12px",
+                                fontWeight: 600,
+                                color: "#078b87",
+                                textDecoration: "none"
+                              }}
+                            >
+                              <span>View Details</span>
+                              <ExternalLink size={12} />
+                            </Link>
+                          )}
+
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDelete(notif.id);
+                            }}
+                            title="Delete notification"
+                            style={{
+                              background: "transparent",
+                              border: "none",
+                              color: "#94a3b8",
+                              cursor: "pointer",
+                              padding: "2px",
+                              marginLeft: "auto"
+                            }}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </main>
+          </div>
         </div>
       </div>
     </PublicShell>
