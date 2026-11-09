@@ -19,7 +19,36 @@ export function PublicNav({ navTheme }: { navTheme?: "default" | "velvet-gold" }
   const pathname = usePathname();
   const [hidden, setHidden] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [profileUrl, setProfileUrl] = useState("/auth/login");
+  const [userInitials, setUserInitials] = useState<string | null>(null);
   const isVelvetGold = navTheme === "velvet-gold" || pathname === "/download" || pathname === "/download-app" || pathname === "/sun-drop";
+
+  useEffect(() => {
+    try {
+      const token = localStorage.getItem("sui_dhaga_auth_token");
+      const rawUser = localStorage.getItem("sui_dhaga_user");
+      if (token && rawUser) {
+        const u = JSON.parse(rawUser);
+        const role = u.role || "customer";
+        if (role === "admin") setProfileUrl("/admin/dashboard");
+        else if (role === "tailor") setProfileUrl("/tailor/dashboard");
+        else setProfileUrl("/customer/dashboard");
+
+        const name = u.name || u.full_name || u.email || "";
+        if (name) {
+          const parts = name.trim().split(" ");
+          const initials =
+            parts.length > 1
+              ? `${parts[0][0]}${parts[1][0]}`.toUpperCase()
+              : name.slice(0, 2).toUpperCase();
+          setUserInitials(initials);
+        }
+      } else {
+        setProfileUrl("/auth/login");
+        setUserInitials(null);
+      }
+    } catch {}
+  }, [pathname]);
 
   useEffect(() => {
     let lastScrollY = window.scrollY;
@@ -104,10 +133,10 @@ export function PublicNav({ navTheme }: { navTheme?: "default" | "velvet-gold" }
         <button aria-label="Search" style={{ background: 'none', border: 'none', cursor: 'pointer', color: isVelvetGold ? '#FDE68A' : (scrolled ? '#078b87' : '#111'), padding: 0, display: 'flex' }}>
           <Search size={22} strokeWidth={2} />
         </button>
-        <button aria-label="Alerts" style={{ background: 'none', border: 'none', cursor: 'pointer', color: isVelvetGold ? '#FDE68A' : (scrolled ? '#078b87' : '#111'), padding: 0, display: 'flex' }}>
+        <Link href="/notifications" aria-label="Notifications" style={{ background: 'none', border: 'none', cursor: 'pointer', color: isVelvetGold ? '#FDE68A' : (scrolled ? '#078b87' : '#111'), padding: 0, display: 'flex' }}>
           <Bell size={22} strokeWidth={2} />
-        </button>
-        <Link href="/auth/login" aria-label="Profile" style={{ 
+        </Link>
+        <Link href={profileUrl} aria-label="Profile" style={{ 
           background: isVelvetGold ? 'linear-gradient(135deg, #B45309 0%, #78350F 100%)' : '#14919b', 
           border: isVelvetGold ? '1px solid #FCD34D' : 'none', 
           cursor: 'pointer', 
@@ -118,9 +147,11 @@ export function PublicNav({ navTheme }: { navTheme?: "default" | "velvet-gold" }
           display: 'flex', 
           alignItems: 'center', 
           justifyContent: 'center',
-          textDecoration: 'none'
+          textDecoration: 'none',
+          fontSize: '13px',
+          fontWeight: 700,
         }}>
-          <User size={20} strokeWidth={2} />
+          {userInitials ? userInitials : <User size={20} strokeWidth={2} />}
         </Link>
       </div>
 

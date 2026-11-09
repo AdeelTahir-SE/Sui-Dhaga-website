@@ -21,6 +21,7 @@ import {
   ArrowRight
 } from "lucide-react";
 import { PublicShell } from "@/components/common/site-shell";
+import { authService } from "@/lib/api";
 import {
   fetchCustomerProfileApi,
   fetchDashboardStatsApi,
@@ -72,7 +73,12 @@ export function CustomerDashboardPage() {
     };
   }, []);
 
-  const userName = profile?.name || "Ayesha Khan";
+  const userName =
+    profile?.name && profile.name !== "Customer"
+      ? profile.name
+      : profile?.email
+      ? profile.email.split("@")[0]
+      : "Valued Customer";
 
   return (
     <PublicShell>
@@ -149,10 +155,27 @@ export function CustomerDashboardPage() {
                   <span>Account Settings</span>
                 </Link>
 
-                <Link href="/auth/login" className="sidebar-item logout-btn">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await authService.logout();
+                    window.location.href = "/auth/login";
+                  }}
+                  className="sidebar-item logout-btn"
+                  style={{
+                    background: "none",
+                    border: "none",
+                    width: "100%",
+                    textAlign: "left",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "12px",
+                  }}
+                >
                   <LogOut size={18} />
                   <span>Logout</span>
-                </Link>
+                </button>
               </nav>
             </aside>
 
@@ -190,7 +213,7 @@ export function CustomerDashboardPage() {
                   {/* Stat 1: Upcoming Appointments */}
                   <article className="stat-overview-card">
                     <div className="stat-card-number">
-                      {stats?.upcomingAppointmentsCount ?? 3}
+                      {stats?.upcomingAppointmentsCount ?? 0}
                     </div>
                     <div className="stat-card-label">Upcoming Appointments</div>
                     <Link href="/customer/appointments" className="stat-card-link">
@@ -201,7 +224,7 @@ export function CustomerDashboardPage() {
                   {/* Stat 2: Orders in Progress */}
                   <article className="stat-overview-card">
                     <div className="stat-card-number">
-                      {stats?.ordersInProgressCount ?? 2}
+                      {stats?.ordersInProgressCount ?? 0}
                     </div>
                     <div className="stat-card-label">Orders in Progress</div>
                     <Link href="/customer/orders" className="stat-card-link">
@@ -212,7 +235,7 @@ export function CustomerDashboardPage() {
                   {/* Stat 3: Saved Designs */}
                   <article className="stat-overview-card">
                     <div className="stat-card-number">
-                      {stats?.savedDesignsCount ?? 5}
+                      {stats?.savedDesignsCount ?? 0}
                     </div>
                     <div className="stat-card-label">Saved Designs</div>
                     <Link href="/customer/saved-designs" className="stat-card-link">
@@ -223,7 +246,7 @@ export function CustomerDashboardPage() {
                   {/* Stat 4: Measurements Saved */}
                   <article className="stat-overview-card">
                     <div className="stat-card-number">
-                      {stats?.measurementsSavedCount ?? 12}
+                      {stats?.measurementsSavedCount ?? 0}
                     </div>
                     <div className="stat-card-label">Measurements Saved</div>
                     <Link href="/customer/measurements" className="stat-card-link">
@@ -241,48 +264,67 @@ export function CustomerDashboardPage() {
                     Recent Orders
                   </h2>
 
-                  <div className="orders-list-wrapper">
-                    {recentOrders.map((order) => (
+                  {recentOrders.length === 0 ? (
+                    <div style={{ textAlign: "center", padding: "36px 16px", color: "var(--muted)" }}>
+                      <Package size={38} style={{ margin: "0 auto 12px", color: "#94A3B8" }} />
+                      <p style={{ fontWeight: 650, color: "#1E293B", marginBottom: "4px" }}>
+                        No orders placed yet
+                      </p>
+                      <p style={{ fontSize: "13px", color: "#64748B", marginBottom: "16px" }}>
+                        Discover top tailors to place your first custom stitch order.
+                      </p>
                       <Link
-                        key={order.id}
-                        href={`/customer/orders/${order.id}`}
-                        className="order-row-item"
-                        style={{ textDecoration: "none" }}
+                        href="/tailors"
+                        className="panel-full-btn"
+                        style={{ display: "inline-block", maxWidth: "200px", textDecoration: "none" }}
                       >
-                        <div className="order-item-avatar">
-                          <img
-                            src={order.image}
-                            alt={order.itemTitle}
-                            className="order-avatar-img"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src = "/images/booking/ref-gold-anarkali.jpg";
-                            }}
-                          />
-                        </div>
-
-                        <div className="order-info-details">
-                          <span className="order-number-text">{order.orderNumber}</span>
-                          <h3 className="order-item-name">{order.itemTitle}</h3>
-                        </div>
-
-                        <div className="order-status-col">
-                          <span
-                            className={`order-status-pill ${
-                              order.status === "Delivered"
-                                ? "delivered"
-                                : order.status === "Out for Delivery"
-                                ? "out-for-delivery"
-                                : "in-progress"
-                            }`}
-                          >
-                            <span className="status-dot" />
-                            {order.status}
-                          </span>
-                          <ChevronRight size={16} className="row-chevron" />
-                        </div>
+                        Explore Tailors
                       </Link>
-                    ))}
-                  </div>
+                    </div>
+                  ) : (
+                    <div className="orders-list-wrapper">
+                      {recentOrders.map((order) => (
+                        <Link
+                          key={order.id}
+                          href={`/customer/orders/${order.id}`}
+                          className="order-row-item"
+                          style={{ textDecoration: "none" }}
+                        >
+                          <div className="order-item-avatar">
+                            <img
+                              src={order.image}
+                              alt={order.itemTitle}
+                              className="order-avatar-img"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = "/images/booking/ref-gold-anarkali.jpg";
+                              }}
+                            />
+                          </div>
+
+                          <div className="order-info-details">
+                            <span className="order-number-text">{order.orderNumber}</span>
+                            <h3 className="order-item-name">{order.itemTitle}</h3>
+                          </div>
+
+                          <div className="order-status-col">
+                            <span
+                              className={`order-status-pill ${
+                                order.status === "Delivered"
+                                  ? "delivered"
+                                  : order.status === "Out for Delivery"
+                                  ? "out-for-delivery"
+                                  : "in-progress"
+                              }`}
+                            >
+                              <span className="status-dot" />
+                              {order.status}
+                            </span>
+                            <ChevronRight size={16} className="row-chevron" />
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
 
                   <Link href="/customer/orders" className="panel-full-btn">
                     View All Orders
@@ -295,42 +337,61 @@ export function CustomerDashboardPage() {
                     Upcoming Appointments
                   </h2>
 
-                  <div className="appointments-list-wrapper">
-                    {upcomingAppointments.map((apt) => (
+                  {upcomingAppointments.length === 0 ? (
+                    <div style={{ textAlign: "center", padding: "36px 16px", color: "var(--muted)" }}>
+                      <Calendar size={38} style={{ margin: "0 auto 12px", color: "#94A3B8" }} />
+                      <p style={{ fontWeight: 650, color: "#1E293B", marginBottom: "4px" }}>
+                        No upcoming appointments
+                      </p>
+                      <p style={{ fontSize: "13px", color: "#64748B", marginBottom: "16px" }}>
+                        Schedule a consultation or measurement session with a master tailor.
+                      </p>
                       <Link
-                        key={apt.id}
-                        href={`/customer/appointments/${apt.id}`}
-                        className="appointment-row-item"
-                        style={{ textDecoration: "none" }}
+                        href="/tailors"
+                        className="panel-full-btn"
+                        style={{ display: "inline-block", maxWidth: "200px", textDecoration: "none" }}
                       >
-                        <div className="tailor-avatar-circle">
-                          <img
-                            src={apt.tailorImage}
-                            alt={apt.tailorName}
-                            className="tailor-img"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src = "/images/home/tailor-rekha.png";
-                            }}
-                          />
-                        </div>
-
-                        <div className="appointment-info-details">
-                          <span className="appointment-datetime">
-                            {apt.date} - {apt.time}
-                          </span>
-                          <h3 className="appointment-tailor-name">{apt.tailorName}</h3>
-                          <span className="appointment-service-name">{apt.serviceName}</span>
-                        </div>
-
-                        <div className="appointment-status-col">
-                          <span className="appointment-status-pill">
-                            {apt.status}
-                          </span>
-                          <ChevronRight size={16} className="row-chevron" />
-                        </div>
+                        Book Appointment
                       </Link>
-                    ))}
-                  </div>
+                    </div>
+                  ) : (
+                    <div className="appointments-list-wrapper">
+                      {upcomingAppointments.map((apt) => (
+                        <Link
+                          key={apt.id}
+                          href={`/customer/appointments/${apt.id}`}
+                          className="appointment-row-item"
+                          style={{ textDecoration: "none" }}
+                        >
+                          <div className="tailor-avatar-circle">
+                            <img
+                              src={apt.tailorImage}
+                              alt={apt.tailorName}
+                              className="tailor-img"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = "/images/home/tailor-rekha.png";
+                              }}
+                            />
+                          </div>
+
+                          <div className="appointment-info-details">
+                            <span className="appointment-datetime">
+                              {apt.date} - {apt.time}
+                            </span>
+                            <h3 className="appointment-tailor-name">{apt.tailorName}</h3>
+                            <span className="appointment-service-name">{apt.serviceName}</span>
+                          </div>
+
+                          <div className="appointment-status-col">
+                            <span className="appointment-status-pill">
+                              {apt.status}
+                            </span>
+                            <ChevronRight size={16} className="row-chevron" />
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
 
                   <Link href="/customer/appointments" className="panel-full-btn">
                     View All Appointments
@@ -351,20 +412,35 @@ export function CustomerDashboardPage() {
                     </Link>
                   </div>
 
-                  <div className="saved-designs-thumbnails-row">
-                    {savedDesigns.slice(0, 3).map((dsg) => (
-                      <div key={dsg.id} className="saved-design-thumb-card">
-                        <img
-                          src={dsg.image}
-                          alt={dsg.title}
-                          className="design-thumb-img"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = "/images/booking/ref-pink-kurti.jpg";
-                          }}
-                        />
-                      </div>
-                    ))}
-                  </div>
+                  {savedDesigns.length === 0 ? (
+                    <div style={{ textAlign: "center", padding: "26px 12px", color: "var(--muted)" }}>
+                      <Sparkles size={32} style={{ margin: "0 auto 8px", color: "#94A3B8" }} />
+                      <p style={{ fontSize: "13px", color: "#475569", marginBottom: "12px" }}>
+                        No saved designs yet.
+                      </p>
+                      <Link
+                        href="/design-studio"
+                        style={{ fontSize: "13px", color: "#078B87", fontWeight: 700, textDecoration: "none" }}
+                      >
+                        Create in AI Studio &rarr;
+                      </Link>
+                    </div>
+                  ) : (
+                    <div className="saved-designs-thumbnails-row">
+                      {savedDesigns.slice(0, 3).map((dsg) => (
+                        <div key={dsg.id} className="saved-design-thumb-card">
+                          <img
+                            src={dsg.image}
+                            alt={dsg.title}
+                            className="design-thumb-img"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = "/images/booking/ref-pink-kurti.jpg";
+                            }}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </section>
 
                 {/* Card 2: Style Assistant */}
