@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   Star,
   X,
@@ -12,38 +13,114 @@ import {
   Clock,
   Award,
   Sparkles,
-  Search
+  Search,
+  Loader2
 } from "lucide-react";
 import { PublicShell } from "@/components/common/site-shell";
-import { initialTailors, getTailorById, TailorItem } from "@/lib/tailors-data";
+import {
+  initialTailors,
+  getTailorById,
+  fetchTailorByIdApi,
+  mapBackendTailorToItem,
+  TailorItem
+} from "@/lib/tailors-data";
+import { tailorService } from "@/lib/api/tailor-service";
+import "@/styles/pages/tailors.css";
 
 export function TailorsComparePage() {
-  // State for selected tailor IDs (defaults to top 3 tailors: Rekha Tailors, Stitch Craft, Aarav Bespoke)
-  const [selectedIds, setSelectedIds] = useState<string[]>([
-    "rekha-tailors",
-    "stitch-craft",
-    "aarav-bespoke"
-  ]);
+  const searchParams = useSearchParams();
+  const urlIds = searchParams?.get("ids") || searchParams?.get("tailors") || "";
+
+  // All tailors loaded from live database or fallback catalog
+  const [allTailors, setAllTailors] = useState<TailorItem[]>(initialTailors);
+  const [selectedIds, setSelectedIds] = useState<string[]>(() => {
+    if (urlIds) {
+      const parsed = urlIds.split(",").map((s) => s.trim()).filter(Boolean);
+      if (parsed.length > 0) return parsed.slice(0, 4);
+    }
+    return ["rekha-tailors", "stitch-craft", "aarav-bespoke"];
+  });
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
   const [modalSearchInput, setModalSearchInput] = useState<string>("");
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  // Load live tailors from backend database
+  useEffect(() => {
+    let isSubscribed = true;
+
+    async function loadLiveTailors() {
+      try {
+        const res = await tailorService.getTailors({ limit: 50 });
+        if (res?.success && Array.isArray(res.data) && res.data.length > 0 && isSubscribed) {
+          const liveList = res.data.map((t, idx) => mapBackendTailorToItem(t, idx));
+          setAllTailors(liveList);
+
+          // If URL params are present, honor them
+          if (urlIds) {
+            const parsed = urlIds.split(",").map((s) => s.trim()).filter(Boolean);
+            if (parsed.length > 0) {
+              setSelectedIds(parsed.slice(0, 4));
+              setIsLoading(false);
+              return;
+            }
+          }
+
+          // Pre-select the top 3 live tailors from the database
+          setSelectedIds(liveList.slice(0, 3).map((t) => t.id));
+          setIsLoading(false);
+          return;
+        }
+      } catch (err) {
+        console.warn("[Tailors Compare] Live tailors fetch error, using fallback catalog:", err);
+      }
+
+      if (isSubscribed) {
+        setIsLoading(false);
+      }
+    }
+
+    loadLiveTailors();
+
+    return () => {
+      isSubscribed = false;
+    };
+  }, [urlIds]);
+
+  // If any selected ID is not in allTailors (e.g. from deep link), fetch it individually
+  useEffect(() => {
+    selectedIds.forEach(async (id) => {
+      const exists = allTailors.some((t) => t.id === id);
+      if (!exists) {
+        try {
+          const fetched = await fetchTailorByIdApi(id);
+          if (fetched) {
+            setAllTailors((prev) => (prev.some((p) => p.id === fetched.id) ? prev : [...prev, fetched]));
+          }
+        } catch (e) {
+          console.warn("Could not fetch individual tailor:", id, e);
+        }
+      }
+    });
+  }, [selectedIds, allTailors]);
 
   // Get full tailor objects for selected IDs
   const selectedTailors = useMemo(() => {
     return selectedIds
-      .map((id) => getTailorById(id))
+      .map((id) => allTailors.find((t) => t.id === id) || getTailorById(id))
       .filter((t): t is TailorItem => t !== undefined);
-  }, [selectedIds]);
+  }, [selectedIds, allTailors]);
 
   // Available tailors not yet selected
   const availableTailors = useMemo(() => {
-    return initialTailors.filter(
+    return allTailors.filter(
       (t) =>
         !selectedIds.includes(t.id) &&
         (modalSearchInput.trim() === "" ||
           t.name.toLowerCase().includes(modalSearchInput.toLowerCase()) ||
-          t.specialties.some((s) => s.toLowerCase().includes(modalSearchInput.toLowerCase())))
+          t.specialties.some((s) => s.toLowerCase().includes(modalSearchInput.toLowerCase())) ||
+          (t.city && t.city.toLowerCase().includes(modalSearchInput.toLowerCase())))
     );
-  }, [selectedIds, modalSearchInput]);
+  }, [selectedIds, allTailors, modalSearchInput]);
 
   const handleRemoveTailor = (id: string) => {
     if (selectedIds.length <= 1) return; // Keep at least 1 tailor
@@ -214,7 +291,7 @@ export function TailorsComparePage() {
                       <td className="row-label">Starting Price</td>
                       {selectedTailors.map((tailor) => (
                         <td key={tailor.id} className="cell-value highlight-price">
-                          {tailor.startingPrice.replace("Starting from ", "")}
+                          {tailor.startingPrice ? tailor.startingPrice.replace("Starting from ", "") : "PKR 1,500"}
                         </td>
                       ))}
                     </tr>
@@ -224,7 +301,7 @@ export function TailorsComparePage() {
                       <td className="row-label">Experience</td>
                       {selectedTailors.map((tailor) => (
                         <td key={tailor.id} className="cell-value bold-value">
-                          {tailor.experience || "12+ years"}
+                          {tailor.experience || "8+ years"}
                         </td>
                       ))}
                     </tr>
@@ -234,7 +311,7 @@ export function TailorsComparePage() {
                       <td className="row-label">Specialties</td>
                       {selectedTailors.map((tailor) => (
                         <td key={tailor.id} className="cell-value">
-                          {tailor.specialties.join(", ")}
+                          {tailor.specialties?.length ? tailor.specialties.join(", ") : "Bespoke Tailoring"}
                         </td>
                       ))}
                     </tr>
@@ -244,7 +321,7 @@ export function TailorsComparePage() {
                       <td className="row-label">Delivery Time</td>
                       {selectedTailors.map((tailor) => (
                         <td key={tailor.id} className="cell-value">
-                          {tailor.turnaroundTime}
+                          {tailor.turnaroundTime || "3-5 days"}
                         </td>
                       ))}
                     </tr>
