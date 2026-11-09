@@ -26,6 +26,14 @@
   align-items: start;
 }
 
+/* Main Content Area: Pushed down so UI components comfortably clear fixed header */
+.customer-main-feed-area {
+  display: flex;
+  flex-direction: column;
+  padding-top: 68px;
+  min-width: 0;
+}
+
 /* Breadcrumb Navigation */
 .customer-breadcrumb-nav {
   display: flex;
@@ -216,6 +224,9 @@
   }
   .customer-sidebar-nav {
     position: static;
+  }
+  .customer-main-feed-area {
+    padding-top: 24px;
   }
 }
 
