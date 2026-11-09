@@ -24,6 +24,7 @@ import {
   ArrowRight
 } from "lucide-react";
 import { PublicShell } from "@/components/common/site-shell";
+import { NotificationListSkeleton } from "@/components/common/shadow-skeleton";
 import { authService } from "@/lib/api/auth-service";
 import {
   initialConversations,
@@ -189,9 +190,7 @@ export function MessagesOverviewPage() {
               {/* Conversation Cards List */}
               <div className="conversations-list-container">
                 {isLoading ? (
-                  <div style={{ textAlign: "center", padding: "48px 20px", color: "#6b7280" }}>
-                    Loading messages...
-                  </div>
+                  <NotificationListSkeleton count={5} />
                 ) : filteredConversations.length > 0 ? (
                   filteredConversations.map((conv) => (
                     <Link

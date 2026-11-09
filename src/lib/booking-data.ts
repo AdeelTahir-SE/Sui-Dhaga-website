@@ -192,6 +192,9 @@ export const samplePresetReferences = [
   }
 ];
 
+import { tailorService } from "./api/tailor-service";
+import { appointmentService } from "./api/appointment-service";
+
 /**
  * Get services list for a tailor
  */
@@ -203,21 +206,22 @@ export function getTailorServices(tailorId: string): TailorBookingService[] {
  * Async API function to fetch services for a tailor
  */
 export async function fetchTailorServicesApi(tailorId: string): Promise<TailorBookingService[]> {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_BACKEND_URL;
-
-  if (apiUrl) {
-    try {
-      const res = await fetch(`${apiUrl}/api/tailors/${encodeURIComponent(tailorId)}/services`, {
-        headers: { "Content-Type": "application/json" },
-        cache: "no-store"
-      });
-      if (res.ok) {
-        const data = await res.json();
-        return data.services || data.data || [];
-      }
-    } catch (err) {
-      console.warn("[Booking API] Services endpoint unavailable, falling back:", err);
+  try {
+    const res = await tailorService.getTailorById(tailorId);
+    if (res?.data?.services && Array.isArray(res.data.services) && res.data.services.length > 0) {
+      return res.data.services.map((s: any) => ({
+        id: s.id,
+        name: s.title || s.name || "Custom Stitching",
+        category: s.category || "General",
+        price: `Rs. ${(s.price || 1500).toLocaleString()}`,
+        priceValue: s.price || 1500,
+        deliveryTime: s.delivery_time_days ? `${s.delivery_time_days} days` : "5-7 days",
+        durationMins: 45,
+        description: s.description || "Custom handcrafted stitching tailored to your measurements."
+      }));
     }
+  } catch (err) {
+    console.warn("[Booking API] Services endpoint unavailable, falling back:", err);
   }
 
   return getTailorServices(tailorId);
@@ -227,30 +231,20 @@ export async function fetchTailorServicesApi(tailorId: string): Promise<TailorBo
  * Async API function to fetch available time slots for a given tailor and date
  */
 export async function fetchAvailableSlotsApi(tailorId: string, date: string): Promise<string[]> {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_BACKEND_URL;
-
-  if (apiUrl) {
-    try {
-      const res = await fetch(
-        `${apiUrl}/api/tailors/${encodeURIComponent(tailorId)}/availability?date=${encodeURIComponent(date)}`,
-        {
-          headers: { "Content-Type": "application/json" },
-          cache: "no-store"
-        }
-      );
-      if (res.ok) {
-        const data = await res.json();
-        return data.slots || data.availableSlots || defaultAvailableTimeSlots;
-      }
-    } catch (err) {
-      console.warn("[Booking API] Slots endpoint unavailable, falling back:", err);
+  try {
+    const res = await tailorService.getAvailability(tailorId);
+    if (res?.data && Array.isArray(res.data) && res.data.length > 0) {
+      const activeSlots = res.data
+        .filter((s) => s.isAvailable !== false)
+        .map((s) => `${s.startTime || "10:00 AM"}`);
+      if (activeSlots.length > 0) return activeSlots;
     }
+  } catch (err) {
+    console.warn("[Booking API] Slots endpoint unavailable, falling back:", err);
   }
 
   return defaultAvailableTimeSlots;
 }
-
-import { appointmentService } from "./api/appointment-service";
 
 /**
  * Submit appointment booking to backend or local store

@@ -27,6 +27,7 @@ import {
   Check
 } from "lucide-react";
 import { PublicShell } from "@/components/common/site-shell";
+import { CardsGridSkeleton } from "@/components/common/shadow-skeleton";
 import {
   fetchCustomerSavedDesignsApi,
   removeSavedDesignApi,
@@ -249,7 +250,11 @@ export function CustomerSavedDesignsPage() {
 
               {/* 4-Column Saved Designs Grid */}
               <div className="saved-designs-cards-grid">
-                {!isLoading && filteredDesigns.length === 0 && (
+                {isLoading ? (
+                  <div style={{ gridColumn: "1 / -1" }}>
+                    <CardsGridSkeleton count={4} cardHeight={260} />
+                  </div>
+                ) : filteredDesigns.length === 0 ? (
                   <div
                     className="empty-designs-card"
                     style={{
@@ -290,9 +295,8 @@ export function CustomerSavedDesignsPage() {
                       <span>Launch AI Studio</span>
                     </Link>
                   </div>
-                )}
-
-                {filteredDesigns.map((design) => (
+                ) : (
+                  filteredDesigns.map((design) => (
                   <article
                     key={design.id}
                     onClick={() => setSelectedDesign(design)}
@@ -342,7 +346,7 @@ export function CustomerSavedDesignsPage() {
                       </button>
                     </div>
                   </article>
-                ))}
+                )))}
 
                 {/* "Create New Design" Card */}
                 <Link href="/design-studio" className="create-new-design-card">

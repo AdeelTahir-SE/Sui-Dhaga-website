@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { PublicShell } from "@/components/common/site-shell";
 import { CustomerSidebar } from "@/components/customer/customer-sidebar";
+import { CardsGridSkeleton, ProfileHeaderSkeleton } from "@/components/common/shadow-skeleton";
 import { userService } from "@/lib/api/user-service";
 import { authService } from "@/lib/api/auth-service";
 import "@/styles/pages/customer-dashboard.css";
@@ -308,8 +309,18 @@ export function CustomerSettingsPage() {
                 </button>
               </div>
 
+              {/* Loading Shimmer State */}
+              {isLoading && (
+                <div className="customer-section-card">
+                  <ProfileHeaderSkeleton />
+                  <div style={{ marginTop: "24px" }}>
+                    <CardsGridSkeleton count={2} cardHeight={120} />
+                  </div>
+                </div>
+              )}
+
               {/* Tab 1: Personal Profile */}
-              {activeTab === "profile" && (
+              {!isLoading && activeTab === "profile" && (
                 <form onSubmit={handleSaveProfile} className="customer-section-card">
                   <div className="customer-card-header">
                     <h2 className="customer-card-title">
@@ -485,7 +496,7 @@ export function CustomerSettingsPage() {
               )}
 
               {/* Tab 2: Security & Password */}
-              {activeTab === "security" && (
+              {!isLoading && activeTab === "security" && (
                 <form onSubmit={handleSaveSecurity} className="customer-section-card">
                   <div className="customer-card-header">
                     <h2 className="customer-card-title">
@@ -568,7 +579,7 @@ export function CustomerSettingsPage() {
               )}
 
               {/* Tab 3: Notification Preferences */}
-              {activeTab === "notifications" && (
+              {!isLoading && activeTab === "notifications" && (
                 <div className="customer-section-card">
                   <div className="customer-card-header">
                     <h2 className="customer-card-title">

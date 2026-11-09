@@ -13,6 +13,7 @@ import {
 import { PublicNav } from "@/components/common/site-shell";
 import { TailorSidebar } from "@/components/tailors/tailor-sidebar";
 import { AdminToast } from "@/components/admin/admin-toast";
+import { NotificationListSkeleton } from "@/components/common/shadow-skeleton";
 import { reviewService } from "@/lib/api/review-service";
 import { userService } from "@/lib/api/user-service";
 import "@/styles/pages/tailor-reviews-view.css";
@@ -96,13 +97,15 @@ const initialTailorReviews: ReviewItem[] = [
 ];
 
 export function TailorReviewsPage() {
-  const [reviews, setReviews] = useState<ReviewItem[]>(initialTailorReviews);
+  const [reviews, setReviews] = useState<ReviewItem[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<string>("all");
   const [replyTextMap, setReplyTextMap] = useState<Record<string, string>>({});
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   React.useEffect(() => {
     async function loadReviews() {
+      setIsLoading(true);
       try {
         const userRes = await userService.getMe();
         if (userRes?.data?.id) {
@@ -120,11 +123,16 @@ export function TailorReviewsPage() {
               photos: r.images || []
             }));
             setReviews(mapped);
+            setIsLoading(false);
+            return;
           }
         }
       } catch (err) {
         console.warn("Could not load reviews from backend API:", err);
       }
+
+      setReviews(initialTailorReviews);
+      setIsLoading(false);
     }
 
     loadReviews();
@@ -305,7 +313,9 @@ export function TailorReviewsPage() {
 
           {/* Reviews List */}
           <div className="trv-list">
-            {filteredReviews.length === 0 ? (
+            {isLoading ? (
+              <NotificationListSkeleton count={4} />
+            ) : filteredReviews.length === 0 ? (
               <div style={{ textAlign: "center", padding: "48px 20px", color: "#6B7280", background: "#FFFFFF", borderRadius: "16px", border: "1px solid #EAE6DF" }}>
                 No reviews found in this category.
               </div>

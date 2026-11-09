@@ -19,6 +19,7 @@ import {
 import { PublicNav } from "@/components/common/site-shell";
 import { TailorSidebar } from "@/components/tailors/tailor-sidebar";
 import { AdminToast } from "@/components/admin/admin-toast";
+import { TableSkeleton } from "@/components/common/shadow-skeleton";
 import { appointmentService } from "@/lib/api/appointment-service";
 import "@/styles/pages/tailor-appointments-view.css";
 
@@ -185,7 +186,8 @@ const initialAppointmentsList: TailorAppointmentItem[] = [
 const KEY_TAILOR_APPOINTMENTS = "sui_dhaga_tailor_appointments_list";
 
 export function TailorAppointmentsPage() {
-  const [appointments, setAppointments] = useState<TailorAppointmentItem[]>(initialAppointmentsList);
+  const [appointments, setAppointments] = useState<TailorAppointmentItem[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<string>("all_view"); // "all_view" shows the curated table from the screenshot, or specific tab filters
   const [selectedAppointment, setSelectedAppointment] = useState<TailorAppointmentItem | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -219,7 +221,9 @@ export function TailorAppointmentsPage() {
   // Load from live database or fallback to localStorage
   useEffect(() => {
     async function loadAppointments() {
+      setIsLoading(true);
       try {
+        const hasToken = typeof window !== "undefined" && !!localStorage.getItem("sui_dhaga_auth_token");
         const res = await appointmentService.getAppointments();
         if (res?.data && Array.isArray(res.data) && res.data.length > 0) {
           const liveList = res.data.map(mapBackendAppointment);
@@ -227,6 +231,11 @@ export function TailorAppointmentsPage() {
           if (typeof window !== "undefined") {
             localStorage.setItem(KEY_TAILOR_APPOINTMENTS, JSON.stringify(liveList));
           }
+          setIsLoading(false);
+          return;
+        } else if (hasToken && res?.data && Array.isArray(res.data)) {
+          setAppointments([]);
+          setIsLoading(false);
           return;
         }
       } catch (err) {
@@ -239,12 +248,13 @@ export function TailorAppointmentsPage() {
           if (saved) {
             setAppointments(JSON.parse(saved));
           } else {
-            localStorage.setItem(KEY_TAILOR_APPOINTMENTS, JSON.stringify(initialAppointmentsList));
+            setAppointments(initialAppointmentsList);
           }
         } catch (e) {
           console.warn("Failed to load appointments from localStorage:", e);
         }
       }
+      setIsLoading(false);
     }
 
     loadAppointments();
@@ -345,7 +355,9 @@ export function TailorAppointmentsPage() {
 
           {/* Appointments List Card matching exact design */}
           <div className="tap-card-container">
-            {displayedAppointments.length === 0 ? (
+            {isLoading ? (
+              <TableSkeleton rows={5} cols={5} />
+            ) : displayedAppointments.length === 0 ? (
               <div style={{ textAlign: "center", padding: "48px 20px", color: "#6B7280" }}>
                 No appointments found in this category.
               </div>

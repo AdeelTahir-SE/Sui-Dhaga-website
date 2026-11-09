@@ -29,6 +29,7 @@ import {
   Scissors
 } from "lucide-react";
 import { PublicShell } from "@/components/common/site-shell";
+import { CardsGridSkeleton } from "@/components/common/shadow-skeleton";
 import {
   fetchCustomerAppointmentsApi,
   rescheduleCustomerAppointmentApi,
@@ -356,7 +357,9 @@ export function CustomerAppointmentsPage() {
 
               {/* Appointments List Cards */}
               <div className="appointments-cards-list">
-                {currentList.length === 0 ? (
+                {isLoading ? (
+                  <CardsGridSkeleton count={3} cardHeight={140} />
+                ) : currentList.length === 0 ? (
                   <div className="empty-appointments-card">
                     <CalendarCheck size={48} className="empty-icon" />
                     <h3 className="empty-title">No {activeTab.toLowerCase()} appointments found</h3>

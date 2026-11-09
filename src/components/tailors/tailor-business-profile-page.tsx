@@ -21,6 +21,7 @@ import {
 import { PublicNav } from "@/components/common/site-shell";
 import { TailorSidebar } from "@/components/tailors/tailor-sidebar";
 import { AdminToast } from "@/components/admin/admin-toast";
+import { ProfileHeaderSkeleton, CardsGridSkeleton } from "@/components/common/shadow-skeleton";
 import { userService } from "@/lib/api/user-service";
 import { tailorService } from "@/lib/api/tailor-service";
 import "@/styles/pages/tailor-profile-view.css";
@@ -60,10 +61,12 @@ export function TailorBusinessProfilePage() {
   // Edit Form Temp State
   const [editForm, setEditForm] = useState({ ...businessProfile });
   const [newSpecialtyTag, setNewSpecialtyTag] = useState("");
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   // Load from live backend
   React.useEffect(() => {
     async function loadProfile() {
+      setIsLoading(true);
       try {
         const userRes = await userService.getMe();
         if (userRes?.data) {
@@ -106,6 +109,8 @@ export function TailorBusinessProfilePage() {
         }
       } catch (err) {
         console.warn("Could not load tailor profile from backend:", err);
+      } finally {
+        setIsLoading(false);
       }
     }
 
@@ -170,7 +175,14 @@ export function TailorBusinessProfilePage() {
           </div>
 
           {/* 1. Top Business Card matching exact design */}
-          <div className="tp-business-card">
+          {isLoading ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+              <ProfileHeaderSkeleton />
+              <CardsGridSkeleton count={2} cardHeight={160} />
+            </div>
+          ) : (
+            <>
+              <div className="tp-business-card">
             <div className="tp-business-left">
               {/* Tailor Avatar */}
               <img
@@ -311,6 +323,8 @@ export function TailorBusinessProfilePage() {
               </div>
             </div>
           </div>
+            </>
+          )}
         </main>
       </div>
 

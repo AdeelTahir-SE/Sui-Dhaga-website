@@ -19,6 +19,7 @@ import {
 import { PublicNav } from "@/components/common/site-shell";
 import { TailorSidebar } from "@/components/tailors/tailor-sidebar";
 import { AdminToast } from "@/components/admin/admin-toast";
+import { TableSkeleton } from "@/components/common/shadow-skeleton";
 import { orderService } from "@/lib/api/order-service";
 import "@/styles/pages/tailor-orders-view.css";
 
@@ -238,7 +239,8 @@ import { useRouter } from "next/navigation";
 
 export function TailorOrdersPage() {
   const router = useRouter();
-  const [orders, setOrders] = useState<TailorOrderItem[]>(initialOrdersList);
+  const [orders, setOrders] = useState<TailorOrderItem[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<string>("all");
   const [selectedOrder, setSelectedOrder] = useState<TailorOrderItem | null>(null);
   const [newStatus, setNewStatus] = useState<TailorOrderStatus>("in_progress");
@@ -278,7 +280,9 @@ export function TailorOrdersPage() {
   // Load from live backend database or localStorage fallback
   useEffect(() => {
     async function loadOrders() {
+      setIsLoading(true);
       try {
+        const hasToken = typeof window !== "undefined" && !!localStorage.getItem("sui_dhaga_auth_token");
         const res = await orderService.getOrders();
         if (res?.data && Array.isArray(res.data) && res.data.length > 0) {
           const liveOrders = res.data.map(mapBackendOrderToTailorOrder);
@@ -286,6 +290,11 @@ export function TailorOrdersPage() {
           if (typeof window !== "undefined") {
             localStorage.setItem(KEY_TAILOR_ORDERS, JSON.stringify(liveOrders));
           }
+          setIsLoading(false);
+          return;
+        } else if (hasToken && res?.data && Array.isArray(res.data)) {
+          setOrders([]);
+          setIsLoading(false);
           return;
         }
       } catch (err) {
@@ -298,12 +307,13 @@ export function TailorOrdersPage() {
           if (saved) {
             setOrders(JSON.parse(saved));
           } else {
-            localStorage.setItem(KEY_TAILOR_ORDERS, JSON.stringify(initialOrdersList));
+            setOrders(initialOrdersList);
           }
         } catch (e) {
           console.warn("Failed to load orders from localStorage:", e);
         }
       }
+      setIsLoading(false);
     }
 
     loadOrders();
@@ -441,7 +451,9 @@ export function TailorOrdersPage() {
 
           {/* Order Cards Container matching exact design */}
           <div className="tor-orders-container">
-            {filteredOrders.length === 0 ? (
+            {isLoading ? (
+              <TableSkeleton rows={5} cols={5} />
+            ) : filteredOrders.length === 0 ? (
               <div style={{ textAlign: "center", padding: "48px 20px", color: "#6B7280" }}>
                 No orders found in this category.
               </div>

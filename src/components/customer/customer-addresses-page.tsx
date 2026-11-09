@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { PublicShell } from "@/components/common/site-shell";
 import { CustomerSidebar } from "@/components/customer/customer-sidebar";
+import { CardsGridSkeleton } from "@/components/common/shadow-skeleton";
 import { userService } from "@/lib/api/user-service";
 import "@/styles/pages/customer-dashboard.css";
 import "@/styles/pages/customer-account-views.css";
@@ -268,7 +269,9 @@ export function CustomerAddressesPage() {
               </div>
 
               {/* Address Cards Grid */}
-              {!isLoading && addresses.length === 0 ? (
+              {isLoading ? (
+                <CardsGridSkeleton count={2} cardHeight={180} />
+              ) : addresses.length === 0 ? (
                 <div className="customer-empty-state-box">
                   <div className="customer-empty-state-icon">
                     <MapPin size={36} />

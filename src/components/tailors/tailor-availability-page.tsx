@@ -16,6 +16,7 @@ import {
 import { PublicNav } from "@/components/common/site-shell";
 import { TailorSidebar } from "@/components/tailors/tailor-sidebar";
 import { AdminToast } from "@/components/admin/admin-toast";
+import { CardsGridSkeleton } from "@/components/common/shadow-skeleton";
 import { tailorService } from "@/lib/api/tailor-service";
 import { userService } from "@/lib/api/user-service";
 import "@/styles/pages/tailor-availability-view.css";
@@ -39,6 +40,7 @@ export function TailorAvailabilityPage() {
   const [selectedDay, setSelectedDay] = useState<number>(20);
   const [selectedMonth, setSelectedMonth] = useState<string>("May 2024");
   const [slots, setSlots] = useState<TimeSlot[]>(defaultSlots);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [currentTailorId, setCurrentTailorId] = useState<string | null>(null);
   const [blockedDates, setBlockedDates] = useState<string[]>([
     "25 May 2024",
@@ -52,6 +54,7 @@ export function TailorAvailabilityPage() {
   // Load from live database or fallback to localStorage
   useEffect(() => {
     async function loadAvailability() {
+      setIsLoading(true);
       try {
         const userRes = await userService.getMe();
         if (userRes?.data?.id) {
@@ -67,6 +70,7 @@ export function TailorAvailabilityPage() {
             if (typeof window !== "undefined") {
               localStorage.setItem(KEY_TAILOR_AVAILABILITY, JSON.stringify({ slots: mappedSlots, blockedDates }));
             }
+            setIsLoading(false);
             return;
           }
         }
@@ -86,6 +90,7 @@ export function TailorAvailabilityPage() {
           console.warn("Failed to load availability from localStorage:", e);
         }
       }
+      setIsLoading(false);
     }
 
     loadAvailability();
@@ -279,23 +284,27 @@ export function TailorAvailabilityPage() {
                 <h4 className="tav-section-subhead">Available Slots</h4>
 
                 {/* Slots List */}
-                <div className="tav-slots-list">
-                  {slots.map((slot) => (
-                    <div
-                      key={slot.id}
-                      onClick={() => toggleSlotEnabled(slot.id)}
-                      className={`tav-slot-item ${slot.enabled ? "active" : ""}`}
-                    >
-                      <span>{slot.label}</span>
-                      <input
-                        type="checkbox"
-                        checked={slot.enabled}
-                        onChange={() => toggleSlotEnabled(slot.id)}
-                        style={{ width: "16px", height: "16px", accentColor: "#078B87", cursor: "pointer" }}
-                      />
-                    </div>
-                  ))}
-                </div>
+                {isLoading ? (
+                  <CardsGridSkeleton count={4} cardHeight={48} />
+                ) : (
+                  <div className="tav-slots-list">
+                    {slots.map((slot) => (
+                      <div
+                        key={slot.id}
+                        onClick={() => toggleSlotEnabled(slot.id)}
+                        className={`tav-slot-item ${slot.enabled ? "active" : ""}`}
+                      >
+                        <span>{slot.label}</span>
+                        <input
+                          type="checkbox"
+                          checked={slot.enabled}
+                          onChange={() => toggleSlotEnabled(slot.id)}
+                          style={{ width: "16px", height: "16px", accentColor: "#078B87", cursor: "pointer" }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
 
                 {/* Add Slot Button */}
                 <button

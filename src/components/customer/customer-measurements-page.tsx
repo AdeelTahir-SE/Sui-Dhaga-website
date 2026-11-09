@@ -30,6 +30,7 @@ import {
   Video
 } from "lucide-react";
 import { PublicShell } from "@/components/common/site-shell";
+import { CardsGridSkeleton } from "@/components/common/shadow-skeleton";
 import {
   fetchMeasurementProfilesApi,
   saveMeasurementProfileApi,
@@ -310,7 +311,11 @@ export function CustomerMeasurementsPage() {
               </div>
 
               {/* Measurements Content Area */}
-              {!isLoading && profiles.length === 0 ? (
+              {isLoading ? (
+                <div style={{ margin: "24px 0" }}>
+                  <CardsGridSkeleton count={2} cardHeight={320} />
+                </div>
+              ) : profiles.length === 0 ? (
                 <div
                   className="empty-measurements-banner"
                   style={{

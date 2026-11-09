@@ -25,6 +25,7 @@ import {
   PaginatedTailorsResponse
 } from "@/lib/tailors-data";
 import { TailorsGoogleMap } from "./tailors-google-map";
+import { CardsGridSkeleton } from "@/components/common/shadow-skeleton";
 
 export function TailorsMarketplacePage() {
   const searchParams = useSearchParams();
@@ -378,7 +379,9 @@ export function TailorsMarketplacePage() {
 
               {/* Cards List */}
               <div className="tailors-cards-list">
-                {tailors.length === 0 ? (
+                {isLoading ? (
+                  <CardsGridSkeleton count={4} cardHeight={220} />
+                ) : tailors.length === 0 ? (
                   <div className="no-results-box" style={{ padding: "40px 20px", textAlign: "center", background: "#ffffff", borderRadius: "16px", border: "1px solid #e2e8f0" }}>
                     <p style={{ fontSize: "16px", color: "#64748b", margin: 0 }}>
                       No tailors matched your filter criteria. Try adjusting your search query or location.

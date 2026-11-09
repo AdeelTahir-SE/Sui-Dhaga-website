@@ -25,6 +25,7 @@ import {
   Filter
 } from "lucide-react";
 import { PublicShell } from "@/components/common/site-shell";
+import { CardsGridSkeleton } from "@/components/common/shadow-skeleton";
 import {
   fetchCustomerOrdersApi,
   initialOrdersData,
@@ -220,7 +221,9 @@ export function CustomerOrdersPage() {
 
               {/* Orders List Cards */}
               <div className="orders-cards-list">
-                {filteredOrders.length === 0 ? (
+                {isLoading ? (
+                  <CardsGridSkeleton count={3} cardHeight={140} />
+                ) : filteredOrders.length === 0 ? (
                   <div className="empty-orders-card">
                     <ShoppingBag size={48} className="empty-icon" />
                     <h3 className="empty-title">No orders found</h3>

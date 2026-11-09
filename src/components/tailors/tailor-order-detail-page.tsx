@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { PublicNav, PublicFooter } from "@/components/common/site-shell";
 import { AdminToast } from "@/components/admin/admin-toast";
+import { CardsGridSkeleton, ProfileHeaderSkeleton } from "@/components/common/shadow-skeleton";
 import { orderService } from "@/lib/api/order-service";
 import "@/styles/pages/tailor-order-detail-view.css";
 
@@ -28,6 +29,7 @@ export function TailorOrderDetailPage() {
 
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   // Order Detail State matching reference design
   const [order, setOrder] = useState({
@@ -134,6 +136,7 @@ export function TailorOrderDetailPage() {
               }
             }));
             setSelectedStatus(formattedStatus);
+            setIsLoading(false);
             return;
           }
         }
@@ -181,6 +184,7 @@ export function TailorOrderDetailPage() {
           console.warn("Failed to hydrate tailor order details:", e);
         }
       }
+      setIsLoading(false);
     }
 
     loadLiveOrder();
@@ -253,7 +257,13 @@ export function TailorOrderDetailPage() {
           </div>
 
           {/* 2-Column Main Grid */}
-          <div className="tod-grid">
+          {isLoading ? (
+            <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: "24px", marginTop: "24px" }}>
+              <ProfileHeaderSkeleton />
+              <CardsGridSkeleton count={2} cardHeight={200} />
+            </div>
+          ) : (
+            <div className="tod-grid">
             {/* =========================================================================
                 LEFT COLUMN (Customer Info, Order Items & Specs, Design References)
                 ========================================================================= */}
@@ -441,6 +451,7 @@ export function TailorOrderDetailPage() {
               </div>
             </div>
           </div>
+          )}
         </div>
 
         {/* Update Status Milestone Modal */}

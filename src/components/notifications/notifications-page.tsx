@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { PublicShell } from "@/components/common/site-shell";
 import { CustomerSidebar } from "@/components/customer/customer-sidebar";
+import { NotificationListSkeleton } from "@/components/common/shadow-skeleton";
 import { notificationService } from "@/lib/api/notification-service";
 import { AppNotification } from "@/lib/api/types";
 import "@/styles/pages/customer-dashboard.css";
@@ -254,7 +255,9 @@ export function CustomerNotificationsPage() {
               </div>
 
               {/* Notifications List */}
-              {!isLoading && filteredNotifications.length === 0 ? (
+              {isLoading ? (
+                <NotificationListSkeleton count={4} />
+              ) : filteredNotifications.length === 0 ? (
                 <div className="customer-empty-state-box">
                   <div className="customer-empty-state-icon">
                     <Bell size={36} />

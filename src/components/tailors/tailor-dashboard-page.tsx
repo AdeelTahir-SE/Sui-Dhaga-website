@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { PublicNav } from "@/components/common/site-shell";
 import { TailorSidebar } from "@/components/tailors/tailor-sidebar";
+import { Skeleton, DashboardStatsSkeleton } from "@/components/common/shadow-skeleton";
 import {
   tailorDashboardService,
   TailorDashboardData,
@@ -54,54 +55,87 @@ export function TailorDashboardPage() {
 
         {/* Main Dashboard Body */}
         <main className="td-main-content">
-          {/* Welcome Header matching reference image */}
+          {/* Welcome Header */}
           <div className="td-header">
-            <h1 className="td-welcome-title">
-              Welcome back, {tailor.name}! 👋
-            </h1>
-            <p className="td-welcome-sub">
-              Here&apos;s what&apos;s happening with your business today.
-            </p>
+            {isLoading ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                <Skeleton width="280px" height="34px" />
+                <Skeleton width="340px" height="18px" />
+              </div>
+            ) : (
+              <>
+                <h1 className="td-welcome-title">
+                  Welcome back, {tailor.name}! 👋
+                </h1>
+                <p className="td-welcome-sub">
+                  Here&apos;s what&apos;s happening with your business today.
+                </p>
+              </>
+            )}
           </div>
 
-          {/* 1. Overview Cards (4 Top Cards) */}
-          <div className="td-overview-grid">
-            {/* Card 1: New Orders */}
-            <div className="td-stat-card">
-              <span className="td-stat-number">{overview.newOrdersCount}</span>
-              <span className="td-stat-label">New Orders</span>
-              <span className="td-stat-change-positive">{overview.newOrdersChange}</span>
+          {isLoading ? (
+            <div>
+              <DashboardStatsSkeleton count={4} />
+              <div className="td-middle-grid" style={{ marginBottom: "24px" }}>
+                <div className="td-section-card" style={{ minHeight: "320px", padding: "24px" }}>
+                  <Skeleton width="180px" height="22px" style={{ marginBottom: "16px" }} />
+                  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                    <Skeleton height="64px" borderRadius="10px" />
+                    <Skeleton height="64px" borderRadius="10px" />
+                    <Skeleton height="64px" borderRadius="10px" />
+                  </div>
+                </div>
+                <div className="td-section-card" style={{ minHeight: "320px", padding: "24px" }}>
+                  <Skeleton width="180px" height="22px" style={{ marginBottom: "16px" }} />
+                  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                    <Skeleton height="64px" borderRadius="10px" />
+                    <Skeleton height="64px" borderRadius="10px" />
+                    <Skeleton height="64px" borderRadius="10px" />
+                  </div>
+                </div>
+              </div>
             </div>
+          ) : (
+            <>
+              {/* 1. Overview Cards (4 Top Cards) */}
+              <div className="td-overview-grid">
+                {/* Card 1: New Orders */}
+                <div className="td-stat-card">
+                  <span className="td-stat-number">{overview.newOrdersCount}</span>
+                  <span className="td-stat-label">New Orders</span>
+                  <span className="td-stat-change-positive">{overview.newOrdersChange}</span>
+                </div>
 
-            {/* Card 2: Appointments */}
-            <div className="td-stat-card">
-              <span className="td-stat-number">{overview.appointmentsCount}</span>
-              <span className="td-stat-label">Appointments</span>
-              <span className="td-stat-change-positive">{overview.appointmentsChange}</span>
-            </div>
+                {/* Card 2: Appointments */}
+                <div className="td-stat-card">
+                  <span className="td-stat-number">{overview.appointmentsCount}</span>
+                  <span className="td-stat-label">Appointments</span>
+                  <span className="td-stat-change-positive">{overview.appointmentsChange}</span>
+                </div>
 
-            {/* Card 3: Orders in Progress */}
-            <div className="td-stat-card">
-              <span className="td-stat-number">{overview.ordersInProgressCount}</span>
-              <span className="td-stat-label">Orders in Progress</span>
-              <Link href="/tailor/orders" className="td-stat-link">
-                <span>View all</span>
-                <ChevronRight size={14} />
-              </Link>
-            </div>
+                {/* Card 3: Orders in Progress */}
+                <div className="td-stat-card">
+                  <span className="td-stat-number">{overview.ordersInProgressCount}</span>
+                  <span className="td-stat-label">Orders in Progress</span>
+                  <Link href="/tailor/orders" className="td-stat-link">
+                    <span>View all</span>
+                    <ChevronRight size={14} />
+                  </Link>
+                </div>
 
-            {/* Card 4: This Month Earnings */}
-            <div className="td-stat-card">
-              <span className="td-stat-number">
-                ₹{overview.thisMonthEarnings.toLocaleString("en-IN")}
-              </span>
-              <span className="td-stat-label">This Month Earnings</span>
-              <Link href="/tailor/earnings" className="td-stat-link">
-                <span>View details</span>
-                <ChevronRight size={14} />
-              </Link>
-            </div>
-          </div>
+                {/* Card 4: This Month Earnings */}
+                <div className="td-stat-card">
+                  <span className="td-stat-number">
+                    ₹{overview.thisMonthEarnings.toLocaleString("en-IN")}
+                  </span>
+                  <span className="td-stat-label">This Month Earnings</span>
+                  <Link href="/tailor/earnings" className="td-stat-link">
+                    <span>View details</span>
+                    <ChevronRight size={14} />
+                  </Link>
+                </div>
+              </div>
 
           {/* 2. Middle Row: Today's Appointments (Left) + New Orders (Right) */}
           <div className="td-middle-grid">
@@ -268,7 +302,9 @@ export function TailorDashboardPage() {
               </Link>
             </div>
           </div>
-        </main>
+        </>
+      )}
+    </main>
       </div>
     </div>
   );

@@ -18,6 +18,7 @@ import {
   Award
 } from "lucide-react";
 import { PublicShell } from "@/components/common/site-shell";
+import { ProfileHeaderSkeleton, CardsGridSkeleton } from "@/components/common/shadow-skeleton";
 import { getTailorById, fetchTailorByIdApi, toggleWishlistApi, TailorItem } from "@/lib/tailors-data";
 
 interface TailorProfilePageProps {
@@ -55,6 +56,19 @@ export function TailorProfilePage({ tailorId: propTailorId }: TailorProfilePageP
       isSubscribed = false;
     };
   }, [activeId]);
+
+  if (isLoading && !tailor) {
+    return (
+      <PublicShell>
+        <div style={{ maxWidth: "1280px", margin: "40px auto", padding: "0 24px" }}>
+          <ProfileHeaderSkeleton />
+          <div style={{ marginTop: "32px" }}>
+            <CardsGridSkeleton count={3} cardHeight={240} />
+          </div>
+        </div>
+      </PublicShell>
+    );
+  }
 
   if (!tailor) {
     return (

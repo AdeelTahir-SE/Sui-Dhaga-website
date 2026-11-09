@@ -16,6 +16,7 @@ import {
 import { PublicNav } from "@/components/common/site-shell";
 import { TailorSidebar } from "@/components/tailors/tailor-sidebar";
 import { AdminToast } from "@/components/admin/admin-toast";
+import { DashboardStatsSkeleton, NotificationListSkeleton } from "@/components/common/shadow-skeleton";
 import { orderService } from "@/lib/api/order-service";
 import "@/styles/pages/tailor-earnings-view.css";
 
@@ -45,10 +46,11 @@ const chartPointsData = [
 const KEY_TAILOR_EARNINGS = "sui_dhaga_tailor_earnings_records";
 
 export function TailorEarningsPage() {
-  const [totalEarnings, setTotalEarnings] = useState(48650);
-  const [monthlyEarnings, setMonthlyEarnings] = useState(38250);
-  const [completedOrders, setCompletedOrders] = useState(42);
-  const [pendingPayments, setPendingPayments] = useState(6400);
+  const [totalEarnings, setTotalEarnings] = useState(0);
+  const [monthlyEarnings, setMonthlyEarnings] = useState(0);
+  const [completedOrders, setCompletedOrders] = useState(0);
+  const [pendingPayments, setPendingPayments] = useState(0);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const [withdrawals, setWithdrawals] = useState<WithdrawalRecord[]>(initialWithdrawals);
   const [selectedPoint, setSelectedPoint] = useState(chartPointsData[3]); // 20 May (₹2,850) matching screenshot
@@ -59,6 +61,7 @@ export function TailorEarningsPage() {
   // Load from live database or fallback to localStorage
   useEffect(() => {
     async function loadEarningsFromOrders() {
+      setIsLoading(true);
       try {
         const res = await orderService.getOrders();
         if (res?.data && Array.isArray(res.data) && res.data.length > 0) {
@@ -85,6 +88,7 @@ export function TailorEarningsPage() {
             setMonthlyEarnings(completedEarnings || computedTotal);
             setCompletedOrders(completedList.length);
             setPendingPayments(pendingEarnings);
+            setIsLoading(false);
             return;
           }
         }
@@ -100,11 +104,17 @@ export function TailorEarningsPage() {
             if (parsed.withdrawals) setWithdrawals(parsed.withdrawals);
             if (parsed.totalEarnings) setTotalEarnings(parsed.totalEarnings);
             if (parsed.monthlyEarnings) setMonthlyEarnings(parsed.monthlyEarnings);
+          } else {
+            setTotalEarnings(48650);
+            setMonthlyEarnings(38250);
+            setCompletedOrders(42);
+            setPendingPayments(6400);
           }
         } catch (e) {
           console.warn("Failed to load earnings from localStorage:", e);
         }
       }
+      setIsLoading(false);
     }
 
     loadEarningsFromOrders();
@@ -166,27 +176,31 @@ export function TailorEarningsPage() {
           </div>
 
           {/* 1. Top 4 Overview KPI Cards matching reference image */}
-          <div className="ter-kpi-grid">
-            <div className="ter-kpi-card">
-              <span className="ter-kpi-val">₹{totalEarnings.toLocaleString("en-IN")}</span>
-              <span className="ter-kpi-label">Total Earnings</span>
-            </div>
+          {isLoading ? (
+            <DashboardStatsSkeleton />
+          ) : (
+            <div className="ter-kpi-grid">
+              <div className="ter-kpi-card">
+                <span className="ter-kpi-val">₹{totalEarnings.toLocaleString("en-IN")}</span>
+                <span className="ter-kpi-label">Total Earnings</span>
+              </div>
 
-            <div className="ter-kpi-card">
-              <span className="ter-kpi-val">₹{monthlyEarnings.toLocaleString("en-IN")}</span>
-              <span className="ter-kpi-label">This Month</span>
-            </div>
+              <div className="ter-kpi-card">
+                <span className="ter-kpi-val">₹{monthlyEarnings.toLocaleString("en-IN")}</span>
+                <span className="ter-kpi-label">This Month</span>
+              </div>
 
-            <div className="ter-kpi-card">
-              <span className="ter-kpi-val">{completedOrders}</span>
-              <span className="ter-kpi-label">Completed Orders</span>
-            </div>
+              <div className="ter-kpi-card">
+                <span className="ter-kpi-val">{completedOrders}</span>
+                <span className="ter-kpi-label">Completed Orders</span>
+              </div>
 
-            <div className="ter-kpi-card">
-              <span className="ter-kpi-val">₹{pendingPayments.toLocaleString("en-IN")}</span>
-              <span className="ter-kpi-label">Pending Payments</span>
+              <div className="ter-kpi-card">
+                <span className="ter-kpi-val">₹{pendingPayments.toLocaleString("en-IN")}</span>
+                <span className="ter-kpi-label">Pending Payments</span>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* 2. Middle Row: 2-Column Split (Chart + Withdrawal History) */}
           <div className="ter-main-grid">
@@ -292,17 +306,21 @@ export function TailorEarningsPage() {
             <div className="ter-history-card">
               <h2 className="ter-card-title">Withdrawal History</h2>
 
-              <div className="ter-history-list">
-                {withdrawals.map((item) => (
-                  <div key={item.id} className="ter-history-item">
-                    <span className="ter-hist-date">{item.date}</span>
-                    <div className="ter-hist-right">
-                      <span className="ter-hist-amount">₹{item.amount.toLocaleString("en-IN")}</span>
-                      <span className="ter-paid-badge">{item.status}</span>
+              {isLoading ? (
+                <NotificationListSkeleton count={4} />
+              ) : (
+                <div className="ter-history-list">
+                  {withdrawals.map((item) => (
+                    <div key={item.id} className="ter-history-item">
+                      <span className="ter-hist-date">{item.date}</span>
+                      <div className="ter-hist-right">
+                        <span className="ter-hist-amount">₹{item.amount.toLocaleString("en-IN")}</span>
+                        <span className="ter-paid-badge">{item.status}</span>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </main>

@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { PublicShell } from "@/components/common/site-shell";
 import { authService } from "@/lib/api";
+import { Skeleton, DashboardStatsSkeleton, CardsGridSkeleton } from "@/components/common/shadow-skeleton";
 import {
   fetchCustomerProfileApi,
   fetchDashboardStatsApi,
@@ -185,7 +186,13 @@ export function CustomerDashboardPage() {
               <section className="customer-welcome-hero" aria-label="Welcome Banner">
                 <div className="welcome-text-content">
                   <span className="welcome-greeting">Welcome back,</span>
-                  <h1 className="customer-user-name">{userName}</h1>
+                  {isLoading ? (
+                    <div style={{ margin: "6px 0 10px" }}>
+                      <Skeleton width="220px" height="34px" />
+                    </div>
+                  ) : (
+                    <h1 className="customer-user-name">{userName}</h1>
+                  )}
                   <p className="welcome-tagline">
                     Here&apos;s what&apos;s happening with your style journey today.
                   </p>
@@ -209,51 +216,55 @@ export function CustomerDashboardPage() {
                   Quick Overview
                 </h2>
 
-                <div className="quick-overview-grid">
-                  {/* Stat 1: Upcoming Appointments */}
-                  <article className="stat-overview-card">
-                    <div className="stat-card-number">
-                      {stats?.upcomingAppointmentsCount ?? 0}
-                    </div>
-                    <div className="stat-card-label">Upcoming Appointments</div>
-                    <Link href="/customer/appointments" className="stat-card-link">
-                      View all
-                    </Link>
-                  </article>
+                {isLoading ? (
+                  <DashboardStatsSkeleton count={4} />
+                ) : (
+                  <div className="quick-overview-grid">
+                    {/* Stat 1: Upcoming Appointments */}
+                    <article className="stat-overview-card">
+                      <div className="stat-card-number">
+                        {stats?.upcomingAppointmentsCount ?? 0}
+                      </div>
+                      <div className="stat-card-label">Upcoming Appointments</div>
+                      <Link href="/customer/appointments" className="stat-card-link">
+                        View all
+                      </Link>
+                    </article>
 
-                  {/* Stat 2: Orders in Progress */}
-                  <article className="stat-overview-card">
-                    <div className="stat-card-number">
-                      {stats?.ordersInProgressCount ?? 0}
-                    </div>
-                    <div className="stat-card-label">Orders in Progress</div>
-                    <Link href="/customer/orders" className="stat-card-link">
-                      View all
-                    </Link>
-                  </article>
+                    {/* Stat 2: Orders in Progress */}
+                    <article className="stat-overview-card">
+                      <div className="stat-card-number">
+                        {stats?.ordersInProgressCount ?? 0}
+                      </div>
+                      <div className="stat-card-label">Orders in Progress</div>
+                      <Link href="/customer/orders" className="stat-card-link">
+                        View all
+                      </Link>
+                    </article>
 
-                  {/* Stat 3: Saved Designs */}
-                  <article className="stat-overview-card">
-                    <div className="stat-card-number">
-                      {stats?.savedDesignsCount ?? 0}
-                    </div>
-                    <div className="stat-card-label">Saved Designs</div>
-                    <Link href="/customer/saved-designs" className="stat-card-link">
-                      View all
-                    </Link>
-                  </article>
+                    {/* Stat 3: Saved Designs */}
+                    <article className="stat-overview-card">
+                      <div className="stat-card-number">
+                        {stats?.savedDesignsCount ?? 0}
+                      </div>
+                      <div className="stat-card-label">Saved Designs</div>
+                      <Link href="/customer/saved-designs" className="stat-card-link">
+                        View all
+                      </Link>
+                    </article>
 
-                  {/* Stat 4: Measurements Saved */}
-                  <article className="stat-overview-card">
-                    <div className="stat-card-number">
-                      {stats?.measurementsSavedCount ?? 0}
-                    </div>
-                    <div className="stat-card-label">Measurements Saved</div>
-                    <Link href="/customer/measurements" className="stat-card-link">
-                      View all
-                    </Link>
-                  </article>
-                </div>
+                    {/* Stat 4: Measurements Saved */}
+                    <article className="stat-overview-card">
+                      <div className="stat-card-number">
+                        {stats?.measurementsSavedCount ?? 0}
+                      </div>
+                      <div className="stat-card-label">Measurements Saved</div>
+                      <Link href="/customer/measurements" className="stat-card-link">
+                        View all
+                      </Link>
+                    </article>
+                  </div>
+                )}
               </section>
 
               {/* Middle Section: Recent Orders & Upcoming Appointments (2 Columns) */}
@@ -264,7 +275,12 @@ export function CustomerDashboardPage() {
                     Recent Orders
                   </h2>
 
-                  {recentOrders.length === 0 ? (
+                  {isLoading ? (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "12px", padding: "16px 0" }}>
+                      <Skeleton height="60px" borderRadius="10px" />
+                      <Skeleton height="60px" borderRadius="10px" />
+                    </div>
+                  ) : recentOrders.length === 0 ? (
                     <div style={{ textAlign: "center", padding: "36px 16px", color: "var(--muted)" }}>
                       <Package size={38} style={{ margin: "0 auto 12px", color: "#94A3B8" }} />
                       <p style={{ fontWeight: 650, color: "#1E293B", marginBottom: "4px" }}>
@@ -337,7 +353,12 @@ export function CustomerDashboardPage() {
                     Upcoming Appointments
                   </h2>
 
-                  {upcomingAppointments.length === 0 ? (
+                  {isLoading ? (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "12px", padding: "16px 0" }}>
+                      <Skeleton height="60px" borderRadius="10px" />
+                      <Skeleton height="60px" borderRadius="10px" />
+                    </div>
+                  ) : upcomingAppointments.length === 0 ? (
                     <div style={{ textAlign: "center", padding: "36px 16px", color: "var(--muted)" }}>
                       <Calendar size={38} style={{ margin: "0 auto 12px", color: "#94A3B8" }} />
                       <p style={{ fontWeight: 650, color: "#1E293B", marginBottom: "4px" }}>

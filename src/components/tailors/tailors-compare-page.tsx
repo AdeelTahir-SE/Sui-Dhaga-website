@@ -25,6 +25,7 @@ import {
   TailorItem
 } from "@/lib/tailors-data";
 import { tailorService } from "@/lib/api/tailor-service";
+import { TailorsCompareSkeleton } from "@/components/common/shadow-skeleton";
 import "@/styles/pages/tailors.css";
 
 export function TailorsComparePage() {
@@ -237,152 +238,156 @@ export function TailorsComparePage() {
 
             {/* Right Column: Comprehensive Comparison Matrix Table */}
             <main className="compare-matrix-column">
-              <div className="comparison-table-wrapper">
-                <table className="comparison-table">
-                  {/* Table Header: Tailor Cards */}
-                  <thead>
-                    <tr>
-                      <th className="attr-column-header"></th>
-                      {selectedTailors.map((tailor) => (
-                        <th key={tailor.id} className="tailor-column-header">
-                          <div className="header-tailor-card">
-                            <img
-                              src={tailor.image}
-                              alt={tailor.name}
-                              className="header-avatar"
-                            />
-                            <div className="header-info">
-                              <h4 className="header-name">{tailor.name}</h4>
-                              <div className="header-rating">
-                                <Star size={13} fill="#F59E0B" color="#F59E0B" />
-                                <span>
-                                  <strong>{tailor.rating}</strong> ({tailor.reviewsCount})
-                                </span>
+              {isLoading ? (
+                <TailorsCompareSkeleton />
+              ) : (
+                <div className="comparison-table-wrapper">
+                  <table className="comparison-table">
+                    {/* Table Header: Tailor Cards */}
+                    <thead>
+                      <tr>
+                        <th className="attr-column-header"></th>
+                        {selectedTailors.map((tailor) => (
+                          <th key={tailor.id} className="tailor-column-header">
+                            <div className="header-tailor-card">
+                              <img
+                                src={tailor.image}
+                                alt={tailor.name}
+                                className="header-avatar"
+                              />
+                              <div className="header-info">
+                                <h4 className="header-name">{tailor.name}</h4>
+                                <div className="header-rating">
+                                  <Star size={13} fill="#F59E0B" color="#F59E0B" />
+                                  <span>
+                                    <strong>{tailor.rating}</strong> ({tailor.reviewsCount})
+                                  </span>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
 
-                  <tbody>
-                    {/* Rating & Reviews Row */}
-                    <tr>
-                      <td className="row-label">Rating &amp; Reviews</td>
-                      {selectedTailors.map((tailor) => (
-                        <td key={tailor.id} className="cell-value">
-                          <div className="stars-display">
-                            {[1, 2, 3, 4, 5].map((s) => (
-                              <Star
-                                key={s}
-                                size={14}
-                                fill={s <= Math.round(tailor.rating) ? "#F59E0B" : "none"}
-                                color={s <= Math.round(tailor.rating) ? "#F59E0B" : "#CBD5E1"}
-                              />
-                            ))}
-                          </div>
-                        </td>
-                      ))}
-                    </tr>
+                    <tbody>
+                      {/* Rating & Reviews Row */}
+                      <tr>
+                        <td className="row-label">Rating &amp; Reviews</td>
+                        {selectedTailors.map((tailor) => (
+                          <td key={tailor.id} className="cell-value">
+                            <div className="stars-display">
+                              {[1, 2, 3, 4, 5].map((s) => (
+                                <Star
+                                  key={s}
+                                  size={14}
+                                  fill={s <= Math.round(tailor.rating) ? "#F59E0B" : "none"}
+                                  color={s <= Math.round(tailor.rating) ? "#F59E0B" : "#CBD5E1"}
+                                />
+                              ))}
+                            </div>
+                          </td>
+                        ))}
+                      </tr>
 
-                    {/* Starting Price Row */}
-                    <tr>
-                      <td className="row-label">Starting Price</td>
-                      {selectedTailors.map((tailor) => (
-                        <td key={tailor.id} className="cell-value highlight-price">
-                          {tailor.startingPrice ? tailor.startingPrice.replace("Starting from ", "") : "PKR 1,500"}
-                        </td>
-                      ))}
-                    </tr>
+                      {/* Starting Price Row */}
+                      <tr>
+                        <td className="row-label">Starting Price</td>
+                        {selectedTailors.map((tailor) => (
+                          <td key={tailor.id} className="cell-value highlight-price">
+                            {tailor.startingPrice ? tailor.startingPrice.replace("Starting from ", "") : "PKR 1,500"}
+                          </td>
+                        ))}
+                      </tr>
 
-                    {/* Experience Row */}
-                    <tr>
-                      <td className="row-label">Experience</td>
-                      {selectedTailors.map((tailor) => (
-                        <td key={tailor.id} className="cell-value bold-value">
-                          {tailor.experience || "8+ years"}
-                        </td>
-                      ))}
-                    </tr>
+                      {/* Experience Row */}
+                      <tr>
+                        <td className="row-label">Experience</td>
+                        {selectedTailors.map((tailor) => (
+                          <td key={tailor.id} className="cell-value bold-value">
+                            {tailor.experience || "8+ years"}
+                          </td>
+                        ))}
+                      </tr>
 
-                    {/* Specialties Row */}
-                    <tr>
-                      <td className="row-label">Specialties</td>
-                      {selectedTailors.map((tailor) => (
-                        <td key={tailor.id} className="cell-value">
-                          {tailor.specialties?.length ? tailor.specialties.join(", ") : "Bespoke Tailoring"}
-                        </td>
-                      ))}
-                    </tr>
+                      {/* Specialties Row */}
+                      <tr>
+                        <td className="row-label">Specialties</td>
+                        {selectedTailors.map((tailor) => (
+                          <td key={tailor.id} className="cell-value">
+                            {tailor.specialties?.length ? tailor.specialties.join(", ") : "Bespoke Tailoring"}
+                          </td>
+                        ))}
+                      </tr>
 
-                    {/* Delivery Time Row */}
-                    <tr>
-                      <td className="row-label">Delivery Time</td>
-                      {selectedTailors.map((tailor) => (
-                        <td key={tailor.id} className="cell-value">
-                          {tailor.turnaroundTime || "3-5 days"}
-                        </td>
-                      ))}
-                    </tr>
+                      {/* Delivery Time Row */}
+                      <tr>
+                        <td className="row-label">Delivery Time</td>
+                        {selectedTailors.map((tailor) => (
+                          <td key={tailor.id} className="cell-value">
+                            {tailor.turnaroundTime || "3-5 days"}
+                          </td>
+                        ))}
+                      </tr>
 
-                    {/* On-time Delivery Row */}
-                    <tr>
-                      <td className="row-label">On-time Delivery</td>
-                      {selectedTailors.map((tailor) => (
-                        <td key={tailor.id} className="cell-value bold-value">
-                          {tailor.onTimeDelivery || "98%"}
-                        </td>
-                      ))}
-                    </tr>
+                      {/* On-time Delivery Row */}
+                      <tr>
+                        <td className="row-label">On-time Delivery</td>
+                        {selectedTailors.map((tailor) => (
+                          <td key={tailor.id} className="cell-value bold-value">
+                            {tailor.onTimeDelivery || "98%"}
+                          </td>
+                        ))}
+                      </tr>
 
-                    {/* Happy Customers Row */}
-                    <tr>
-                      <td className="row-label">Happy Customers</td>
-                      {selectedTailors.map((tailor) => (
-                        <td key={tailor.id} className="cell-value">
-                          {tailor.happyCustomers || "2K+"}
-                        </td>
-                      ))}
-                    </tr>
+                      {/* Happy Customers Row */}
+                      <tr>
+                        <td className="row-label">Happy Customers</td>
+                        {selectedTailors.map((tailor) => (
+                          <td key={tailor.id} className="cell-value">
+                            {tailor.happyCustomers || "2K+"}
+                          </td>
+                        ))}
+                      </tr>
 
-                    {/* Price for Similar Outfit Row */}
-                    <tr>
-                      <td className="row-label">Price for Similar Outfit</td>
-                      {selectedTailors.map((tailor) => (
-                        <td key={tailor.id} className="cell-value">
-                          {tailor.similarOutfitPrice || "Rs. 2,000 (Example)"}
-                        </td>
-                      ))}
-                    </tr>
+                      {/* Price for Similar Outfit Row */}
+                      <tr>
+                        <td className="row-label">Price for Similar Outfit</td>
+                        {selectedTailors.map((tailor) => (
+                          <td key={tailor.id} className="cell-value">
+                            {tailor.similarOutfitPrice || "Rs. 2,000 (Example)"}
+                          </td>
+                        ))}
+                      </tr>
 
-                    {/* Reviews Summary Row */}
-                    <tr>
-                      <td className="row-label">Reviews Summary</td>
-                      {selectedTailors.map((tailor) => (
-                        <td key={tailor.id} className="cell-value italic-summary">
-                          {tailor.reviewsSummary || "Excellent stitching and fit"}
-                        </td>
-                      ))}
-                    </tr>
+                      {/* Reviews Summary Row */}
+                      <tr>
+                        <td className="row-label">Reviews Summary</td>
+                        {selectedTailors.map((tailor) => (
+                          <td key={tailor.id} className="cell-value italic-summary">
+                            {tailor.reviewsSummary || "Excellent stitching and fit"}
+                          </td>
+                        ))}
+                      </tr>
 
-                    {/* Book Now CTA Row */}
-                    <tr className="cta-row">
-                      <td className="row-label"></td>
-                      {selectedTailors.map((tailor) => (
-                        <td key={tailor.id} className="cell-value cta-cell">
-                          <Link
-                            href={`/book/${tailor.id}`}
-                            className="compare-book-btn"
-                          >
-                            Book Now
-                          </Link>
-                        </td>
-                      ))}
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
+                      {/* Book Now CTA Row */}
+                      <tr className="cta-row">
+                        <td className="row-label"></td>
+                        {selectedTailors.map((tailor) => (
+                          <td key={tailor.id} className="cell-value cta-cell">
+                            <Link
+                              href={`/book/${tailor.id}`}
+                              className="compare-book-btn"
+                            >
+                              Book Now
+                            </Link>
+                          </td>
+                        ))}
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </main>
           </div>
         </div>

@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { PublicShell } from "@/components/common/site-shell";
 import { CustomerSidebar } from "@/components/customer/customer-sidebar";
+import { CardsGridSkeleton, TableSkeleton } from "@/components/common/shadow-skeleton";
 import "@/styles/pages/customer-dashboard.css";
 import "@/styles/pages/customer-account-views.css";
 
@@ -294,7 +295,9 @@ export function CustomerPaymentsPage() {
                   </h2>
                 </div>
 
-                {!isLoading && methods.length === 0 ? (
+                {isLoading ? (
+                  <CardsGridSkeleton count={2} cardHeight={160} />
+                ) : methods.length === 0 ? (
                   <div style={{ textAlign: "center", padding: "36px 16px", color: "#64748b" }}>
                     <CreditCard size={36} style={{ color: "#cbd5e1", margin: "0 auto 12px" }} />
                     <p style={{ fontSize: "14px", margin: "0 0 16px 0" }}>No payment methods saved yet.</p>
@@ -411,46 +414,50 @@ export function CustomerPaymentsPage() {
                   </h2>
                 </div>
 
-                <div style={{ overflowX: "auto" }}>
-                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13.5px" }}>
-                    <thead>
-                      <tr style={{ borderBottom: "1px solid #e2e8f0", textAlign: "left", color: "#64748b" }}>
-                        <th style={{ padding: "12px 14px" }}>Date</th>
-                        <th style={{ padding: "12px 14px" }}>Description</th>
-                        <th style={{ padding: "12px 14px" }}>Tailor</th>
-                        <th style={{ padding: "12px 14px" }}>Method</th>
-                        <th style={{ padding: "12px 14px" }}>Amount</th>
-                        <th style={{ padding: "12px 14px" }}>Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {transactions.map((txn) => (
-                        <tr key={txn.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
-                          <td style={{ padding: "14px", color: "#64748b" }}>{txn.date}</td>
-                          <td style={{ padding: "14px", fontWeight: 600, color: "#1e293b" }}>{txn.title}</td>
-                          <td style={{ padding: "14px", color: "#475569" }}>{txn.tailorName}</td>
-                          <td style={{ padding: "14px", color: "#64748b" }}>{txn.paymentMethod}</td>
-                          <td style={{ padding: "14px", fontWeight: 700, color: "#078b87" }}>{txn.amount}</td>
-                          <td style={{ padding: "14px" }}>
-                            <span
-                              style={{
-                                display: "inline-block",
-                                padding: "4px 10px",
-                                borderRadius: "12px",
-                                fontSize: "12px",
-                                fontWeight: 600,
-                                background: txn.status === "Completed" ? "#f0fdf4" : txn.status === "Escrow Secured" ? "#eff6ff" : "#fef2f2",
-                                color: txn.status === "Completed" ? "#166534" : txn.status === "Escrow Secured" ? "#1d4ed8" : "#b91c1c"
-                              }}
-                            >
-                              {txn.status}
-                            </span>
-                          </td>
+                {isLoading ? (
+                  <TableSkeleton rows={3} cols={6} />
+                ) : (
+                  <div style={{ overflowX: "auto" }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13.5px" }}>
+                      <thead>
+                        <tr style={{ borderBottom: "1px solid #e2e8f0", textAlign: "left", color: "#64748b" }}>
+                          <th style={{ padding: "12px 14px" }}>Date</th>
+                          <th style={{ padding: "12px 14px" }}>Description</th>
+                          <th style={{ padding: "12px 14px" }}>Tailor</th>
+                          <th style={{ padding: "12px 14px" }}>Method</th>
+                          <th style={{ padding: "12px 14px" }}>Amount</th>
+                          <th style={{ padding: "12px 14px" }}>Status</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody>
+                        {transactions.map((txn) => (
+                          <tr key={txn.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                            <td style={{ padding: "14px", color: "#64748b" }}>{txn.date}</td>
+                            <td style={{ padding: "14px", fontWeight: 600, color: "#1e293b" }}>{txn.title}</td>
+                            <td style={{ padding: "14px", color: "#475569" }}>{txn.tailorName}</td>
+                            <td style={{ padding: "14px", color: "#64748b" }}>{txn.paymentMethod}</td>
+                            <td style={{ padding: "14px", fontWeight: 700, color: "#078b87" }}>{txn.amount}</td>
+                            <td style={{ padding: "14px" }}>
+                              <span
+                                style={{
+                                  display: "inline-block",
+                                  padding: "4px 10px",
+                                  borderRadius: "12px",
+                                  fontSize: "12px",
+                                  fontWeight: 600,
+                                  background: txn.status === "Completed" ? "#f0fdf4" : txn.status === "Escrow Secured" ? "#eff6ff" : "#fef2f2",
+                                  color: txn.status === "Completed" ? "#166534" : txn.status === "Escrow Secured" ? "#1d4ed8" : "#b91c1c"
+                                }}
+                              >
+                                {txn.status}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             </main>
           </div>

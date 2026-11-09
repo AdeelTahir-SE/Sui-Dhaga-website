@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { PublicShell } from "@/components/common/site-shell";
 import { CustomerSidebar } from "@/components/customer/customer-sidebar";
+import { CardsGridSkeleton } from "@/components/common/shadow-skeleton";
 import "@/styles/pages/customer-dashboard.css";
 import "@/styles/pages/customer-account-views.css";
 
@@ -204,7 +205,9 @@ export function CustomerWishlistPage() {
               </div>
 
               {/* Wishlist Grid */}
-              {!isLoading && filteredItems.length === 0 ? (
+              {isLoading ? (
+                <CardsGridSkeleton count={4} cardHeight={320} />
+              ) : filteredItems.length === 0 ? (
                 <div className="customer-empty-state-box">
                   <div className="customer-empty-state-icon">
                     <Heart size={36} />
