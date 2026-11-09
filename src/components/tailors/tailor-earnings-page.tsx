@@ -16,6 +16,7 @@ import {
 import { PublicNav } from "@/components/common/site-shell";
 import { TailorSidebar } from "@/components/tailors/tailor-sidebar";
 import { AdminToast } from "@/components/admin/admin-toast";
+import { orderService } from "@/lib/api/order-service";
 import "@/styles/pages/tailor-earnings-view.css";
 
 interface WithdrawalRecord {
@@ -55,21 +56,58 @@ export function TailorEarningsPage() {
   const [withdrawAmount, setWithdrawAmount] = useState("5000");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Load from local storage
+  // Load from live database or fallback to localStorage
   useEffect(() => {
-    if (typeof window !== "undefined") {
+    async function loadEarningsFromOrders() {
       try {
-        const saved = localStorage.getItem(KEY_TAILOR_EARNINGS);
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (parsed.withdrawals) setWithdrawals(parsed.withdrawals);
-          if (parsed.totalEarnings) setTotalEarnings(parsed.totalEarnings);
-          if (parsed.monthlyEarnings) setMonthlyEarnings(parsed.monthlyEarnings);
+        const res = await orderService.getOrders();
+        if (res?.data && Array.isArray(res.data) && res.data.length > 0) {
+          const orders = res.data;
+          const completedList = orders.filter((o) =>
+            ["completed", "delivered", "ready"].includes((o.status || "").toLowerCase())
+          );
+          const inProgressList = orders.filter((o) =>
+            !["completed", "delivered", "ready", "cancelled"].includes((o.status || "").toLowerCase())
+          );
+
+          const completedEarnings = completedList.reduce(
+            (acc, o) => acc + (o.total_price || o.total_amount || o.amount || 0),
+            0
+          );
+          const pendingEarnings = inProgressList.reduce(
+            (acc, o) => acc + (o.total_price || o.total_amount || o.amount || 0),
+            0
+          );
+          const computedTotal = completedEarnings + pendingEarnings;
+
+          if (computedTotal > 0) {
+            setTotalEarnings(computedTotal);
+            setMonthlyEarnings(completedEarnings || computedTotal);
+            setCompletedOrders(completedList.length);
+            setPendingPayments(pendingEarnings);
+            return;
+          }
         }
-      } catch (e) {
-        console.warn("Failed to load earnings from localStorage:", e);
+      } catch (err) {
+        console.warn("Could not calculate live earnings from backend orders:", err);
+      }
+
+      if (typeof window !== "undefined") {
+        try {
+          const saved = localStorage.getItem(KEY_TAILOR_EARNINGS);
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            if (parsed.withdrawals) setWithdrawals(parsed.withdrawals);
+            if (parsed.totalEarnings) setTotalEarnings(parsed.totalEarnings);
+            if (parsed.monthlyEarnings) setMonthlyEarnings(parsed.monthlyEarnings);
+          }
+        } catch (e) {
+          console.warn("Failed to load earnings from localStorage:", e);
+        }
       }
     }
+
+    loadEarningsFromOrders();
   }, []);
 
   const handleWithdrawSubmit = (e: React.FormEvent) => {

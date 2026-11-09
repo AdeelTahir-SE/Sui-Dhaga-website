@@ -25,6 +25,7 @@ import {
 import { PublicNav, PublicFooter } from "@/components/common/site-shell";
 import { AdminToast } from "@/components/admin/admin-toast";
 import { adminService } from "@/lib/api/admin-service";
+import { tailorService } from "@/lib/api/tailor-service";
 import "@/styles/pages/tailor-onboarding.css";
 
 interface ServiceItem {
@@ -123,8 +124,22 @@ export function TailorOnboardingPage() {
     e.preventDefault();
     setIsSubmitting(true);
     try {
+      // 1. Submit tailor profile creation to backend API
+      try {
+        await tailorService.createTailorProfile({
+          shopName: profile.businessName,
+          specialties: services.filter(s => s.selected).map(s => s.name),
+          city: location.city || "Jaipur",
+          address: location.streetAddress,
+          experienceYears: parseInt(profile.experience) || 8,
+          bio: profile.bio || "Custom bespoke tailoring studio"
+        });
+      } catch (e) {
+        console.warn("Backend tailor creation endpoint notice:", e);
+      }
+
       // Synchronize with API / Admin service store
-      await adminService.tailors.getTailors(); // prefetch / mock verify
+      await adminService.tailors.getTailors();
 
       setToastMessage("🎉 Profile submitted successfully! Redirecting to your Artisan Dashboard...");
       setTimeout(() => {

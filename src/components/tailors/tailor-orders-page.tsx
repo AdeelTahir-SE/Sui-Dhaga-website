@@ -19,6 +19,7 @@ import {
 import { PublicNav } from "@/components/common/site-shell";
 import { TailorSidebar } from "@/components/tailors/tailor-sidebar";
 import { AdminToast } from "@/components/admin/admin-toast";
+import { orderService } from "@/lib/api/order-service";
 import "@/styles/pages/tailor-orders-view.css";
 
 export type TailorOrderStatus = "new" | "in_progress" | "completed" | "cancelled";
@@ -244,20 +245,68 @@ export function TailorOrdersPage() {
   const [statusNote, setStatusNote] = useState("");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Load from local storage
+  // Map backend Order object to TailorOrderItem
+  const mapBackendOrderToTailorOrder = (o: any): TailorOrderItem => {
+    const num = o.id ? o.id.replace(/[^a-zA-Z0-9]/g, "").slice(-4).toUpperCase() : "1206";
+    const rawStatus = (o.status || "").toLowerCase();
+    const status: TailorOrderStatus =
+      ["pending", "confirmed"].includes(rawStatus) ? "new"
+      : ["in_progress", "cutting", "stitching", "quality_check"].includes(rawStatus) ? "in_progress"
+      : ["completed", "delivered", "ready"].includes(rawStatus) ? "completed"
+      : rawStatus === "cancelled" ? "cancelled"
+      : "new";
+
+    return {
+      id: o.id,
+      orderNumber: `SD${num}`,
+      customerName: o.customer?.full_name || o.customer?.name || "Verified Customer",
+      customerPhone: o.customer?.phone || "+92 300 1234567",
+      customerEmail: o.customer?.email || "customer@example.com",
+      customerAvatar: o.customer?.avatar_url || "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120&auto=format&fit=crop&q=80",
+      itemTitle: o.service?.title || o.notes?.slice(0, 30) || "Custom Bespoke Outfit",
+      category: o.service?.category || "Bespoke Wear",
+      fabricDetails: o.fabric_details || o.notes || "Customer Specified Fabric",
+      amount: o.total_price || o.total_amount || o.amount || 2500,
+      date: o.created_at ? new Date(o.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "Recent",
+      expectedDelivery: o.delivery_date ? new Date(o.delivery_date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "In 7 Days",
+      status,
+      measurementsSummary: o.measurements ? (typeof o.measurements === "object" ? Object.entries(o.measurements).map(([k, v]) => `${k}: ${v}`).join(", ") : String(o.measurements)) : undefined,
+      notes: o.notes || undefined
+    };
+  };
+
+  // Load from live backend database or localStorage fallback
   useEffect(() => {
-    if (typeof window !== "undefined") {
+    async function loadOrders() {
       try {
-        const saved = localStorage.getItem(KEY_TAILOR_ORDERS);
-        if (saved) {
-          setOrders(JSON.parse(saved));
-        } else {
-          localStorage.setItem(KEY_TAILOR_ORDERS, JSON.stringify(initialOrdersList));
+        const res = await orderService.getOrders();
+        if (res?.data && Array.isArray(res.data) && res.data.length > 0) {
+          const liveOrders = res.data.map(mapBackendOrderToTailorOrder);
+          setOrders(liveOrders);
+          if (typeof window !== "undefined") {
+            localStorage.setItem(KEY_TAILOR_ORDERS, JSON.stringify(liveOrders));
+          }
+          return;
         }
-      } catch (e) {
-        console.warn("Failed to load orders from localStorage:", e);
+      } catch (err) {
+        console.warn("Could not fetch live tailor orders from backend, checking cache/mock:", err);
+      }
+
+      if (typeof window !== "undefined") {
+        try {
+          const saved = localStorage.getItem(KEY_TAILOR_ORDERS);
+          if (saved) {
+            setOrders(JSON.parse(saved));
+          } else {
+            localStorage.setItem(KEY_TAILOR_ORDERS, JSON.stringify(initialOrdersList));
+          }
+        } catch (e) {
+          console.warn("Failed to load orders from localStorage:", e);
+        }
       }
     }
+
+    loadOrders();
   }, []);
 
   const saveOrdersToStorage = (updated: TailorOrderItem[]) => {
@@ -293,16 +342,34 @@ export function TailorOrdersPage() {
     router.push(`/tailor/orders/${ord.orderNumber.replace("#", "")}`);
   };
 
-  const handleSaveStatusUpdate = (e: React.FormEvent) => {
+  const handleSaveStatusUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedOrder) return;
+
+    // Persist status change to live backend endpoint
+    const backendStatusMap: Record<TailorOrderStatus, any> = {
+      new: "confirmed",
+      in_progress: "in_progress",
+      completed: "completed",
+      cancelled: "cancelled",
+    };
+
+    try {
+      await orderService.updateOrderStatus(
+        selectedOrder.id,
+        backendStatusMap[newStatus] || "in_progress",
+        statusNote || undefined
+      );
+    } catch (err) {
+      console.warn("Could not patch order status to backend endpoint:", err);
+    }
 
     const updated = orders.map((o) =>
       o.id === selectedOrder.id
         ? {
             ...o,
             status: newStatus,
-            notes: statusNote
+            notes: statusNote || o.notes
           }
         : o
     );

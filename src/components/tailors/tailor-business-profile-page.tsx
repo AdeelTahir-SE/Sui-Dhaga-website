@@ -21,6 +21,8 @@ import {
 import { PublicNav } from "@/components/common/site-shell";
 import { TailorSidebar } from "@/components/tailors/tailor-sidebar";
 import { AdminToast } from "@/components/admin/admin-toast";
+import { userService } from "@/lib/api/user-service";
+import { tailorService } from "@/lib/api/tailor-service";
 import "@/styles/pages/tailor-profile-view.css";
 
 export function TailorBusinessProfilePage() {
@@ -59,16 +61,76 @@ export function TailorBusinessProfilePage() {
   const [editForm, setEditForm] = useState({ ...businessProfile });
   const [newSpecialtyTag, setNewSpecialtyTag] = useState("");
 
+  // Load from live backend
+  React.useEffect(() => {
+    async function loadProfile() {
+      try {
+        const userRes = await userService.getMe();
+        if (userRes?.data) {
+          const u = userRes.data;
+          const tailorName = u.full_name || u.name || "Master Tailor";
+          let tailorData: any = null;
+          try {
+            const tRes = await tailorService.getTailorById(u.id);
+            tailorData = tRes?.data;
+          } catch {}
+
+          const profileData = {
+            shopName: tailorData?.shopName || (u as any).shop_name || `${tailorName}'s Studio`,
+            ownerName: tailorName,
+            avatar: u.avatar_url || tailorData?.avatar_url || "/images/tailor-onboarding-avatar.jpg",
+            rating: tailorData?.rating || (u as any).rating || 4.8,
+            reviewsCount: tailorData?.reviewsCount || (u as any).reviewsCount || 128,
+            memberSince: "May 2023",
+            specializesSummary: tailorData?.specialties ? tailorData.specialties.join(", ") : "Ethnic Wear, Wedding Wear, Men's Wear",
+            about: tailorData?.bio || "With over 8 years of experience, we bring your style to life with perfect stitching and attention to detail.",
+            specialties: tailorData?.specialties || [
+              "Anarkali Suits",
+              "Lehengas",
+              "Blouses",
+              "Sherwanis",
+              "Kurta Sets",
+              "Alterations"
+            ],
+            city: tailorData?.city || (u as any).city || "Jaipur",
+            province: (u as any).province || "Rajasthan",
+            address: tailorData?.address || (u as any).address || "Shop #14, Main Market, Fashion Enclave",
+            servingRadiusKm: 15,
+            phone: u.phone || "+91 98765-43210",
+            email: u.email || "arjunverma@email.com",
+            isVerified: true
+          };
+
+          setBusinessProfile(profileData);
+          setEditForm(profileData);
+        }
+      } catch (err) {
+        console.warn("Could not load tailor profile from backend:", err);
+      }
+    }
+
+    loadProfile();
+  }, []);
+
   const handleOpenEdit = () => {
     setEditForm({ ...businessProfile });
     setIsEditModalOpen(true);
   };
 
-  const handleSaveProfile = (e: React.FormEvent) => {
+  const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusinessProfile({ ...editForm });
     setIsEditModalOpen(false);
     setToastMessage("🎉 Business profile updated successfully!");
+
+    try {
+      await userService.updateMe({
+        full_name: editForm.ownerName,
+        phone: editForm.phone,
+      });
+    } catch (err) {
+      console.warn("Could not sync user profile to backend:", err);
+    }
   };
 
   const handleAddSpecialty = () => {

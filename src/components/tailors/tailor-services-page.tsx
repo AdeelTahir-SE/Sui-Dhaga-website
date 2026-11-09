@@ -15,6 +15,8 @@ import {
 import { PublicNav } from "@/components/common/site-shell";
 import { TailorSidebar } from "@/components/tailors/tailor-sidebar";
 import { AdminToast } from "@/components/admin/admin-toast";
+import { tailorService } from "@/lib/api/tailor-service";
+import { userService } from "@/lib/api/user-service";
 import "@/styles/pages/tailor-services-view.css";
 
 export interface TailorServiceRecord {
@@ -81,6 +83,7 @@ const KEY_TAILOR_SERVICES = "sui_dhaga_tailor_services_list";
 
 export function TailorServicesPage() {
   const [services, setServices] = useState<TailorServiceRecord[]>(initialTailorServices);
+  const [currentTailorId, setCurrentTailorId] = useState<string | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingService, setEditingService] = useState<TailorServiceRecord | null>(null);
   const [deletingService, setDeletingService] = useState<TailorServiceRecord | null>(null);
@@ -95,20 +98,49 @@ export function TailorServicesPage() {
     status: "active" as "active" | "inactive"
   });
 
-  // Load from local storage
+  // Load from live database or localStorage fallback
   useEffect(() => {
-    if (typeof window !== "undefined") {
+    async function loadLiveServices() {
       try {
-        const saved = localStorage.getItem(KEY_TAILOR_SERVICES);
-        if (saved) {
-          setServices(JSON.parse(saved));
-        } else {
-          localStorage.setItem(KEY_TAILOR_SERVICES, JSON.stringify(initialTailorServices));
+        const userRes = await userService.getMe();
+        if (userRes?.data?.id) {
+          setCurrentTailorId(userRes.data.id);
+          const tailorRes = await tailorService.getTailorById(userRes.data.id);
+          if (tailorRes?.data?.services && Array.isArray(tailorRes.data.services) && tailorRes.data.services.length > 0) {
+            const liveList: TailorServiceRecord[] = tailorRes.data.services.map((s) => ({
+              id: s.id,
+              name: s.title || (s as any).name || "Bespoke Garment",
+              category: s.category || "Tailored Wear",
+              startingPrice: s.price || 1500,
+              deliveryTime: (s as any).deliveryTime || "5 - 7 days",
+              status: "active"
+            }));
+            setServices(liveList);
+            if (typeof window !== "undefined") {
+              localStorage.setItem(KEY_TAILOR_SERVICES, JSON.stringify(liveList));
+            }
+            return;
+          }
         }
-      } catch (e) {
-        console.warn("Failed to load services from localStorage:", e);
+      } catch (err) {
+        console.warn("Could not fetch tailor services from backend:", err);
+      }
+
+      if (typeof window !== "undefined") {
+        try {
+          const saved = localStorage.getItem(KEY_TAILOR_SERVICES);
+          if (saved) {
+            setServices(JSON.parse(saved));
+          } else {
+            localStorage.setItem(KEY_TAILOR_SERVICES, JSON.stringify(initialTailorServices));
+          }
+        } catch (e) {
+          console.warn("Failed to load services from localStorage:", e);
+        }
       }
     }
+
+    loadLiveServices();
   }, []);
 
   const saveServicesToStorage = (updated: TailorServiceRecord[]) => {
@@ -144,8 +176,23 @@ export function TailorServicesPage() {
     });
   };
 
-  const handleSaveAdd = (e: React.FormEvent) => {
+  const handleSaveAdd = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Call live endpoint to persist service if tailorId is available
+    if (currentTailorId) {
+      try {
+        await tailorService.addService(currentTailorId, {
+          title: formData.name,
+          price: Number(formData.startingPrice),
+          category: formData.category,
+          description: formData.deliveryTime
+        });
+      } catch (err) {
+        console.warn("Could not save new service to backend endpoint:", err);
+      }
+    }
+
     const newService: TailorServiceRecord = {
       id: `srv-${Date.now()}`,
       name: formData.name,

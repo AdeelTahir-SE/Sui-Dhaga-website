@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { PublicNav, PublicFooter } from "@/components/common/site-shell";
 import { AdminToast } from "@/components/admin/admin-toast";
+import { orderService } from "@/lib/api/order-service";
 import "@/styles/pages/tailor-order-detail-view.css";
 
 export function TailorOrderDetailPage() {
@@ -82,52 +83,129 @@ export function TailorOrderDetailPage() {
   const [selectedStatus, setSelectedStatus] = useState(order.status);
   const [trialTime, setTrialTime] = useState("18 May 2024, 04:00 PM");
 
-  // Hydrate order details if matching order found
+  // Hydrate order details from live backend or local storage
   useEffect(() => {
-    if (typeof window !== "undefined") {
+    let isSubscribed = true;
+
+    async function loadLiveOrder() {
       try {
-        const saved = localStorage.getItem("sui_dhaga_tailor_orders_list");
-        const list = saved ? JSON.parse(saved) : [];
-        const match = list.find(
-          (o: any) =>
-            o.orderNumber?.replace("#", "").toLowerCase() === orderId.toLowerCase() ||
-            o.id?.toLowerCase() === orderId.toLowerCase()
-        );
-        if (match) {
-          setOrder((prev) => ({
-            ...prev,
-            orderNumber: match.orderNumber?.replace("#", "") || orderId,
-            status: match.status === "in_progress" ? "In Progress" : match.status === "new" ? "New" : match.status === "completed" ? "Completed" : "In Progress",
-            placedDate: match.date || prev.placedDate,
-            deliveryDate: match.expectedDelivery || prev.deliveryDate,
-            customer: {
-              name: match.customerName || prev.customer.name,
-              email: match.customerEmail || prev.customer.email,
-              phone: match.customerPhone || prev.customer.phone,
-              avatar: match.customerAvatar || prev.customer.avatar
-            },
-            item: {
-              ...prev.item,
-              title: match.itemTitle || prev.item.title,
-              price: match.amount || prev.item.price,
-              fabric: match.fabricDetails || prev.item.fabric
-            },
-            payment: {
-              ...prev.payment,
-              itemTotal: match.amount || prev.payment.itemTotal,
-              totalAmount: (match.amount || 2000) + 200
-            }
-          }));
-          setSelectedStatus(match.status === "in_progress" ? "In Progress" : match.status === "new" ? "New" : match.status === "completed" ? "Completed" : "In Progress");
+        // Try direct fetch or list lookup
+        const res = await orderService.getOrders();
+        if (res?.data && Array.isArray(res.data) && res.data.length > 0) {
+          const match = res.data.find(
+            (o: any) =>
+              o.id?.toLowerCase() === orderId.toLowerCase() ||
+              `SD${o.id?.replace(/[^a-zA-Z0-9]/g, "").slice(-4).toUpperCase()}`.toLowerCase() === orderId.toLowerCase()
+          );
+
+          if (match && isSubscribed) {
+            const num = match.id.replace(/[^a-zA-Z0-9]/g, "").slice(-4).toUpperCase();
+            const formattedStatus =
+              ["completed", "delivered"].includes(match.status) ? "Completed"
+              : match.status === "cancelled" ? "Cancelled"
+              : match.status === "quality_check" ? "Ready for Trial"
+              : "In Progress";
+
+            const amt = match.total_price || match.total_amount || match.amount || 2000;
+
+            setOrder((prev) => ({
+              ...prev,
+              orderNumber: `SD${num}`,
+              status: formattedStatus,
+              placedDate: match.created_at ? new Date(match.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : prev.placedDate,
+              deliveryDate: match.delivery_date ? new Date(match.delivery_date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : prev.deliveryDate,
+              customer: {
+                name: match.customer?.full_name || match.customer?.name || prev.customer.name,
+                email: match.customer?.email || prev.customer.email,
+                phone: match.customer?.phone || prev.customer.phone,
+                avatar: match.customer?.avatar_url || prev.customer.avatar
+              },
+              item: {
+                ...prev.item,
+                title: match.service?.title || match.notes?.slice(0, 30) || prev.item.title,
+                price: amt,
+                fabric: match.fabric_details || match.notes || prev.item.fabric
+              },
+              payment: {
+                ...prev.payment,
+                itemTotal: amt,
+                totalAmount: amt + 200,
+                status: ["completed", "delivered", "in_progress"].includes(match.status) ? "Paid" : "Pending"
+              }
+            }));
+            setSelectedStatus(formattedStatus);
+            return;
+          }
         }
-      } catch (e) {
-        console.warn("Failed to hydrate tailor order details:", e);
+      } catch (err) {
+        console.warn("Could not fetch order from backend API, using local storage:", err);
+      }
+
+      if (typeof window !== "undefined") {
+        try {
+          const saved = localStorage.getItem("sui_dhaga_tailor_orders_list");
+          const list = saved ? JSON.parse(saved) : [];
+          const match = list.find(
+            (o: any) =>
+              o.orderNumber?.replace("#", "").toLowerCase() === orderId.toLowerCase() ||
+              o.id?.toLowerCase() === orderId.toLowerCase()
+          );
+          if (match && isSubscribed) {
+            setOrder((prev) => ({
+              ...prev,
+              orderNumber: match.orderNumber?.replace("#", "") || orderId,
+              status: match.status === "in_progress" ? "In Progress" : match.status === "new" ? "New" : match.status === "completed" ? "Completed" : "In Progress",
+              placedDate: match.date || prev.placedDate,
+              deliveryDate: match.expectedDelivery || prev.deliveryDate,
+              customer: {
+                name: match.customerName || prev.customer.name,
+                email: match.customerEmail || prev.customer.email,
+                phone: match.customerPhone || prev.customer.phone,
+                avatar: match.customerAvatar || prev.customer.avatar
+              },
+              item: {
+                ...prev.item,
+                title: match.itemTitle || prev.item.title,
+                price: match.amount || prev.item.price,
+                fabric: match.fabricDetails || prev.item.fabric
+              },
+              payment: {
+                ...prev.payment,
+                itemTotal: match.amount || prev.payment.itemTotal,
+                totalAmount: (match.amount || 2000) + 200
+              }
+            }));
+            setSelectedStatus(match.status === "in_progress" ? "In Progress" : match.status === "new" ? "New" : match.status === "completed" ? "Completed" : "In Progress");
+          }
+        } catch (e) {
+          console.warn("Failed to hydrate tailor order details:", e);
+        }
       }
     }
+
+    loadLiveOrder();
+
+    return () => {
+      isSubscribed = false;
+    };
   }, [orderId]);
 
-  const handleUpdateStatusSubmit = (e: React.FormEvent) => {
+  const handleUpdateStatusSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Sync to backend status API if possible
+    try {
+      const backendStatus =
+        selectedStatus === "Completed" || selectedStatus === "Delivered" ? "completed"
+        : selectedStatus === "Ready for Trial" ? "quality_check"
+        : selectedStatus === "Cancelled" ? "cancelled"
+        : "in_progress";
+
+      await orderService.updateOrderStatus(order.orderNumber, backendStatus as any, `Updated to ${selectedStatus}`);
+    } catch (err) {
+      console.warn("Backend status update error:", err);
+    }
+
     const updatedTimeline = order.timeline.map((t) => {
       if (t.step === "Ready for Trial" && selectedStatus === "Ready for Trial") {
         return { ...t, completed: true, time: trialTime };

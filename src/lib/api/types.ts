@@ -224,6 +224,8 @@ export interface Order {
   total_price?: number;
   totalPrice?: number;
   total_amount?: number;
+  fabric_details?: string;
+  fabricDetails?: string;
   estimated_delivery_date?: string;
   delivery_date?: string;
   notes?: string;
@@ -382,6 +384,7 @@ export interface TailorReview {
   user_id?: string;
   author_name?: string;
   author_avatar?: string;
+  user?: Partial<UserProfile>;
   rating: number;
   comment?: string;
   images?: string[];

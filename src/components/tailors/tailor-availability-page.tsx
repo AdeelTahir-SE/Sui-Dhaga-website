@@ -16,6 +16,8 @@ import {
 import { PublicNav } from "@/components/common/site-shell";
 import { TailorSidebar } from "@/components/tailors/tailor-sidebar";
 import { AdminToast } from "@/components/admin/admin-toast";
+import { tailorService } from "@/lib/api/tailor-service";
+import { userService } from "@/lib/api/user-service";
 import "@/styles/pages/tailor-availability-view.css";
 
 interface TimeSlot {
@@ -37,6 +39,7 @@ export function TailorAvailabilityPage() {
   const [selectedDay, setSelectedDay] = useState<number>(20);
   const [selectedMonth, setSelectedMonth] = useState<string>("May 2024");
   const [slots, setSlots] = useState<TimeSlot[]>(defaultSlots);
+  const [currentTailorId, setCurrentTailorId] = useState<string | null>(null);
   const [blockedDates, setBlockedDates] = useState<string[]>([
     "25 May 2024",
     "24 May 2024"
@@ -46,20 +49,46 @@ export function TailorAvailabilityPage() {
   const [newSlotEnd, setNewSlotEnd] = useState("08:00 PM");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Load from local storage
+  // Load from live database or fallback to localStorage
   useEffect(() => {
-    if (typeof window !== "undefined") {
+    async function loadAvailability() {
       try {
-        const saved = localStorage.getItem(KEY_TAILOR_AVAILABILITY);
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (parsed.slots) setSlots(parsed.slots);
-          if (parsed.blockedDates) setBlockedDates(parsed.blockedDates);
+        const userRes = await userService.getMe();
+        if (userRes?.data?.id) {
+          setCurrentTailorId(userRes.data.id);
+          const avRes = await tailorService.getAvailability(userRes.data.id);
+          if (avRes?.data && Array.isArray(avRes.data) && avRes.data.length > 0) {
+            const mappedSlots: TimeSlot[] = avRes.data.map((s) => ({
+              id: s.id,
+              label: `${s.startTime || "09:00 AM"} - ${s.endTime || "05:00 PM"}`,
+              enabled: s.isAvailable !== false
+            }));
+            setSlots(mappedSlots);
+            if (typeof window !== "undefined") {
+              localStorage.setItem(KEY_TAILOR_AVAILABILITY, JSON.stringify({ slots: mappedSlots, blockedDates }));
+            }
+            return;
+          }
         }
-      } catch (e) {
-        console.warn("Failed to load availability from localStorage:", e);
+      } catch (err) {
+        console.warn("Could not fetch availability schedule from backend:", err);
+      }
+
+      if (typeof window !== "undefined") {
+        try {
+          const saved = localStorage.getItem(KEY_TAILOR_AVAILABILITY);
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            if (parsed.slots) setSlots(parsed.slots);
+            if (parsed.blockedDates) setBlockedDates(parsed.blockedDates);
+          }
+        } catch (e) {
+          console.warn("Failed to load availability from localStorage:", e);
+        }
       }
     }
+
+    loadAvailability();
   }, []);
 
   const selectedDateString = `${selectedDay} ${selectedMonth}`;
@@ -71,7 +100,7 @@ export function TailorAvailabilityPage() {
     );
   };
 
-  const handleAddSlot = (e: React.FormEvent) => {
+  const handleAddSlot = async (e: React.FormEvent) => {
     e.preventDefault();
     const label = `${newSlotStart} - ${newSlotEnd}`;
     const newSlot: TimeSlot = {
@@ -79,6 +108,20 @@ export function TailorAvailabilityPage() {
       label,
       enabled: true
     };
+
+    if (currentTailorId) {
+      try {
+        await tailorService.addAvailabilitySlot(currentTailorId, {
+          dayOfWeek: "Monday",
+          startTime: newSlotStart,
+          endTime: newSlotEnd,
+          isAvailable: true
+        });
+      } catch (err) {
+        console.warn("Could not save availability slot to backend:", err);
+      }
+    }
+
     setSlots([...slots, newSlot]);
     setIsAddSlotOpen(false);
     setToastMessage(`✓ Added time slot ${label}`);

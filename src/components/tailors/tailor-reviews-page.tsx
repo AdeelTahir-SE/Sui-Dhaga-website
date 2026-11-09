@@ -13,6 +13,8 @@ import {
 import { PublicNav } from "@/components/common/site-shell";
 import { TailorSidebar } from "@/components/tailors/tailor-sidebar";
 import { AdminToast } from "@/components/admin/admin-toast";
+import { reviewService } from "@/lib/api/review-service";
+import { userService } from "@/lib/api/user-service";
 import "@/styles/pages/tailor-reviews-view.css";
 
 interface ReviewItem {
@@ -98,6 +100,35 @@ export function TailorReviewsPage() {
   const [activeTab, setActiveTab] = useState<string>("all");
   const [replyTextMap, setReplyTextMap] = useState<Record<string, string>>({});
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    async function loadReviews() {
+      try {
+        const userRes = await userService.getMe();
+        if (userRes?.data?.id) {
+          const revRes = await reviewService.getTailorReviews(userRes.data.id);
+          if (revRes?.data && Array.isArray(revRes.data) && revRes.data.length > 0) {
+            const mapped: ReviewItem[] = revRes.data.map((r) => ({
+              id: r.id,
+              authorName: r.author_name || r.user?.full_name || r.user?.name || "Customer",
+              avatar: r.author_avatar || r.user?.avatar_url || "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120&auto=format&fit=crop&q=80",
+              rating: r.rating || 5,
+              date: r.created_at ? new Date(r.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "Recent",
+              orderTitle: (r as any).orderTitle || "Custom Tailoring",
+              orderNumber: (r as any).orderNumber || "SD1256",
+              comment: r.comment || "",
+              photos: r.images || []
+            }));
+            setReviews(mapped);
+          }
+        }
+      } catch (err) {
+        console.warn("Could not load reviews from backend API:", err);
+      }
+    }
+
+    loadReviews();
+  }, []);
 
   const filteredReviews = reviews.filter((r) => {
     if (activeTab === "all") return true;

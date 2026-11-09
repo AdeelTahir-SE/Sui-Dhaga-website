@@ -19,6 +19,7 @@ import {
 import { PublicNav } from "@/components/common/site-shell";
 import { TailorSidebar } from "@/components/tailors/tailor-sidebar";
 import { AdminToast } from "@/components/admin/admin-toast";
+import { appointmentService } from "@/lib/api/appointment-service";
 import "@/styles/pages/tailor-appointments-view.css";
 
 export type AppointmentStatus = "upcoming" | "request" | "completed" | "rejected";
@@ -189,20 +190,64 @@ export function TailorAppointmentsPage() {
   const [selectedAppointment, setSelectedAppointment] = useState<TailorAppointmentItem | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Load from local storage
+  // Map backend Appointment model to TailorAppointmentItem
+  const mapBackendAppointment = (a: any): TailorAppointmentItem => {
+    const rawStatus = (a.status || "").toLowerCase();
+    const status: AppointmentStatus =
+      rawStatus === "pending" ? "request"
+      : rawStatus === "confirmed" ? "upcoming"
+      : rawStatus === "completed" ? "completed"
+      : rawStatus === "cancelled" ? "rejected"
+      : "upcoming";
+
+    return {
+      id: a.id,
+      customerName: a.customer?.full_name || a.customer?.name || "Client",
+      customerPhone: a.customer?.phone || "+92 300 0000000",
+      customerEmail: a.customer?.email || "client@example.com",
+      customerAvatar: a.customer?.avatar_url || "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120&auto=format&fit=crop&q=80",
+      serviceName: a.service?.title || a.notes || "Tailor Fitting Session",
+      type: "In-Shop Fitting",
+      date: a.appointment_date ? new Date(a.appointment_date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "Upcoming",
+      time: a.appointment_time || "10:00 AM",
+      address: a.tailor?.address || "Shop #14, Main Market, Fashion Enclave",
+      notes: a.notes || undefined,
+      status
+    };
+  };
+
+  // Load from live database or fallback to localStorage
   useEffect(() => {
-    if (typeof window !== "undefined") {
+    async function loadAppointments() {
       try {
-        const saved = localStorage.getItem(KEY_TAILOR_APPOINTMENTS);
-        if (saved) {
-          setAppointments(JSON.parse(saved));
-        } else {
-          localStorage.setItem(KEY_TAILOR_APPOINTMENTS, JSON.stringify(initialAppointmentsList));
+        const res = await appointmentService.getAppointments();
+        if (res?.data && Array.isArray(res.data) && res.data.length > 0) {
+          const liveList = res.data.map(mapBackendAppointment);
+          setAppointments(liveList);
+          if (typeof window !== "undefined") {
+            localStorage.setItem(KEY_TAILOR_APPOINTMENTS, JSON.stringify(liveList));
+          }
+          return;
         }
-      } catch (e) {
-        console.warn("Failed to load appointments from localStorage:", e);
+      } catch (err) {
+        console.warn("Could not fetch live appointments from backend, using cache/mock:", err);
+      }
+
+      if (typeof window !== "undefined") {
+        try {
+          const saved = localStorage.getItem(KEY_TAILOR_APPOINTMENTS);
+          if (saved) {
+            setAppointments(JSON.parse(saved));
+          } else {
+            localStorage.setItem(KEY_TAILOR_APPOINTMENTS, JSON.stringify(initialAppointmentsList));
+          }
+        } catch (e) {
+          console.warn("Failed to load appointments from localStorage:", e);
+        }
       }
     }
+
+    loadAppointments();
   }, []);
 
   const saveAppointmentsToStorage = (updated: TailorAppointmentItem[]) => {
@@ -229,7 +274,13 @@ export function TailorAppointmentsPage() {
     return true;
   }).slice(0, activeTab === "all_view" ? 4 : 20);
 
-  const handleAcceptRequest = (item: TailorAppointmentItem) => {
+  const handleAcceptRequest = async (item: TailorAppointmentItem) => {
+    try {
+      await appointmentService.updateStatus(item.id, "confirmed");
+    } catch (err) {
+      console.warn("Could not update appointment status on server:", err);
+    }
+
     const updated = appointments.map((a) =>
       a.id === item.id ? { ...a, status: "upcoming" as AppointmentStatus } : a
     );
@@ -237,7 +288,13 @@ export function TailorAppointmentsPage() {
     setToastMessage(`✓ Appointment request from ${item.customerName} accepted.`);
   };
 
-  const handleRejectRequest = (item: TailorAppointmentItem) => {
+  const handleRejectRequest = async (item: TailorAppointmentItem) => {
+    try {
+      await appointmentService.updateStatus(item.id, "cancelled");
+    } catch (err) {
+      console.warn("Could not reject appointment on server:", err);
+    }
+
     const updated = appointments.filter((a) => a.id !== item.id);
     saveAppointmentsToStorage(updated);
     setToastMessage(`Appointment request from ${item.customerName} declined.`);
