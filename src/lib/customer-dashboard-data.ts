@@ -215,6 +215,16 @@ export async function fetchCustomerProfileApi(): Promise<CustomerProfile> {
     } catch {}
   }
 
+  const hasToken = typeof window !== "undefined" && !!localStorage.getItem("sui_dhaga_auth_token");
+  if (hasToken) {
+    return {
+      name: "Customer",
+      email: "",
+      avatar: "/images/auth/avatar-placeholder.png",
+      city: "Pakistan",
+    };
+  }
+
   return initialCustomerProfile;
 }
 
@@ -437,12 +447,12 @@ export async function fetchUpcomingAppointmentsApi(): Promise<UpcomingAppointmen
 export async function fetchSavedDesignsApi(): Promise<SavedDesignSummary[]> {
   try {
     const res = await designService.getDesigns();
-    if (res?.success && Array.isArray(res.data) && res.data.length > 0) {
-      return res.data.map((dsg: any, idx: number) => ({
+    if (res?.success && Array.isArray(res.data)) {
+      const mapped = res.data.map((dsg: any, idx: number) => ({
         id: String(dsg.id || `dsg-${idx + 1}`),
         title: dsg.title || dsg.name || "AI Generated Outfit",
         type: dsg.garment_type || dsg.style || "Custom",
-        image: dsg.preview_url || dsg.image_url || "/images/booking/ref-pink-kurti.jpg",
+        image: dsg.preview_url || dsg.previewUrl || dsg.image_url || "/images/booking/ref-pink-kurti.jpg",
         savedDate: dsg.created_at
           ? new Date(dsg.created_at).toLocaleDateString("en-US", {
               day: "numeric",
@@ -451,6 +461,28 @@ export async function fetchSavedDesignsApi(): Promise<SavedDesignSummary[]> {
             })
           : "Saved",
       }));
+
+      // Check localStorage for AI Studio designs saved on client
+      let localList: SavedDesignSummary[] = [];
+      if (typeof window !== "undefined") {
+        try {
+          const raw = localStorage.getItem("sui_dhaga_saved_designs");
+          if (raw) {
+            const list = JSON.parse(raw);
+            if (Array.isArray(list)) {
+              localList = list.map((item: any, idx: number) => ({
+                id: item.id || `local-dsg-${idx + 1}`,
+                title: item.title || item.name || "AI Studio Design",
+                type: item.garmentType || item.type || "Custom",
+                image: item.image || item.imageUrl || "/images/booking/ref-pink-kurti.jpg",
+                savedDate: item.date || item.savedDate || "Saved",
+              }));
+            }
+          }
+        } catch {}
+      }
+
+      return [...mapped, ...localList.filter((l) => !mapped.some((m) => m.id === l.id))];
     }
   } catch (err) {
     console.warn("[Customer API] Live designs endpoint fallback:", err);

@@ -353,19 +353,63 @@ export function mapBackendAppointmentToItem(apt: Appointment): AppointmentItem {
 export async function fetchCustomerAppointmentsApi(
   tab: "Upcoming" | "Completed" | "Cancelled" | "All" = "Upcoming"
 ): Promise<AppointmentItem[]> {
+  const hasToken = typeof window !== "undefined" && !!localStorage.getItem("sui_dhaga_auth_token");
+
   try {
     const res = await appointmentService.getAppointments();
-    if (res?.data && Array.isArray(res.data) && res.data.length > 0) {
+    if (res?.data && Array.isArray(res.data)) {
       const mapped = res.data.map(mapBackendAppointmentToItem);
-      if (tab === "All") return mapped;
-      return mapped.filter((a) => a.status === tab);
+      // Merge with any offline appointments created locally
+      let localList: AppointmentItem[] = [];
+      if (typeof window !== "undefined") {
+        try {
+          const raw = localStorage.getItem("sui_dhaga_appointments");
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) {
+              localList = parsed.map((apt: any) => ({
+                id: apt.id || `apt-${Date.now()}`,
+                referenceNo: apt.referenceNo || `APT${Math.floor(1000 + Math.random() * 9000)}`,
+                tailorId: apt.tailorId || "rekha-tailors",
+                tailorName: apt.tailorName || "Rekha Tailors",
+                tailorAvatar: apt.tailorImage || "/images/home/tailor-rekha.png",
+                tailorRating: 4.8,
+                tailorReviewsCount: 128,
+                tailorAddress: apt.tailorAddress || "Commercial Area, Faisalabad",
+                distance: "0.6 km away",
+                serviceId: apt.serviceId || "srv-custom-stitching",
+                serviceName: apt.serviceName || "Custom Stitching",
+                serviceCategory: "Women's Wear",
+                price: apt.price || "Rs. 2,000",
+                priceValue: apt.priceValue || 2000,
+                date: apt.date || "20 May, 2024",
+                time: apt.timeSlot || "2:00 PM",
+                duration: "45 mins",
+                deliveryTime: apt.deliveryTime || "7-10 days",
+                status: apt.status || "Upcoming",
+                notes: apt.notes || "",
+                referenceImages: apt.referenceImages || [
+                  "/images/booking/ref-pink-kurti.jpg",
+                  "/images/booking/ref-peach-gown.jpg",
+                  "/images/booking/ref-neckline-detail.jpg",
+                  "/images/booking/ref-gold-anarkali.jpg"
+                ],
+                createdAt: apt.createdAt || new Date().toISOString()
+              }));
+            }
+          }
+        } catch {}
+      }
+      const combined = [...mapped, ...localList.filter((l) => !mapped.some((m) => m.id === l.id))];
+      if (tab === "All") return combined;
+      return combined.filter((a) => a.status === tab);
     }
   } catch (err) {
     console.warn("[Appointments API] Backend unavailable, using local store:", err);
   }
 
   // Local storage sync
-  let appointmentsList = [...initialAppointmentsData];
+  let appointmentsList: AppointmentItem[] = [];
   try {
     if (typeof window !== "undefined") {
       const storedJson = localStorage.getItem("sui_dhaga_appointments");
@@ -401,20 +445,23 @@ export async function fetchCustomerAppointmentsApi(
           createdAt: apt.createdAt || new Date().toISOString()
         }));
 
-        // Deduplicate
-        const storedIds = new Set(mappedStored.map((m) => m.id));
-        appointmentsList = [
-          ...mappedStored,
-          ...appointmentsList.filter((a) => !storedIds.has(a.id))
-        ];
+        appointmentsList = mappedStored;
       }
     }
   } catch (e) {
     console.warn("Error reading local appointments:", e);
   }
 
-  if (tab === "All") return appointmentsList;
-  return appointmentsList.filter((a) => a.status === tab);
+  // If user is authenticated, return their actual appointments (or empty array if new)
+  if (hasToken) {
+    if (tab === "All") return appointmentsList;
+    return appointmentsList.filter((a) => a.status === tab);
+  }
+
+  // Demo fallback only for guest users
+  const demoList = [...appointmentsList, ...initialAppointmentsData];
+  if (tab === "All") return demoList;
+  return demoList.filter((a) => a.status === tab);
 }
 
 /**

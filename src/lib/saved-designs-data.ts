@@ -138,24 +138,35 @@ export function mapBackendDesignToItem(des: ApiDesign): SavedDesignItem {
 }
 
 /**
- * Fetch all saved designs with optional category filtering
+ * Fetch all saved designs with optional category filtering for current user
  */
 export async function fetchCustomerSavedDesignsApi(
   category: string = "All"
 ): Promise<SavedDesignItem[]> {
+  const hasToken = typeof window !== "undefined" && !!localStorage.getItem("sui_dhaga_auth_token");
+
   try {
     const res = await designService.getDesigns();
-    if (res?.data && Array.isArray(res.data) && res.data.length > 0) {
+    if (res?.success && Array.isArray(res.data)) {
       const mapped = res.data.map(mapBackendDesignToItem);
-      if (category === "All") return mapped;
-      return mapped.filter((item) => item.category.toLowerCase() === category.toLowerCase());
+      // Merge with any locally created studio designs
+      let localList: SavedDesignItem[] = [];
+      if (typeof window !== "undefined") {
+        try {
+          const raw = localStorage.getItem("sui_dhaga_saved_designs");
+          if (raw) localList = JSON.parse(raw);
+        } catch {}
+      }
+      const combined = [...mapped, ...localList.filter((l) => !mapped.some((m) => m.id === l.id))];
+      if (category === "All") return combined;
+      return combined.filter((item) => item.category.toLowerCase() === category.toLowerCase());
     }
   } catch (err) {
     console.warn("[Saved Designs API] Backend unavailable, using local store:", err);
   }
 
   // Local storage sync
-  let list = [...initialSavedDesignsData];
+  let list: SavedDesignItem[] = [];
   try {
     if (typeof window !== "undefined") {
       const storedJson = localStorage.getItem("sui_dhaga_saved_designs");
@@ -167,8 +178,16 @@ export async function fetchCustomerSavedDesignsApi(
     console.warn("Error reading local saved designs:", e);
   }
 
-  if (category === "All") return list;
-  return list.filter((item) => item.category.toLowerCase() === category.toLowerCase());
+  // If user is authenticated, return their actual designs
+  if (hasToken) {
+    if (category === "All") return list;
+    return list.filter((item) => item.category.toLowerCase() === category.toLowerCase());
+  }
+
+  // Guest demo fallback
+  let demoList = list.length > 0 ? list : [...initialSavedDesignsData];
+  if (category === "All") return demoList;
+  return demoList.filter((item) => item.category.toLowerCase() === category.toLowerCase());
 }
 
 /**

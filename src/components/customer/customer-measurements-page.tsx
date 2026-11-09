@@ -33,6 +33,7 @@ import { PublicShell } from "@/components/common/site-shell";
 import {
   fetchMeasurementProfilesApi,
   saveMeasurementProfileApi,
+  deleteMeasurementProfileApi,
   initialMeasurementProfiles,
   STANDARD_SIZE_GUIDE_CHART,
   MEASURING_INSTRUCTIONS_STEPS,
@@ -41,8 +42,8 @@ import {
 } from "@/lib/measurements-data";
 
 export function CustomerMeasurementsPage() {
-  const [profiles, setProfiles] = useState<MeasurementProfile[]>(initialMeasurementProfiles);
-  const [activeProfileId, setActiveProfileId] = useState<string>("prof-self");
+  const [profiles, setProfiles] = useState<MeasurementProfile[]>([]);
+  const [activeProfileId, setActiveProfileId] = useState<string>("");
   const [unit, setUnit] = useState<"Inches" | "Centimeters (cm)">("Inches");
   const [highlightedField, setHighlightedField] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -84,7 +85,7 @@ export function CustomerMeasurementsPage() {
   }, []);
 
   const activeProfile =
-    profiles.find((p) => p.id === activeProfileId) || profiles[0] || initialMeasurementProfiles[0];
+    profiles.find((p) => p.id === activeProfileId) || profiles[0] || null;
 
   // Conversion helper
   const formatVal = (valInInches: number | undefined) => {
@@ -108,6 +109,7 @@ export function CustomerMeasurementsPage() {
   };
 
   const handleOpenEditModal = () => {
+    if (!activeProfile) return;
     setFormProfileName(activeProfile.name);
     setFormBust(activeProfile.values.bust);
     setFormWaist(activeProfile.values.waist);
@@ -120,6 +122,25 @@ export function CustomerMeasurementsPage() {
     setIsAddModalOpen(true);
   };
 
+  const handleDeleteProfile = async () => {
+    if (!activeProfile) return;
+    if (!confirm(`Are you sure you want to delete profile "${activeProfile.name}"?`)) return;
+
+    try {
+      await deleteMeasurementProfileApi(activeProfile.id);
+      const remaining = profiles.filter((p) => p.id !== activeProfile.id);
+      setProfiles(remaining);
+      if (remaining.length > 0) {
+        setActiveProfileId(remaining[0].id);
+      } else {
+        setActiveProfileId("");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Failed to delete measurement profile.");
+    }
+  };
+
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
@@ -128,8 +149,9 @@ export function CustomerMeasurementsPage() {
     const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     const formattedDate = `${now.getDate()} ${months[now.getMonth()]}, ${now.getFullYear()}`;
 
+    const isExisting = activeProfile && formProfileName === activeProfile.name;
     const newProfile: MeasurementProfile = {
-      id: formProfileName === activeProfile.name ? activeProfile.id : `prof-${Date.now()}`,
+      id: isExisting ? activeProfile.id : `prof-${Date.now()}`,
       name: formProfileName.trim() || "My Measurements",
       lastUpdated: formattedDate,
       unit: unit,
@@ -147,17 +169,18 @@ export function CustomerMeasurementsPage() {
     };
 
     try {
-      await saveMeasurementProfileApi(newProfile);
+      const res = await saveMeasurementProfileApi(newProfile);
+      const savedProfile = res.profile || newProfile;
       setProfiles((prev) => {
-        const existingIdx = prev.findIndex((p) => p.id === newProfile.id);
+        const existingIdx = prev.findIndex((p) => p.id === savedProfile.id || p.id === newProfile.id);
         if (existingIdx >= 0) {
           const updated = [...prev];
-          updated[existingIdx] = newProfile;
+          updated[existingIdx] = savedProfile;
           return updated;
         }
-        return [...prev, newProfile];
+        return [...prev, savedProfile];
       });
-      setActiveProfileId(newProfile.id);
+      setActiveProfileId(savedProfile.id);
       setIsAddModalOpen(false);
     } catch (err) {
       console.error(err);
@@ -167,15 +190,17 @@ export function CustomerMeasurementsPage() {
     }
   };
 
-  const measurementRows = [
-    { key: "bust", label: "Bust", val: activeProfile.values.bust },
-    { key: "waist", label: "Waist", val: activeProfile.values.waist },
-    { key: "hip", label: "Hip", val: activeProfile.values.hip },
-    { key: "shoulder", label: "Shoulder", val: activeProfile.values.shoulder },
-    { key: "armLength", label: "Arm Length", val: activeProfile.values.armLength },
-    { key: "sleeveLength", label: "Sleeve Length", val: activeProfile.values.sleeveLength },
-    { key: "topLength", label: "Top Length", val: activeProfile.values.topLength }
-  ];
+  const measurementRows = activeProfile
+    ? [
+        { key: "bust", label: "Bust", val: activeProfile.values.bust },
+        { key: "waist", label: "Waist", val: activeProfile.values.waist },
+        { key: "hip", label: "Hip", val: activeProfile.values.hip },
+        { key: "shoulder", label: "Shoulder", val: activeProfile.values.shoulder },
+        { key: "armLength", label: "Arm Length", val: activeProfile.values.armLength },
+        { key: "sleeveLength", label: "Sleeve Length", val: activeProfile.values.sleeveLength },
+        { key: "topLength", label: "Top Length", val: activeProfile.values.topLength }
+      ]
+    : [];
 
   return (
     <PublicShell>
@@ -284,195 +309,281 @@ export function CustomerMeasurementsPage() {
                 </div>
               </div>
 
-              {/* 3-Column Grid: Profile / Body Overview / Help & Video */}
-              <div className="measurements-cards-grid">
-                {/* Column 1: Measurement Profile Panel */}
-                <section className="measurement-panel-card profile-selector-panel" aria-labelledby="profile-panel-heading">
-                  <h2 id="profile-panel-heading" className="panel-card-title">
-                    Measurement Profile
+              {/* Measurements Content Area */}
+              {!isLoading && profiles.length === 0 ? (
+                <div
+                  className="empty-measurements-banner"
+                  style={{
+                    background: "#ffffff",
+                    borderRadius: "16px",
+                    padding: "54px 28px",
+                    textAlign: "center",
+                    border: "1px dashed #d1d5db",
+                    boxShadow: "0 2px 14px rgba(0,0,0,0.04)",
+                    margin: "24px 0"
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "inline-flex",
+                      padding: "16px",
+                      background: "#fff7ed",
+                      borderRadius: "50%",
+                      marginBottom: "16px"
+                    }}
+                  >
+                    <Ruler size={38} color="#E86A33" />
+                  </div>
+                  <h2 style={{ fontSize: "22px", fontWeight: 700, color: "#111827", marginBottom: "8px" }}>
+                    No Measurement Profiles Yet
                   </h2>
-
-                  <div className="profile-input-group">
-                    <label htmlFor="profile-selector-dropdown" className="field-label">
-                      Profile Name
-                    </label>
-                    <div className="select-dropdown-wrapper">
-                      <select
-                        id="profile-selector-dropdown"
-                        value={activeProfileId}
-                        onChange={(e) => setActiveProfileId(e.target.value)}
-                        className="profile-name-select"
-                      >
-                        {profiles.map((p) => (
-                          <option key={p.id} value={p.id}>
-                            {p.name}
-                          </option>
-                        ))}
-                      </select>
-                      <ChevronDown size={16} className="dropdown-arrow-icon" />
-                    </div>
-                  </div>
-
-                  <span className="last-updated-text">
-                    Last updated: {activeProfile.lastUpdated}
-                  </span>
-
-                  <div className="units-input-group">
-                    <label htmlFor="unit-selector-dropdown" className="field-label">
-                      Units
-                    </label>
-                    <div className="select-dropdown-wrapper">
-                      <select
-                        id="unit-selector-dropdown"
-                        value={unit}
-                        onChange={(e) => setUnit(e.target.value as "Inches" | "Centimeters (cm)")}
-                        className="unit-select-dropdown"
-                      >
-                        <option value="Inches">Inches</option>
-                        <option value="Centimeters (cm)">Centimeters (cm)</option>
-                      </select>
-                      <ChevronDown size={16} className="dropdown-arrow-icon" />
-                    </div>
-                  </div>
-
-                  <div className="profile-actions-bottom">
+                  <p style={{ color: "#6b7280", maxWidth: "480px", margin: "0 auto 24px", fontSize: "14px", lineHeight: 1.6 }}>
+                    Save your body measurements once to get a tailored fit on every custom order. You can save multiple profiles (e.g. for yourself, lehengas, or family members).
+                  </p>
+                  <div style={{ display: "flex", gap: "12px", justifyContent: "center", flexWrap: "wrap" }}>
                     <Link
                       href="/customer/measurements/new"
                       className="add-new-measurement-btn"
-                      style={{ textDecoration: "none" }}
+                      style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "8px" }}
                     >
                       <Plus size={16} />
                       <span>Add New Measurement</span>
                     </Link>
-
-                    <button
-                      type="button"
-                      onClick={handleOpenEditModal}
-                      className="edit-current-profile-btn"
-                    >
-                      <Edit3 size={15} />
-                      <span>Edit Current Values</span>
-                    </button>
-                  </div>
-                </section>
-
-                {/* Column 2: Body Overview Panel (Silhouette + Measurements Table) */}
-                <section className="measurement-panel-card body-overview-panel" aria-labelledby="body-overview-heading">
-                  <h2 id="body-overview-heading" className="panel-card-title">
-                    Body Overview
-                  </h2>
-
-                  <div className="body-overview-inner-split">
-                    {/* Left: Interactive Anatomy Diagram */}
-                    <div className="body-diagram-visual-box">
-                      <div className="diagram-img-wrapper">
-                        <img
-                          src="/images/measurements/female-body-diagram.jpg"
-                          alt="Body Anatomy Diagram"
-                          className="diagram-silhouette-img"
-                        />
-
-                        {/* Interactive Hotspot Indicators */}
-                        <button
-                          type="button"
-                          onMouseEnter={() => setHighlightedField("bust")}
-                          onMouseLeave={() => setHighlightedField(null)}
-                          className={`diagram-hotspot bust-dot ${highlightedField === "bust" ? "active" : ""}`}
-                          title="Bust: 36 in"
-                        />
-                        <button
-                          type="button"
-                          onMouseEnter={() => setHighlightedField("waist")}
-                          onMouseLeave={() => setHighlightedField(null)}
-                          className={`diagram-hotspot waist-dot ${highlightedField === "waist" ? "active" : ""}`}
-                          title="Waist: 30 in"
-                        />
-                        <button
-                          type="button"
-                          onMouseEnter={() => setHighlightedField("hip")}
-                          onMouseLeave={() => setHighlightedField(null)}
-                          className={`diagram-hotspot hip-dot ${highlightedField === "hip" ? "active" : ""}`}
-                          title="Hip: 39 in"
-                        />
-                        <button
-                          type="button"
-                          onMouseEnter={() => setHighlightedField("shoulder")}
-                          onMouseLeave={() => setHighlightedField(null)}
-                          className={`diagram-hotspot shoulder-dot ${highlightedField === "shoulder" ? "active" : ""}`}
-                          title="Shoulder: 15 in"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Right: Measurements Table List */}
-                    <div className="measurements-list-table-box">
-                      <div className="measurements-table-header">
-                        <span className="th-col th-label">Measurement</span>
-                        <span className="th-col th-unit">{unit}</span>
-                      </div>
-
-                      <div className="measurements-table-body">
-                        {measurementRows.map((row) => (
-                          <div
-                            key={row.key}
-                            onMouseEnter={() => setHighlightedField(row.key)}
-                            onMouseLeave={() => setHighlightedField(null)}
-                            className={`measurement-table-row ${
-                              highlightedField === row.key ? "highlighted" : ""
-                            }`}
-                          >
-                            <span className="row-item-label">{row.label}</span>
-                            <span className="row-item-value">{formatVal(row.val)}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </section>
-
-                {/* Column 3: Help & Video Cards */}
-                <div className="measurements-side-cards-column">
-                  {/* Card 3A: Need Help? & Size Guide */}
-                  <section className="measurement-panel-card help-panel-card" aria-labelledby="need-help-heading">
-                    <h2 id="need-help-heading" className="panel-card-title">
-                      Need Help?
-                    </h2>
-                    <p className="help-card-desc">
-                      Check our size guide or learn how to measure
-                    </p>
-
-                    <div className="size-badge-box">
-                      <span className="standard-size-pill">
-                        {activeProfile.standardSize || "M (Medium)"}
-                      </span>
-                    </div>
-
                     <button
                       type="button"
                       onClick={() => setIsSizeGuideOpen(true)}
                       className="view-size-guide-btn"
+                      style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}
                     >
-                      View Size Guide
+                      <HelpCircle size={16} />
+                      <span>View Size Guide</span>
                     </button>
-                  </section>
-
-                  {/* Card 3B: How to Measure? Video Guide */}
-                  <section className="measurement-panel-card video-panel-card" aria-labelledby="how-to-measure-heading">
-                    <h2 id="how-to-measure-heading" className="panel-card-title">
-                      How to Measure?
-                    </h2>
-
                     <button
                       type="button"
                       onClick={() => setIsVideoModalOpen(true)}
                       className="watch-video-btn"
+                      style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}
                     >
-                      <Play size={16} fill="currentColor" />
-                      <span>Watch Video</span>
+                      <Play size={15} fill="currentColor" />
+                      <span>How to Measure</span>
                     </button>
-                  </section>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="measurements-cards-grid">
+                  {/* Column 1: Measurement Profile Panel */}
+                  <section className="measurement-panel-card profile-selector-panel" aria-labelledby="profile-panel-heading">
+                    <h2 id="profile-panel-heading" className="panel-card-title">
+                      Measurement Profile
+                    </h2>
+
+                    <div className="profile-input-group">
+                      <label htmlFor="profile-selector-dropdown" className="field-label">
+                        Profile Name
+                      </label>
+                      <div className="select-dropdown-wrapper">
+                        <select
+                          id="profile-selector-dropdown"
+                          value={activeProfileId}
+                          onChange={(e) => setActiveProfileId(e.target.value)}
+                          className="profile-name-select"
+                        >
+                          {profiles.map((p) => (
+                            <option key={p.id} value={p.id}>
+                              {p.name}
+                            </option>
+                          ))}
+                        </select>
+                        <ChevronDown size={16} className="dropdown-arrow-icon" />
+                      </div>
+                    </div>
+
+                    <span className="last-updated-text">
+                      Last updated: {activeProfile ? activeProfile.lastUpdated : "Never"}
+                    </span>
+
+                    <div className="units-input-group">
+                      <label htmlFor="unit-selector-dropdown" className="field-label">
+                        Units
+                      </label>
+                      <div className="select-dropdown-wrapper">
+                        <select
+                          id="unit-selector-dropdown"
+                          value={unit}
+                          onChange={(e) => setUnit(e.target.value as "Inches" | "Centimeters (cm)")}
+                          className="unit-select-dropdown"
+                        >
+                          <option value="Inches">Inches</option>
+                          <option value="Centimeters (cm)">Centimeters (cm)</option>
+                        </select>
+                        <ChevronDown size={16} className="dropdown-arrow-icon" />
+                      </div>
+                    </div>
+
+                    <div className="profile-actions-bottom" style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                      <Link
+                        href="/customer/measurements/new"
+                        className="add-new-measurement-btn"
+                        style={{ textDecoration: "none", width: "100%", justifyContent: "center" }}
+                      >
+                        <Plus size={16} />
+                        <span>Add New Measurement</span>
+                      </Link>
+
+                      <div style={{ display: "flex", gap: "8px", width: "100%" }}>
+                        <button
+                          type="button"
+                          onClick={handleOpenEditModal}
+                          className="edit-current-profile-btn"
+                          style={{ flex: 1, justifyContent: "center" }}
+                        >
+                          <Edit3 size={15} />
+                          <span>Edit Current Values</span>
+                        </button>
+
+                        {activeProfile && (
+                          <button
+                            type="button"
+                            onClick={handleDeleteProfile}
+                            className="delete-current-profile-btn"
+                            title="Delete this profile"
+                            style={{
+                              background: "#fef2f2",
+                              color: "#dc2626",
+                              border: "1px solid #fee2e2",
+                              borderRadius: "8px",
+                              padding: "8px 12px",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              cursor: "pointer"
+                            }}
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </section>
+
+                  {/* Column 2: Body Overview Panel (Silhouette + Measurements Table) */}
+                  <section className="measurement-panel-card body-overview-panel" aria-labelledby="body-overview-heading">
+                    <h2 id="body-overview-heading" className="panel-card-title">
+                      Body Overview
+                    </h2>
+
+                    <div className="body-overview-inner-split">
+                      {/* Left: Interactive Anatomy Diagram */}
+                      <div className="body-diagram-visual-box">
+                        <div className="diagram-img-wrapper">
+                          <img
+                            src="/images/measurements/female-body-diagram.jpg"
+                            alt="Body Anatomy Diagram"
+                            className="diagram-silhouette-img"
+                          />
+
+                          {/* Interactive Hotspot Indicators */}
+                          <button
+                            type="button"
+                            onMouseEnter={() => setHighlightedField("bust")}
+                            onMouseLeave={() => setHighlightedField(null)}
+                            className={`diagram-hotspot bust-dot ${highlightedField === "bust" ? "active" : ""}`}
+                            title={`Bust: ${formatVal(activeProfile?.values?.bust)}`}
+                          />
+                          <button
+                            type="button"
+                            onMouseEnter={() => setHighlightedField("waist")}
+                            onMouseLeave={() => setHighlightedField(null)}
+                            className={`diagram-hotspot waist-dot ${highlightedField === "waist" ? "active" : ""}`}
+                            title={`Waist: ${formatVal(activeProfile?.values?.waist)}`}
+                          />
+                          <button
+                            type="button"
+                            onMouseEnter={() => setHighlightedField("hip")}
+                            onMouseLeave={() => setHighlightedField(null)}
+                            className={`diagram-hotspot hip-dot ${highlightedField === "hip" ? "active" : ""}`}
+                            title={`Hip: ${formatVal(activeProfile?.values?.hip)}`}
+                          />
+                          <button
+                            type="button"
+                            onMouseEnter={() => setHighlightedField("shoulder")}
+                            onMouseLeave={() => setHighlightedField(null)}
+                            className={`diagram-hotspot shoulder-dot ${highlightedField === "shoulder" ? "active" : ""}`}
+                            title={`Shoulder: ${formatVal(activeProfile?.values?.shoulder)}`}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Right: Measurements Table List */}
+                      <div className="measurements-list-table-box">
+                        <div className="measurements-table-header">
+                          <span className="th-col th-label">Measurement</span>
+                          <span className="th-col th-unit">{unit}</span>
+                        </div>
+
+                        <div className="measurements-table-body">
+                          {measurementRows.map((row) => (
+                            <div
+                              key={row.key}
+                              onMouseEnter={() => setHighlightedField(row.key)}
+                              onMouseLeave={() => setHighlightedField(null)}
+                              className={`measurement-table-row ${
+                                highlightedField === row.key ? "highlighted" : ""
+                              }`}
+                            >
+                              <span className="row-item-label">{row.label}</span>
+                              <span className="row-item-value">{formatVal(row.val)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </section>
+
+                  {/* Column 3: Help & Video Cards */}
+                  <div className="measurements-side-cards-column">
+                    {/* Card 3A: Need Help? & Size Guide */}
+                    <section className="measurement-panel-card help-panel-card" aria-labelledby="need-help-heading">
+                      <h2 id="need-help-heading" className="panel-card-title">
+                        Need Help?
+                      </h2>
+                      <p className="help-card-desc">
+                        Check our size guide or learn how to measure
+                      </p>
+
+                      <div className="size-badge-box">
+                        <span className="standard-size-pill">
+                          {activeProfile?.standardSize || "Custom"}
+                        </span>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => setIsSizeGuideOpen(true)}
+                        className="view-size-guide-btn"
+                      >
+                        View Size Guide
+                      </button>
+                    </section>
+
+                    {/* Card 3B: How to Measure? Video Guide */}
+                    <section className="measurement-panel-card video-panel-card" aria-labelledby="how-to-measure-heading">
+                      <h2 id="how-to-measure-heading" className="panel-card-title">
+                        How to Measure?
+                      </h2>
+
+                      <button
+                        type="button"
+                        onClick={() => setIsVideoModalOpen(true)}
+                        className="watch-video-btn"
+                      >
+                        <Play size={16} fill="currentColor" />
+                        <span>Watch Video</span>
+                      </button>
+                    </section>
+                  </div>
+                </div>
+              )}
             </main>
           </div>
         </div>

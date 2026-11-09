@@ -368,33 +368,54 @@ export function mapBackendOrderToItem(ord: ApiOrder): OrderItem {
 export async function fetchCustomerOrdersApi(
   tab: "All" | "Processing" | "In Progress" | "Delivered" | "Cancelled" = "All"
 ): Promise<OrderItem[]> {
+  const hasToken = typeof window !== "undefined" && !!localStorage.getItem("sui_dhaga_auth_token");
+
   try {
     const res = await orderService.getOrders();
-    if (res?.data && Array.isArray(res.data) && res.data.length > 0) {
+    if (res?.data && Array.isArray(res.data)) {
       const mapped = res.data.map(mapBackendOrderToItem);
-      if (tab === "All") return mapped;
-      return mapped.filter((o) => o.status === tab);
+      // Merge with any local offline orders
+      let localList: OrderItem[] = [];
+      if (typeof window !== "undefined") {
+        try {
+          const raw = localStorage.getItem("sui_dhaga_orders");
+          if (raw) localList = JSON.parse(raw);
+        } catch {}
+      }
+      const combined = [...mapped, ...localList.filter((l) => !mapped.some((m) => m.id === l.id))];
+      if (tab === "All") return combined;
+      return combined.filter((o) => o.status === tab);
     }
   } catch (err) {
     console.warn("[Orders API] Backend unavailable, using local store:", err);
   }
 
   // Local storage sync
-  let ordersList = [...initialOrdersData];
+  let ordersList: OrderItem[] = [];
   try {
     if (typeof window !== "undefined") {
       const storedJson = localStorage.getItem("sui_dhaga_orders");
       if (storedJson) {
         const storedList = JSON.parse(storedJson);
-        ordersList = [...storedList, ...ordersList];
+        if (Array.isArray(storedList)) {
+          ordersList = storedList;
+        }
       }
     }
   } catch (e) {
     console.warn("Error reading local orders:", e);
   }
 
-  if (tab === "All") return ordersList;
-  return ordersList.filter((o) => o.status === tab);
+  // If authenticated user, return their orders (or empty array if none)
+  if (hasToken) {
+    if (tab === "All") return ordersList;
+    return ordersList.filter((o) => o.status === tab);
+  }
+
+  // Guest demo users fallback
+  const demoList = [...ordersList, ...initialOrdersData];
+  if (tab === "All") return demoList;
+  return demoList.filter((o) => o.status === tab);
 }
 
 /**

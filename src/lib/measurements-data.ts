@@ -129,77 +129,88 @@ export const MEASURING_INSTRUCTIONS_STEPS = [
 import { measurementService } from "./api/measurement-service";
 import { MeasurementProfile as ApiMeasurementProfile } from "./api/types";
 
-function mapApiToMeasurementProfile(apiProf: ApiMeasurementProfile): MeasurementProfile {
+function mapApiToMeasurementProfile(apiProf: any): MeasurementProfile {
   return {
-    id: apiProf.id,
-    name: apiProf.profile_name || apiProf.profileName || "My Profile",
-    lastUpdated: apiProf.updated_at
-      ? new Date(apiProf.updated_at).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" })
+    id: String(apiProf.id),
+    name: apiProf.title || apiProf.profile_name || apiProf.profileName || "My Profile",
+    lastUpdated: apiProf.updated_at || apiProf.created_at
+      ? new Date(apiProf.updated_at || apiProf.created_at).toLocaleDateString("en-US", {
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+        })
       : "Just now",
     unit: apiProf.unit === "cm" ? "Centimeters (cm)" : "Inches",
     standardSize: "Custom",
     values: {
-      bust: apiProf.chest || 36,
-      waist: apiProf.waist || 30,
-      hip: apiProf.hips || 39,
-      shoulder: apiProf.shoulder || 15,
-      armLength: apiProf.sleeve_length || apiProf.sleeveLength || 22,
-      sleeveLength: apiProf.sleeve_length || apiProf.sleeveLength || 18,
-      topLength: apiProf.height || 54,
-      neck: apiProf.neck || 14.5,
-      inseam: apiProf.inseam || 38,
-      waistToAnkle: 40
+      bust: Number(apiProf.chest) || 36,
+      waist: Number(apiProf.waist) || 30,
+      hip: Number(apiProf.hips) || 39,
+      shoulder: Number(apiProf.shoulder) || 15,
+      armLength: Number(apiProf.sleeveLength || apiProf.sleeve_length) || 22,
+      sleeveLength: Number(apiProf.sleeveLength || apiProf.sleeve_length) || 18,
+      topLength: Number(apiProf.height) || 54,
+      neck: Number(apiProf.neck) || 14.5,
+      inseam: Number(apiProf.inseam) || 38,
+      waistToAnkle: 40,
     },
-    notes: apiProf.notes || ""
+    notes: apiProf.notes || "",
   };
 }
 
 function mapProfileToApiPayload(prof: MeasurementProfile) {
   return {
     title: prof.name,
-    profile_name: prof.name,
-    gender: "women" as const,
     unit: prof.unit === "Centimeters (cm)" ? ("cm" as const) : ("in" as const),
-    chest: prof.values.bust,
-    waist: prof.values.waist,
-    hips: prof.values.hip,
-    shoulder: prof.values.shoulder,
-    sleeve_length: prof.values.sleeveLength,
-    inseam: prof.values.inseam,
-    neck: prof.values.neck,
-    height: prof.values.topLength,
-    notes: prof.notes
+    chest: Number(prof.values.bust),
+    waist: Number(prof.values.waist),
+    hips: Number(prof.values.hip),
+    shoulder: Number(prof.values.shoulder),
+    sleeveLength: Number(prof.values.sleeveLength || prof.values.armLength),
+    inseam: prof.values.inseam ? Number(prof.values.inseam) : undefined,
+    neck: prof.values.neck ? Number(prof.values.neck) : undefined,
+    notes: prof.notes || undefined,
   };
 }
 
 /**
- * Fetch all measurement profiles
+ * Fetch all measurement profiles for the authenticated user
  */
 export async function fetchMeasurementProfilesApi(): Promise<MeasurementProfile[]> {
+  const hasToken = typeof window !== "undefined" && !!localStorage.getItem("sui_dhaga_auth_token");
+
   try {
     const res = await measurementService.getMeasurements();
-    if (res?.data && Array.isArray(res.data) && res.data.length > 0) {
+    if (res?.success && Array.isArray(res.data)) {
       return res.data.map(mapApiToMeasurementProfile);
     }
   } catch (err) {
-    console.warn("[Measurements API] Backend unavailable, using local store:", err);
+    console.warn("[Measurements API] Backend unavailable, checking local store:", err);
   }
 
   // Local storage sync
-  let profilesList = [...initialMeasurementProfiles];
+  let localList: MeasurementProfile[] = [];
   try {
     if (typeof window !== "undefined") {
       const storedJson = localStorage.getItem("sui_dhaga_measurements");
       if (storedJson) {
         const storedList = JSON.parse(storedJson);
-        profilesList = storedList;
+        if (Array.isArray(storedList)) {
+          localList = storedList;
+        }
       }
     }
   } catch (e) {
     console.warn("Error reading local measurements:", e);
   }
 
-  return profilesList;
+  // If user is authenticated, return their actual profiles (or empty array if brand new)
+  if (hasToken) {
+    return localList;
+  }
+
+  // Only unauthenticated guest users see the demo profiles
+  return localList.length > 0 ? localList : initialMeasurementProfiles;
 }
 
 /**

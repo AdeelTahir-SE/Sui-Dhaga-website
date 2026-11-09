@@ -37,7 +37,7 @@ import {
 
 export function CustomerSavedDesignsPage() {
   const [activeCategory, setActiveCategory] = useState<string>("All");
-  const [designs, setDesigns] = useState<SavedDesignItem[]>(initialSavedDesignsData);
+  const [designs, setDesigns] = useState<SavedDesignItem[]>([]);
   const [selectedDesign, setSelectedDesign] = useState<SavedDesignItem | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -249,6 +249,49 @@ export function CustomerSavedDesignsPage() {
 
               {/* 4-Column Saved Designs Grid */}
               <div className="saved-designs-cards-grid">
+                {!isLoading && filteredDesigns.length === 0 && (
+                  <div
+                    className="empty-designs-card"
+                    style={{
+                      gridColumn: "1 / -1",
+                      background: "#ffffff",
+                      borderRadius: "16px",
+                      padding: "44px 24px",
+                      textAlign: "center",
+                      border: "1px dashed #d1d5db",
+                      marginBottom: "16px"
+                    }}
+                  >
+                    <FolderHeart size={42} color="#E86A33" style={{ margin: "0 auto 12px" }} />
+                    <h3 style={{ fontSize: "18px", fontWeight: 700, color: "#111827", marginBottom: "6px" }}>
+                      No Saved Designs Found
+                    </h3>
+                    <p style={{ color: "#6b7280", fontSize: "14px", marginBottom: "20px" }}>
+                      {activeCategory === "All"
+                        ? "You have not saved any custom garment designs yet. Generate bespoke outfit concepts in our AI Studio."
+                        : `No saved designs in category "${activeCategory}".`}
+                    </p>
+                    <Link
+                      href="/design-studio"
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        background: "#E86A33",
+                        color: "#ffffff",
+                        padding: "10px 20px",
+                        borderRadius: "8px",
+                        fontSize: "14px",
+                        fontWeight: 600,
+                        textDecoration: "none"
+                      }}
+                    >
+                      <Sparkles size={16} />
+                      <span>Launch AI Studio</span>
+                    </Link>
+                  </div>
+                )}
+
                 {filteredDesigns.map((design) => (
                   <article
                     key={design.id}
@@ -302,12 +345,12 @@ export function CustomerSavedDesignsPage() {
                 ))}
 
                 {/* "Create New Design" Card */}
-                <Link href="/ai-studio" className="create-new-design-card">
+                <Link href="/design-studio" className="create-new-design-card">
                   <div className="create-plus-circle">
                     <Plus size={24} />
                   </div>
                   <strong className="create-card-title">Create New Design</strong>
-                  <span className="create-card-subtitle">Start from scratch</span>
+                  <span className="create-card-subtitle">Start with AI Studio</span>
                 </Link>
               </div>
             </main>
