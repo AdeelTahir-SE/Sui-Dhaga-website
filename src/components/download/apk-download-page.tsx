@@ -2,16 +2,13 @@
 
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import { PublicShell } from "@/components/common/site-shell";
 import {
   Download,
-  ShieldCheck,
   CheckCircle2,
   Share2,
   Copy,
   Check,
-  ArrowRight,
   Scissors,
   Wand2,
   Sparkles,
@@ -19,7 +16,6 @@ import {
   ChevronDown,
   ChevronUp,
   Smartphone,
-  Lock,
   Camera,
 } from "lucide-react";
 
@@ -27,10 +23,8 @@ import {
 // CONFIGURATION: APK FILE LINK & METADATA
 // ==========================================
 export const APP_VERSION_API_URL = "https://sui-dhaga-backend.vercel.app/api/v1/app-version/latest?platform=android&clientVersion=1";
-export const DEFAULT_APK_URL = "https://sui-dhaga-backend.vercel.app/api/v1/app-version/latest?platform=android&clientVersion=1";
-export const APK_VERSION = "v1.0.0";
-export const APK_FILE_SIZE = "28.6 MB";
-export const APK_MIN_ANDROID = "Android 8.0+";
+export const DEFAULT_APK_URL = "https://github.com/AdeelTahir-SE/Sui-Dhaga-mobile/releases/download/v1.0.4/sui-dhaga-v1.0.4-android.apk";
+export const APK_VERSION = "v1.0.4";
 
 // Feature strip
 const APP_FEATURES = [
@@ -59,7 +53,19 @@ const INSTALL_STEPS = [
   },
 ];
 
-export function ApkDownloadPage({ apkDownloadUrl = DEFAULT_APK_URL }: { apkDownloadUrl?: string }) {
+export interface ApkDownloadPageProps {
+  apkDownloadUrl?: string;
+  initialVersion?: string;
+  initialDownloadUrl?: string;
+  initialReleaseNotes?: string | null;
+}
+
+export function ApkDownloadPage({
+  apkDownloadUrl,
+  initialVersion,
+  initialDownloadUrl,
+  initialReleaseNotes = null,
+}: ApkDownloadPageProps) {
   const [copied,           setCopied]           = useState(false);
   const [downloading,      setDownloading]      = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
@@ -71,34 +77,47 @@ export function ApkDownloadPage({ apkDownloadUrl = DEFAULT_APK_URL }: { apkDownl
   const [simulatedTap,     setSimulatedTap]     = useState(false);
 
   // Dynamic API state for latest app version
-  const [latestVersion,    setLatestVersion]    = useState(APK_VERSION);
-  const [activeDownloadUrl,setActiveDownloadUrl]= useState(apkDownloadUrl);
-  const [releaseNotes,     setReleaseNotes]     = useState<string | null>(null);
+  const [latestVersion,    setLatestVersion]    = useState(initialVersion || APK_VERSION);
+  const [activeDownloadUrl,setActiveDownloadUrl]= useState(
+    initialDownloadUrl || apkDownloadUrl || DEFAULT_APK_URL
+  );
+  const [releaseNotes,     setReleaseNotes]     = useState<string | null>(initialReleaseNotes);
 
-  // Fetch latest version and download URL from backend API
+  // Fetch latest version and download URL from backend API (via internal proxy route to bypass CORS)
   useEffect(() => {
     let isMounted = true;
     async function fetchAppVersion() {
       try {
-        const res = await fetch(APP_VERSION_API_URL, {
+        let res = await fetch("/api/app-version", {
           method: "GET",
-          headers: { "Content-Type": "application/json" },
+          headers: { Accept: "application/json" },
         });
+
+        if (!res.ok) {
+          res = await fetch(APP_VERSION_API_URL, {
+            method: "GET",
+            headers: { Accept: "application/json" },
+          });
+        }
+
         if (!res.ok) return;
         const json = await res.json();
         if (isMounted && json?.success && json?.data) {
-          if (json.data.downloadUrl) {
-            setActiveDownloadUrl(json.data.downloadUrl);
+          const d = json.data;
+          if (d.downloadUrl) {
+            setActiveDownloadUrl(d.downloadUrl);
           }
-          if (json.data.latestVersion) {
-            setLatestVersion(`v${json.data.latestVersion}`);
+          if (d.version) {
+            setLatestVersion(d.version.startsWith("v") ? d.version : `v${d.version}`);
+          } else if (d.latestVersion) {
+            setLatestVersion(d.latestVersion.startsWith("v") ? d.latestVersion : `v${d.latestVersion}`);
           }
-          if (json.data.releaseNotes) {
-            setReleaseNotes(json.data.releaseNotes);
+          if (d.releaseNotes) {
+            setReleaseNotes(d.releaseNotes);
           }
         }
       } catch (err) {
-        console.warn("Could not fetch app version, using defaults:", err);
+        console.warn("Could not fetch app version, using current defaults:", err);
       }
     }
 
@@ -161,10 +180,11 @@ export function ApkDownloadPage({ apkDownloadUrl = DEFAULT_APK_URL }: { apkDownl
   };
 
   const triggerDownload = (e?: React.MouseEvent) => {
-    const targetUrl = activeDownloadUrl || apkDownloadUrl;
-    if (e && (!targetUrl || targetUrl.startsWith("#"))) {
+    if (e) {
       e.preventDefault();
     }
+    const targetUrl = activeDownloadUrl || apkDownloadUrl || DEFAULT_APK_URL;
+
     setDownloading(true);
     setDownloadProgress(0);
     setDownloadDone(false);
@@ -179,10 +199,25 @@ export function ApkDownloadPage({ apkDownloadUrl = DEFAULT_APK_URL }: { apkDownl
         setTimeout(() => {
           setDownloading(false);
           setDownloadDone(true);
-          if (targetUrl && !targetUrl.startsWith("#") && typeof window !== "undefined") {
-            window.open(targetUrl, "_blank", "noopener,noreferrer");
+          if (targetUrl && typeof window !== "undefined") {
+            // Start direct in-page download without navigating away or opening a new tab
+            const iframe = document.createElement("iframe");
+            iframe.style.display = "none";
+            iframe.style.position = "absolute";
+            iframe.style.width = "0";
+            iframe.style.height = "0";
+            iframe.style.border = "none";
+            iframe.src = targetUrl;
+            document.body.appendChild(iframe);
+            setTimeout(() => {
+              try {
+                document.body.removeChild(iframe);
+              } catch {
+                // ignore if already removed
+              }
+            }, 30000);
           }
-        }, 400);
+        }, 300);
       } else {
         setDownloadProgress(current);
       }
@@ -306,7 +341,7 @@ export function ApkDownloadPage({ apkDownloadUrl = DEFAULT_APK_URL }: { apkDownl
                   <div className="flex items-center justify-between text-xs mb-2 text-amber-200 font-bold">
                     <span className="flex items-center gap-2">
                       <RefreshCw className="w-4 h-4 animate-spin text-amber-400" />
-                      Downloading SuiDhaga_{latestVersion}.apk ({APK_FILE_SIZE})...
+                      Downloading SuiDhaga_{latestVersion}.apk...
                     </span>
                     <span className="font-mono text-amber-400">{downloadProgress}%</span>
                   </div>
@@ -333,39 +368,19 @@ export function ApkDownloadPage({ apkDownloadUrl = DEFAULT_APK_URL }: { apkDownl
 
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center lg:justify-start gap-4 mb-6">
                 <a
-                  href={activeDownloadUrl || apkDownloadUrl}
+                  href={activeDownloadUrl || DEFAULT_APK_URL}
                   onClick={triggerDownload}
                   id="apk-primary-download-btn"
-                  aria-label={`Download Sui Dhaga APK ${latestVersion} - ${APK_FILE_SIZE}, ${APK_MIN_ANDROID}`}
+                  aria-label={`Download Sui Dhaga APK ${latestVersion}`}
                   className="sundrop-btn-primary inline-flex items-center justify-center gap-3 px-8 py-4 rounded-full text-base font-bold tracking-wide cursor-pointer text-center"
                 >
                   <Download className="w-5 h-5 text-amber-200" />
                   <span>Download APK</span>
-                  <span className="text-xs bg-amber-950/50 px-2.5 py-0.5 rounded-full text-amber-200 font-mono font-normal">
-                    {APK_FILE_SIZE}
-                  </span>
                 </a>
-                <Link
-                  href="/tailors"
-                  className="velvet-btn-outline inline-flex items-center justify-center gap-2 px-7 py-4 rounded-full text-sm font-semibold text-center"
-                >
-                  <span>See Our Tailors</span>
-                  <ArrowRight className="w-4 h-4 text-amber-300" />
-                </Link>
               </div>
 
-              {/* Specs + Share - split into two rows for mobile */}
-              <div className="space-y-2.5 pt-2">
-                <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 text-xs text-amber-200/80">
-                  <span className="flex items-center gap-1.5 text-amber-300 font-medium">
-                    <ShieldCheck className="w-4 h-4 text-amber-400" />
-                    Play Protect Verified
-                  </span>
-                  <span className="text-amber-400/40">&bull;</span>
-                  <span>{APK_MIN_ANDROID}</span>
-                  <span className="text-amber-400/40">&bull;</span>
-                  <span>{latestVersion} (Build 2026.4)</span>
-                </div>
+              {/* Share & Copy Link */}
+              <div className="pt-2">
                 <div className="flex items-center justify-center lg:justify-start gap-5 text-xs">
                   <button
                     type="button"
@@ -440,12 +455,6 @@ export function ApkDownloadPage({ apkDownloadUrl = DEFAULT_APK_URL }: { apkDownl
                     </div>
                   </div>
                 ))}
-                <div className="install-security-note">
-                  <Lock className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
-                  <p className="text-[11px] text-amber-200/80 leading-relaxed">
-                    This APK is Play Protect verified and cryptographically signed. Safe to install on Android 8.0+.
-                  </p>
-                </div>
               </div>
             )}
           </div>
