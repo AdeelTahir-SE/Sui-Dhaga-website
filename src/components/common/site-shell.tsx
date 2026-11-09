@@ -351,6 +351,39 @@ export function DashboardShell({
         ? ["Studio Home", "New Design", "My Designs", "Templates", "AI Assistant", "Inspiration", "Trash", "Help & Support", "Settings"]
         : ["Dashboard", "Appointments", "Orders", "Measurements", "Saved Designs", "Wishlist", "Community", "Messages", "Addresses", "Payment Methods", "Notifications", "Account Settings"];
 
+  const getDashboardItemHref = (item: string) => {
+    if (role === "admin") {
+      const slug = item.toLowerCase().replace(/\s+/g, "-");
+      return slug === "dashboard" ? "/admin/dashboard" : `/admin/${slug}`;
+    }
+    if (role === "tailor") {
+      const slug = item.toLowerCase().replace(/\s+/g, "-");
+      return slug === "dashboard" ? "/tailor/dashboard" : `/tailor/${slug}`;
+    }
+    if (role === "studio") {
+      if (item === "Studio Home") return "/design-studio";
+      if (item === "New Design") return "/design-studio/new";
+      if (item === "My Designs") return "/design-studio/my-designs";
+      if (item === "Templates") return "/design-studio/templates";
+      return "/design-studio";
+    }
+    const customerMap: Record<string, string> = {
+      Dashboard: "/customer/dashboard",
+      Appointments: "/customer/appointments",
+      Orders: "/customer/orders",
+      Measurements: "/customer/measurements",
+      "Saved Designs": "/customer/saved-designs",
+      Wishlist: "/customer/wishlist",
+      Community: "/community",
+      Messages: "/messages",
+      Addresses: "/customer/addresses",
+      "Payment Methods": "/customer/payments",
+      Notifications: "/notifications",
+      "Account Settings": "/customer/settings",
+    };
+    return customerMap[item] || "/customer/dashboard";
+  };
+
   return (
     <div className={isAdmin ? "admin-page" : "app-page"}>
       <div className="ambient-layer" aria-hidden="true" />
@@ -359,7 +392,7 @@ export function DashboardShell({
         <aside className={isAdmin ? "admin-sidebar" : "side-nav"}>
           <Link href={isAdmin ? "/admin/dashboard" : "/"} className="side-brand">{isAdmin ? "Sui Dhaga Admin" : "Sui Dhaga"}</Link>
           {items.map((item) => (
-            <Link key={item} className={item === active ? "active" : ""} href="#">
+            <Link key={item} className={item === active ? "active" : ""} href={getDashboardItemHref(item)}>
               <span className="mini-icon" />
               {item}
             </Link>

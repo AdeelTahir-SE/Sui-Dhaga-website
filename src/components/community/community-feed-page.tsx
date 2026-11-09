@@ -30,6 +30,7 @@ import {
   Flame
 } from "lucide-react";
 import { PublicShell } from "@/components/common/site-shell";
+import { authService } from "@/lib/api/auth-service";
 import {
   initialPosts,
   initialTrendingDesigns,
@@ -204,7 +205,7 @@ export function CommunityFeedPage() {
                   <FolderHeart size={18} />
                   <span>Saved Designs</span>
                 </Link>
-                <Link href="/wishlist" className="sidebar-item">
+                <Link href="/customer/wishlist" className="sidebar-item">
                   <Heart size={18} />
                   <span>Wishlist</span>
                 </Link>
@@ -219,11 +220,11 @@ export function CommunityFeedPage() {
                   <MessageSquare size={18} />
                   <span>Messages</span>
                 </Link>
-                <Link href="/addresses" className="sidebar-item">
+                <Link href="/customer/addresses" className="sidebar-item">
                   <MapPin size={18} />
                   <span>Addresses</span>
                 </Link>
-                <Link href="/payments" className="sidebar-item">
+                <Link href="/customer/payments" className="sidebar-item">
                   <CreditCard size={18} />
                   <span>Payment Methods</span>
                 </Link>
@@ -231,11 +232,20 @@ export function CommunityFeedPage() {
                   <Bell size={18} />
                   <span>Notifications</span>
                 </Link>
-                <Link href="/settings" className="sidebar-item">
+                <Link href="/customer/settings" className="sidebar-item">
                   <Settings size={18} />
                   <span>Account Settings</span>
                 </Link>
-                <button className="sidebar-item logout-btn">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      await authService.logout();
+                    } catch {}
+                    window.location.href = "/auth/login";
+                  }}
+                  className="sidebar-item logout-btn"
+                >
                   <LogOut size={18} />
                   <span>Logout</span>
                 </button>

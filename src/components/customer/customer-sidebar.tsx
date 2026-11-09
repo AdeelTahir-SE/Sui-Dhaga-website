@@ -35,9 +35,10 @@ export type CustomerSidebarActiveTab =
 
 interface CustomerSidebarProps {
   active: CustomerSidebarActiveTab;
+  className?: string;
 }
 
-export function CustomerSidebar({ active }: CustomerSidebarProps) {
+export function CustomerSidebar({ active, className = "customer-sidebar-nav" }: CustomerSidebarProps) {
   const handleLogout = async (e: React.MouseEvent) => {
     e.preventDefault();
     try {
@@ -51,7 +52,7 @@ export function CustomerSidebar({ active }: CustomerSidebarProps) {
   };
 
   return (
-    <aside className="customer-sidebar-nav">
+    <aside className={className}>
       <nav className="sidebar-menu-list">
         <Link
           href="/customer/dashboard"
