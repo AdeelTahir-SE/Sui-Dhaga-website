@@ -17,6 +17,7 @@ export * from "./conversation-service";
 export * from "./community-service";
 export * from "./notification-service";
 export * from "./admin-service";
+export * from "../app-version";
 export type {
   AdminStats,
   RevenueDataPoint,
