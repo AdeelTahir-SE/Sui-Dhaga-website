@@ -4,6 +4,7 @@
  */
 
 import { apiClient } from "./client";
+import { fetchWithCache, invalidateCacheDomain, stableCacheKey } from "./data-cache";
 import { ApiResponse, Appointment, BookAppointmentPayload, AppointmentStatus } from "./types";
 
 export const appointmentService = {
@@ -11,7 +12,16 @@ export const appointmentService = {
    * Get list of appointments for authenticated user (customer or tailor)
    */
   getAppointments: async (params?: { page?: number; limit?: number }): Promise<ApiResponse<Appointment[]>> => {
-    return apiClient.get<ApiResponse<Appointment[]>>("/appointments", { params });
+    const key = `list:${stableCacheKey(params as Record<string, unknown> | undefined)}`;
+    return fetchWithCache(
+      "appointments",
+      key,
+      () => apiClient.get<ApiResponse<Appointment[]>>("/appointments", { params }),
+      {
+        scope: "auth",
+        shouldCache: (res) => Boolean(Array.isArray(res?.data)),
+      }
+    );
   },
 
   /**
@@ -25,21 +35,37 @@ export const appointmentService = {
       appointment_time: payload.appointment_time || payload.time,
       notes: payload.notes,
     };
-    return apiClient.post<ApiResponse<Appointment>>("/appointments", formattedPayload);
+    const res = await apiClient.post<ApiResponse<Appointment>>("/appointments", formattedPayload);
+    invalidateCacheDomain("appointments");
+    invalidateCacheDomain("tailors");
+    invalidateCacheDomain("dashboard");
+    return res;
   },
 
   /**
    * Get appointment details by ID
    */
   getAppointmentById: async (appointmentId: string): Promise<ApiResponse<Appointment>> => {
-    return apiClient.get<ApiResponse<Appointment>>(`/appointments/${appointmentId}`);
+    return fetchWithCache(
+      "appointments",
+      `detail:${appointmentId}`,
+      () => apiClient.get<ApiResponse<Appointment>>(`/appointments/${appointmentId}`),
+      {
+        scope: "auth",
+        shouldCache: (res) => Boolean(res?.data),
+      }
+    );
   },
 
   /**
    * Cancel or delete an appointment
    */
   cancelAppointment: async (appointmentId: string): Promise<ApiResponse<null>> => {
-    return apiClient.delete<ApiResponse<null>>(`/appointments/${appointmentId}`);
+    const res = await apiClient.delete<ApiResponse<null>>(`/appointments/${appointmentId}`);
+    invalidateCacheDomain("appointments");
+    invalidateCacheDomain("tailors");
+    invalidateCacheDomain("dashboard");
+    return res;
   },
 
   /**
@@ -49,7 +75,10 @@ export const appointmentService = {
     appointmentId: string,
     status: AppointmentStatus
   ): Promise<ApiResponse<Appointment>> => {
-    return apiClient.patch<ApiResponse<Appointment>>(`/appointments/${appointmentId}/status`, { status });
+    const res = await apiClient.patch<ApiResponse<Appointment>>(`/appointments/${appointmentId}/status`, { status });
+    invalidateCacheDomain("appointments");
+    invalidateCacheDomain("dashboard");
+    return res;
   },
 
   /**
@@ -60,9 +89,13 @@ export const appointmentService = {
     appointmentDate: string,
     appointmentTime: string
   ): Promise<ApiResponse<Appointment>> => {
-    return apiClient.patch<ApiResponse<Appointment>>(`/appointments/${appointmentId}/reschedule`, {
+    const res = await apiClient.patch<ApiResponse<Appointment>>(`/appointments/${appointmentId}/reschedule`, {
       appointment_date: appointmentDate,
       appointment_time: appointmentTime,
     });
+    invalidateCacheDomain("appointments");
+    invalidateCacheDomain("tailors");
+    invalidateCacheDomain("dashboard");
+    return res;
   },
 };

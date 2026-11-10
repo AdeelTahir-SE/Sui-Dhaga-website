@@ -4,6 +4,7 @@
  */
 
 import { apiClient } from "./client";
+import { fetchWithCache, invalidateCacheDomain } from "./data-cache";
 import { ApiResponse, TailorReview } from "./types";
 
 export const reviewService = {
@@ -11,7 +12,15 @@ export const reviewService = {
    * Get reviews for a tailor profile
    */
   getTailorReviews: async (tailorId: string): Promise<ApiResponse<TailorReview[]>> => {
-    return apiClient.get<ApiResponse<TailorReview[]>>(`/tailors/${tailorId}/reviews`);
+    return fetchWithCache(
+      "tailors",
+      `reviews:${tailorId}`,
+      () => apiClient.get<ApiResponse<TailorReview[]>>(`/tailors/${tailorId}/reviews`),
+      {
+        scope: "public",
+        shouldCache: (res) => Boolean(Array.isArray(res?.data)),
+      }
+    );
   },
 
   /**
@@ -25,6 +34,9 @@ export const reviewService = {
       images?: string[];
     }
   ): Promise<ApiResponse<TailorReview>> => {
-    return apiClient.post<ApiResponse<TailorReview>>(`/orders/${orderId}/review`, review);
+    const res = await apiClient.post<ApiResponse<TailorReview>>(`/orders/${orderId}/review`, review);
+    invalidateCacheDomain("tailors");
+    invalidateCacheDomain("orders");
+    return res;
   },
 };

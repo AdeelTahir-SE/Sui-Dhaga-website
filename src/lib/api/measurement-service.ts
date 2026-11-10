@@ -4,6 +4,7 @@
  */
 
 import { apiClient } from "./client";
+import { fetchWithCache, invalidateCacheDomain } from "./data-cache";
 import { ApiResponse, MeasurementProfile } from "./types";
 
 export const measurementService = {
@@ -11,7 +12,15 @@ export const measurementService = {
    * List user body measurement profiles
    */
   getMeasurements: async (): Promise<ApiResponse<MeasurementProfile[]>> => {
-    return apiClient.get<ApiResponse<MeasurementProfile[]>>("/measurements");
+    return fetchWithCache(
+      "measurements",
+      "list",
+      () => apiClient.get<ApiResponse<MeasurementProfile[]>>("/measurements"),
+      {
+        scope: "auth",
+        shouldCache: (res) => Boolean(res?.success && Array.isArray(res.data)),
+      }
+    );
   },
 
   /**
@@ -20,14 +29,25 @@ export const measurementService = {
   createMeasurement: async (
     payload: Omit<MeasurementProfile, "id" | "created_at" | "updated_at">
   ): Promise<ApiResponse<MeasurementProfile>> => {
-    return apiClient.post<ApiResponse<MeasurementProfile>>("/measurements", payload);
+    const res = await apiClient.post<ApiResponse<MeasurementProfile>>("/measurements", payload);
+    invalidateCacheDomain("measurements");
+    invalidateCacheDomain("designs");
+    return res;
   },
 
   /**
    * Get measurement profile by ID
    */
   getMeasurementById: async (measurementId: string): Promise<ApiResponse<MeasurementProfile>> => {
-    return apiClient.get<ApiResponse<MeasurementProfile>>(`/measurements/${measurementId}`);
+    return fetchWithCache(
+      "measurements",
+      `detail:${measurementId}`,
+      () => apiClient.get<ApiResponse<MeasurementProfile>>(`/measurements/${measurementId}`),
+      {
+        scope: "auth",
+        shouldCache: (res) => Boolean(res?.data),
+      }
+    );
   },
 
   /**
@@ -37,13 +57,22 @@ export const measurementService = {
     measurementId: string,
     updates: Partial<MeasurementProfile>
   ): Promise<ApiResponse<MeasurementProfile>> => {
-    return apiClient.patch<ApiResponse<MeasurementProfile>>(`/measurements/${measurementId}`, updates);
+    const res = await apiClient.patch<ApiResponse<MeasurementProfile>>(
+      `/measurements/${measurementId}`,
+      updates
+    );
+    invalidateCacheDomain("measurements");
+    invalidateCacheDomain("designs");
+    return res;
   },
 
   /**
    * Delete measurement profile
    */
   deleteMeasurement: async (measurementId: string): Promise<ApiResponse<null>> => {
-    return apiClient.delete<ApiResponse<null>>(`/measurements/${measurementId}`);
+    const res = await apiClient.delete<ApiResponse<null>>(`/measurements/${measurementId}`);
+    invalidateCacheDomain("measurements");
+    invalidateCacheDomain("designs");
+    return res;
   },
 };

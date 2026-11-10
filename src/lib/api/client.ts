@@ -6,10 +6,24 @@
  * FormData upload handling, error wrapping, query serialization, and JSON decoding.
  */
 
+import { invalidateAllCaches } from "./data-cache";
+
 export interface RequestOptions extends Omit<RequestInit, "body"> {
   params?: Record<string, string | number | boolean | undefined | null>;
-  body?: any;
+  body?: unknown;
   token?: string;
+}
+
+export class ApiClientError extends Error {
+  status: number;
+  details: unknown;
+
+  constructor(message: string, status: number, details: unknown) {
+    super(message);
+    this.name = "ApiClientError";
+    this.status = status;
+    this.details = details;
+  }
 }
 
 export const API_BASE_URL =
@@ -33,12 +47,16 @@ export function getAuthToken(): string | null {
 /**
  * Sets the active auth token and user profile in storage.
  */
-export function setAuthSession(token: string, user?: any): void {
+export function setAuthSession(token: string, user?: unknown): void {
   if (typeof window !== "undefined") {
+    const prevToken = getAuthToken();
     localStorage.setItem("sui_dhaga_auth_token", token);
     localStorage.setItem("sui_dhaga_admin_token", token);
     if (user) {
       localStorage.setItem("sui_dhaga_user", JSON.stringify(user));
+    }
+    if (prevToken !== token) {
+      invalidateAllCaches();
     }
   }
 }
@@ -52,6 +70,7 @@ export function clearAuthSession(): void {
     localStorage.removeItem("sui_dhaga_admin_token");
     localStorage.removeItem("sui_dhaga_user");
     localStorage.removeItem("supabase_auth_token");
+    invalidateAllCaches();
   }
 }
 
@@ -78,7 +97,7 @@ export function buildQueryString(params?: Record<string, string | number | boole
 /**
  * Core API Request Function
  */
-export async function apiRequest<T = any>(
+export async function apiRequest<T = unknown>(
   endpoint: string,
   options: RequestOptions = {}
 ): Promise<T> {
@@ -130,21 +149,25 @@ export async function apiRequest<T = any>(
   const response = await fetch(url, config);
 
   if (!response.ok) {
-    let errorDetails: any = null;
+    let errorDetails: Record<string, unknown> | null = null;
     try {
-      errorDetails = await response.json();
+      errorDetails = (await response.json()) as Record<string, unknown>;
     } catch {
       errorDetails = { message: response.statusText };
     }
 
+    const nestedErr = errorDetails?.error as Record<string, unknown> | undefined;
     let errorMessage =
-      errorDetails?.message ||
-      errorDetails?.error?.message ||
+      (typeof errorDetails?.message === "string" && errorDetails.message) ||
+      (typeof nestedErr?.message === "string" && nestedErr.message) ||
       `API request failed with status ${response.status}`;
 
     // Extract detailed validation field errors if returned by backend (e.g. Zod / Joi)
-    if (errorDetails?.errors?.fieldErrors) {
-      const fieldEntries = Object.entries(errorDetails.errors.fieldErrors);
+    const validationErrors = errorDetails?.errors as
+      | { fieldErrors?: Record<string, unknown> }
+      | undefined;
+    if (validationErrors?.fieldErrors) {
+      const fieldEntries = Object.entries(validationErrors.fieldErrors);
       if (fieldEntries.length > 0) {
         const fieldDetails = fieldEntries
           .map(([field, msgs]) => {
@@ -157,10 +180,7 @@ export async function apiRequest<T = any>(
       }
     }
 
-    const error = new Error(errorMessage);
-    (error as any).status = response.status;
-    (error as any).details = errorDetails;
-    throw error;
+    throw new ApiClientError(errorMessage, response.status, errorDetails);
   }
 
   if (response.status === 204) {
@@ -171,18 +191,18 @@ export async function apiRequest<T = any>(
 }
 
 export const apiClient = {
-  get: <T = any>(endpoint: string, options?: RequestOptions) =>
+  get: <T = unknown>(endpoint: string, options?: RequestOptions) =>
     apiRequest<T>(endpoint, { ...options, method: "GET" }),
 
-  post: <T = any>(endpoint: string, body?: any, options?: RequestOptions) =>
+  post: <T = unknown>(endpoint: string, body?: unknown, options?: RequestOptions) =>
     apiRequest<T>(endpoint, { ...options, method: "POST", body }),
 
-  put: <T = any>(endpoint: string, body?: any, options?: RequestOptions) =>
+  put: <T = unknown>(endpoint: string, body?: unknown, options?: RequestOptions) =>
     apiRequest<T>(endpoint, { ...options, method: "PUT", body }),
 
-  patch: <T = any>(endpoint: string, body?: any, options?: RequestOptions) =>
+  patch: <T = unknown>(endpoint: string, body?: unknown, options?: RequestOptions) =>
     apiRequest<T>(endpoint, { ...options, method: "PATCH", body }),
 
-  delete: <T = any>(endpoint: string, options?: RequestOptions) =>
+  delete: <T = unknown>(endpoint: string, options?: RequestOptions) =>
     apiRequest<T>(endpoint, { ...options, method: "DELETE" }),
 };
