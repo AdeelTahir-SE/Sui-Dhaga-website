@@ -110,27 +110,34 @@ export function CustomerPaymentsPage() {
   const [isDefault, setIsDefault] = useState<boolean>(false);
 
   useEffect(() => {
+    let active = true;
+    let initialList: PaymentMethodItem[] | null = null;
     if (typeof window !== "undefined") {
       try {
         const stored = localStorage.getItem("sui_dhaga_customer_payment_methods");
         if (stored) {
-          const parsed = JSON.parse(stored);
+          const parsed = JSON.parse(stored) as unknown;
           if (Array.isArray(parsed)) {
-            setMethods(parsed);
-            setIsLoading(false);
-            return;
+            initialList = parsed as PaymentMethodItem[];
           }
         }
       } catch {}
     }
 
-    const hasToken = typeof window !== "undefined" && !!localStorage.getItem("sui_dhaga_auth_token");
-    if (hasToken) {
-      setMethods([]);
-    } else {
-      setMethods(initialPaymentMethods);
+    if (initialList === null) {
+      const hasToken = typeof window !== "undefined" && !!localStorage.getItem("sui_dhaga_auth_token");
+      initialList = hasToken ? [] : initialPaymentMethods;
     }
-    setIsLoading(false);
+
+    const resolvedList = initialList;
+    queueMicrotask(() => {
+      if (!active) return;
+      setMethods(resolvedList);
+      setIsLoading(false);
+    });
+    return () => {
+      active = false;
+    };
   }, []);
 
   const saveMethods = (list: PaymentMethodItem[]) => {
@@ -620,7 +627,7 @@ export function CustomerPaymentsPage() {
                       </label>
                       <select
                         value={walletProvider}
-                        onChange={(e) => setWalletProvider(e.target.value as any)}
+                        onChange={(e) => setWalletProvider(e.target.value as "JazzCash" | "EasyPaisa" | "SadaPay")}
                         style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "14px" }}
                       >
                         <option value="JazzCash">JazzCash Mobile Account</option>

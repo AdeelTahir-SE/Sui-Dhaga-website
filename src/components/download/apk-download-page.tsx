@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useSyncExternalStore } from "react";
 import Image from "next/image";
 import { PublicShell } from "@/components/common/site-shell";
 import {
@@ -70,7 +70,11 @@ export function ApkDownloadPage({
   const [downloading,      setDownloading]      = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [downloadDone,     setDownloadDone]     = useState(false);
-  const [pageUrl,          setPageUrl]          = useState("");
+  const pageUrl = useSyncExternalStore(
+    () => () => {},
+    () => window.location.href,
+    () => ""
+  );
   const [stepsOpen,        setStepsOpen]        = useState(false);
   const [phoneScreen,      setPhoneScreen]      = useState<"dashboard" | "tailors">("dashboard");
   const [isPaused,         setIsPaused]         = useState(false);
@@ -148,12 +152,6 @@ export function ApkDownloadPage({
 
     return () => clearInterval(timer);
   }, [isPaused]);
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      setPageUrl(window.location.href);
-    }
-  }, []);
 
   const handleCopyLink = () => {
     if (typeof window !== "undefined") {

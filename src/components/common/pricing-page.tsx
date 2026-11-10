@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Sparkles,
   Check,
@@ -90,6 +91,7 @@ const plans: PlanTier[] = [
 ];
 
 export function PricingPage() {
+  const router = useRouter();
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
   const [selectedPlanForModal, setSelectedPlanForModal] = useState<PlanTier | null>(null);
   const [selectedPaymentChannel, setSelectedPaymentChannel] = useState<"upi" | "card" | "netbanking">("upi");
@@ -97,7 +99,7 @@ export function PricingPage() {
 
   const handleSelectPlan = (plan: PlanTier) => {
     if (plan.id === "free") {
-      window.location.href = "/design-studio";
+      router.push("/design-studio");
     } else {
       setSelectedPlanForModal(plan);
     }

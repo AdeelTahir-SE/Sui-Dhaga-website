@@ -96,7 +96,7 @@ export function CustomerNotificationsPage() {
         if (res?.data && Array.isArray(res.data)) {
           const mapped: DisplayNotification[] = res.data.map((n: AppNotification) => ({
             id: n.id,
-            type: (n.type as any) || "system",
+            type: (n.type as DisplayNotification["type"]) || "system",
             title: n.title,
             message: n.message,
             timestamp: n.created_at ? new Date(n.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "Recently",
@@ -225,17 +225,19 @@ export function CustomerNotificationsPage() {
                   marginBottom: "20px"
                 }}
               >
-                {[
-                  { key: "all", label: `All (${notifications.length})` },
-                  { key: "unread", label: `Unread (${unreadCount})` },
-                  { key: "order", label: "Orders" },
-                  { key: "appointment", label: "Appointments" },
-                  { key: "community", label: "Community" }
-                ].map((tab) => (
+                {(
+                  [
+                    { key: "all", label: `All (${notifications.length})` },
+                    { key: "unread", label: `Unread (${unreadCount})` },
+                    { key: "order", label: "Orders" },
+                    { key: "appointment", label: "Appointments" },
+                    { key: "community", label: "Community" }
+                  ] as const
+                ).map((tab) => (
                   <button
                     key={tab.key}
                     type="button"
-                    onClick={() => setActiveTab(tab.key as any)}
+                    onClick={() => setActiveTab(tab.key)}
                     style={{
                       padding: "8px 16px",
                       borderRadius: "20px",

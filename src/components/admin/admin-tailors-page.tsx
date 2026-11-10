@@ -27,7 +27,7 @@ import { AdminSidebar } from "@/components/admin/admin-sidebar";
 import { AdminHeader } from "@/components/admin/admin-header";
 import { AdminToast } from "@/components/admin/admin-toast";
 import { adminService } from "@/lib/api/admin-service";
-import { AdminTailor, TailorVerificationStatus, VerifyTailorPayload } from "@/lib/api/admin-types";
+import { AdminTailor, AdminTailorFilterParams, TailorVerificationStatus, VerifyTailorPayload } from "@/lib/api/admin-types";
 
 // ─── Helper: Verification Badge ───────────────────────────────────────────────
 function VerificationBadge({ status }: { status: TailorVerificationStatus }) {
@@ -92,7 +92,9 @@ export function AdminTailorsPage() {
   const [verificationFilter, setVerificationFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const queryKey = `${search}|${verificationFilter}|${statusFilter}|${page}`;
+  const [loadedKey, setLoadedKey] = useState<string | null>(null);
+  const isLoading = loadedKey !== queryKey;
 
   const [selectedTailor, setSelectedTailor] = useState<AdminTailor | null>(null);
   const [approveModal, setApproveModal] = useState<AdminTailor | null>(null);
@@ -114,28 +116,33 @@ export function AdminTailorsPage() {
   }, []);
 
   // ── Load tailors from service (API-ready) ───────────────────────────────────
-  const loadTailors = async () => {
-    try {
-      setIsLoading(true);
-      const res = await adminService.tailors.getTailors({
+  useEffect(() => {
+    let active = true;
+    adminService.tailors
+      .getTailors({
         search,
-        verificationStatus: verificationFilter as any,
-        accountStatus: statusFilter as any,
+        verificationStatus: verificationFilter as AdminTailorFilterParams["verificationStatus"],
+        accountStatus: statusFilter as AdminTailorFilterParams["accountStatus"],
         page,
         limit: 7
+      })
+      .then((res) => {
+        if (!active) return;
+        setTailors(res.data);
+        setTotalCount(res.total || 67);
+        setTotalPages(res.totalPages || 10);
+      })
+      .catch((err) => {
+        console.error("Failed to load tailors:", err);
+        if (active) setToastMessage("Failed to load tailors. Showing local records.");
+      })
+      .finally(() => {
+        if (active) setLoadedKey(queryKey);
       });
-      setTailors(res.data);
-      setTotalCount(res.total || 67);
-      setTotalPages(res.totalPages || 10);
-    } catch (err) {
-      console.error("Failed to load tailors:", err);
-      setToastMessage("Failed to load tailors. Showing local records.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => { loadTailors(); }, [search, verificationFilter, statusFilter, page]);
+    return () => {
+      active = false;
+    };
+  }, [search, verificationFilter, statusFilter, page, queryKey]);
 
   // ── Approve handler ─────────────────────────────────────────────────────────
   const handleApprove = async () => {

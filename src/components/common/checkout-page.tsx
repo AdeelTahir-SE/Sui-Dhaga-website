@@ -52,25 +52,29 @@ export function CheckoutPage() {
     if (typeof window !== "undefined") {
       try {
         const rawUser = localStorage.getItem("sui_dhaga_user");
-        if (rawUser) {
-          const u = JSON.parse(rawUser);
-          if (u.name || u.full_name) setRecipientName(u.name || u.full_name);
-          if (u.address) setRecipientStreet(u.address);
-          if (u.city) setRecipientCity(u.city);
-          if (u.phone) setRecipientPhone(u.phone);
-        }
-
+        const parsedUser = rawUser ? (JSON.parse(rawUser) as Record<string, unknown>) : null;
         const rawAddresses = localStorage.getItem("sui_dhaga_customer_addresses");
-        if (rawAddresses) {
-          const addrs = JSON.parse(rawAddresses);
-          const defaultAddr = addrs.find((a: any) => a.isDefault) || addrs[0];
-          if (defaultAddr) {
-            setRecipientName(defaultAddr.recipientName || "Ayesha Khan");
-            setRecipientStreet(`${defaultAddr.street}, ${defaultAddr.area}`);
-            setRecipientCity(defaultAddr.city || "Faisalabad");
-            setRecipientPhone(defaultAddr.phone || "+92 300 9876543");
+        const parsedAddresses = rawAddresses ? (JSON.parse(rawAddresses) as Record<string, unknown>[]) : null;
+        const defaultAddr = parsedAddresses
+          ? parsedAddresses.find((a) => Boolean(a.isDefault)) || parsedAddresses[0]
+          : null;
+
+        queueMicrotask(() => {
+          if (!isSubscribed) return;
+          if (parsedUser) {
+            const uName = typeof parsedUser.name === "string" ? parsedUser.name : typeof parsedUser.full_name === "string" ? parsedUser.full_name : "";
+            if (uName) setRecipientName(uName);
+            if (typeof parsedUser.address === "string" && parsedUser.address) setRecipientStreet(parsedUser.address);
+            if (typeof parsedUser.city === "string" && parsedUser.city) setRecipientCity(parsedUser.city);
+            if (typeof parsedUser.phone === "string" && parsedUser.phone) setRecipientPhone(parsedUser.phone);
           }
-        }
+          if (defaultAddr) {
+            setRecipientName(typeof defaultAddr.recipientName === "string" && defaultAddr.recipientName ? defaultAddr.recipientName : "Ayesha Khan");
+            setRecipientStreet(`${String(defaultAddr.street || "")}, ${String(defaultAddr.area || "")}`);
+            setRecipientCity(typeof defaultAddr.city === "string" && defaultAddr.city ? defaultAddr.city : "Faisalabad");
+            setRecipientPhone(typeof defaultAddr.phone === "string" && defaultAddr.phone ? defaultAddr.phone : "+92 300 9876543");
+          }
+        });
       } catch {}
     }
 

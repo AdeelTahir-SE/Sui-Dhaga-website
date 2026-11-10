@@ -21,8 +21,8 @@ export function AdminReportsPage() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const handleGenerateAndDownload = () => {
-    let filename = `sui_dhaga_${reportType}_report_${new Date().toISOString().split("T")[0]}.csv`;
-    let headers = "Metric,Category,Volume,PKR_Amount,Growth\n";
+    const filename = `sui_dhaga_${reportType}_report_${new Date().toISOString().split("T")[0]}.csv`;
+    const headers = "Metric,Category,Volume,PKR_Amount,Growth\n";
     let rows = "";
 
     if (reportType === "financial") {

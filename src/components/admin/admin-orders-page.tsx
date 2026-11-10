@@ -27,7 +27,7 @@ import { AdminSidebar } from "@/components/admin/admin-sidebar";
 import { AdminHeader } from "@/components/admin/admin-header";
 import { AdminToast } from "@/components/admin/admin-toast";
 import { adminService } from "@/lib/api/admin-service";
-import { AdminOrder, AdminOrderStatus, UpdateOrderStatusPayload } from "@/lib/api/admin-types";
+import { AdminOrder, AdminOrderFilterParams, AdminOrderStatus, UpdateOrderStatusPayload } from "@/lib/api/admin-types";
 
 // Helper: Status Badge
 function OrderStatusBadge({ status }: { status: AdminOrderStatus }) {
@@ -188,38 +188,43 @@ export function AdminOrdersPage() {
   const [paymentStatusFilter, setPaymentStatusFilter] = useState<string>("all");
   const [disputeStatusFilter, setDisputeStatusFilter] = useState<string>("all");
   const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const queryKey = `${search}|${statusFilter}|${paymentStatusFilter}|${disputeStatusFilter}|${page}`;
+  const [loadedKey, setLoadedKey] = useState<string | null>(null);
+  const isLoading = loadedKey !== queryKey;
   const [selectedOrder, setSelectedOrder] = useState<AdminOrder | null>(null);
   const [updateStatusModal, setUpdateStatusModal] = useState<AdminOrder | null>(null);
   const [newStatus, setNewStatus] = useState<AdminOrderStatus>("stitching");
   const [statusNote, setStatusNote] = useState("");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  const loadOrders = async () => {
-    try {
-      setIsLoading(true);
-      const res = await adminService.orders.getOrders({
+  useEffect(() => {
+    let active = true;
+    adminService.orders
+      .getOrders({
         search,
-        status: statusFilter as any,
+        status: statusFilter as AdminOrderFilterParams["status"],
         paymentStatus: paymentStatusFilter,
         disputeStatus: disputeStatusFilter,
         page,
         limit: 8
+      })
+      .then((res) => {
+        if (!active) return;
+        setOrders(res.data);
+        setTotalCount(res.total || 256);
+        setTotalPages(res.totalPages || 32);
+      })
+      .catch((err) => {
+        console.error("Failed to load orders:", err);
+        if (active) setToastMessage("Failed to load orders from API. Showing local state.");
+      })
+      .finally(() => {
+        if (active) setLoadedKey(queryKey);
       });
-      setOrders(res.data);
-      setTotalCount(res.total || 256);
-      setTotalPages(res.totalPages || 32);
-    } catch (err) {
-      console.error("Failed to load orders:", err);
-      setToastMessage("Failed to load orders from API. Showing local state.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadOrders();
-  }, [search, statusFilter, paymentStatusFilter, disputeStatusFilter, page]);
+    return () => {
+      active = false;
+    };
+  }, [search, statusFilter, paymentStatusFilter, disputeStatusFilter, page, queryKey]);
 
   const handleUpdateStatus = async () => {
     if (!updateStatusModal) return;

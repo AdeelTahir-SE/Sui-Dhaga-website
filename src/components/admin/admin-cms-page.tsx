@@ -22,18 +22,20 @@ export function AdminCmsPage() {
   const [cms, setCms] = useState<AdminCMSContent>(initialCMSContent);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  const loadCms = async () => {
-    try {
-      const data = await adminService.cms.getContent();
-      setCms(data);
-    } catch (err) {
-      console.error(err);
-      setToastMessage("Failed to load CMS content.");
-    }
-  };
-
   useEffect(() => {
-    loadCms();
+    let active = true;
+    adminService.cms
+      .getContent()
+      .then((data) => {
+        if (active) setCms(data);
+      })
+      .catch((err) => {
+        console.error(err);
+        if (active) setToastMessage("Failed to load CMS content.");
+      });
+    return () => {
+      active = false;
+    };
   }, []);
 
   const handleToggleBanner = async (id: string) => {

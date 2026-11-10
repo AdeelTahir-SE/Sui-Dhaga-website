@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useState, useSyncExternalStore } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -24,21 +24,17 @@ export function AnimeNavBar({ items, className, defaultActive = "Home" }: NavBar
   
   // If we are on the root path "/", we can fallback to defaultActive. Otherwise, if it's an unmatched path (like /auth/login), active is null.
   const matchedItem = items.find(item => item.url === pathname);
-  const initialActive = matchedItem ? matchedItem.name : (pathname === '/' ? defaultActive : null);
+  const routeActive = matchedItem ? matchedItem.name : (pathname === '/' ? defaultActive : null);
   
-  const [mounted, setMounted] = useState(false)
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  )
   const [hoveredTab, setHoveredTab] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<string | null>(initialActive)
-  const [isMobile, setIsMobile] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  useEffect(() => {
-    const matchedItem = items.find(item => item.url === pathname);
-    setActiveTab(matchedItem ? matchedItem.name : (pathname === '/' ? defaultActive : null));
-  }, [pathname, items, defaultActive])
+  const [clickedTab, setClickedTab] = useState<{ path: string; name: string } | null>(null)
+  const [, setIsMobile] = useState(false)
+  const activeTab = clickedTab && clickedTab.path === pathname ? clickedTab.name : routeActive
 
   useEffect(() => {
     const handleResize = () => {
@@ -75,7 +71,7 @@ export function AnimeNavBar({ items, className, defaultActive = "Home" }: NavBar
                 key={item.name}
                 href={item.url}
                 onClick={() => {
-                  setActiveTab(item.name)
+                  setClickedTab({ path: pathname, name: item.name })
                 }}
                 onMouseEnter={() => setHoveredTab(item.name)}
                 onMouseLeave={() => setHoveredTab(null)}

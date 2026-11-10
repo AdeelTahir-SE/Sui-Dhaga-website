@@ -30,7 +30,7 @@ import { AdminSidebar } from "@/components/admin/admin-sidebar";
 import { AdminHeader } from "@/components/admin/admin-header";
 import { AdminToast } from "@/components/admin/admin-toast";
 import { adminService } from "@/lib/api/admin-service";
-import { AdminUser, UserRole, UserStatus } from "@/lib/api/admin-types";
+import { AdminUser, AdminUserFilterParams, UserRole, UserStatus } from "@/lib/api/admin-types";
 
 export function AdminUsersPage() {
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -41,7 +41,9 @@ export function AdminUsersPage() {
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [cityFilter, setCityFilter] = useState<string>("");
-  const [isLoading, setIsLoading] = useState(true);
+  const queryKey = `${search}|${roleFilter}|${statusFilter}|${cityFilter}|${page}`;
+  const [loadedKey, setLoadedKey] = useState<string | null>(null);
+  const isLoading = loadedKey !== queryKey;
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
   const [blockModalUser, setBlockModalUser] = useState<AdminUser | null>(null);
   const [blockReason, setBlockReason] = useState("");
@@ -62,31 +64,34 @@ export function AdminUsersPage() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const loadUsers = async () => {
-    try {
-      setIsLoading(true);
-      const res = await adminService.users.getUsers({
+  useEffect(() => {
+    let active = true;
+    adminService.users
+      .getUsers({
         search,
-        role: roleFilter as any,
-        status: statusFilter as any,
+        role: roleFilter as AdminUserFilterParams["role"],
+        status: statusFilter as AdminUserFilterParams["status"],
         city: cityFilter || undefined,
         page,
         limit: 8
+      })
+      .then((res) => {
+        if (!active) return;
+        setUsers(res.data);
+        setTotalCount(res.total || 125);
+        setTotalPages(res.totalPages || 16);
+      })
+      .catch((err) => {
+        console.error("Failed to load users:", err);
+        if (active) setToastMessage("Failed to load users from API. Showing local records.");
+      })
+      .finally(() => {
+        if (active) setLoadedKey(queryKey);
       });
-      setUsers(res.data);
-      setTotalCount(res.total || 125);
-      setTotalPages(res.totalPages || 16);
-    } catch (err) {
-      console.error("Failed to load users:", err);
-      setToastMessage("Failed to load users from API. Showing local records.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadUsers();
-  }, [search, roleFilter, statusFilter, cityFilter, page]);
+    return () => {
+      active = false;
+    };
+  }, [search, roleFilter, statusFilter, cityFilter, page, queryKey]);
 
   // Block / Unblock User Handlers
   const handleConfirmBlockToggle = async () => {

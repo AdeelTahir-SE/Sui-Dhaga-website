@@ -26,6 +26,7 @@ import { AdminHeader } from "@/components/admin/admin-header";
 import { AdminToast } from "@/components/admin/admin-toast";
 import { adminService } from "@/lib/api/admin-service";
 import {
+  AdminPaymentFilterParams,
   AdminPaymentTransaction,
   AdminPayoutRequest,
   PaymentTransactionStatus,
@@ -158,38 +159,42 @@ export function AdminPaymentsPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const queryKey = `${search}|${typeFilter}|${methodFilter}|${statusFilter}`;
+  const [loadedKey, setLoadedKey] = useState<string | null>(null);
+  const isLoading = loadedKey !== queryKey;
 
   const [selectedTxn, setSelectedTxn] = useState<AdminPaymentTransaction | null>(null);
   const [refundModalTxn, setRefundModalTxn] = useState<AdminPaymentTransaction | null>(null);
   const [refundReason, setRefundReason] = useState("");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  const loadData = async () => {
-    try {
-      setIsLoading(true);
-      const [txns, poList] = await Promise.all([
-        adminService.payments.getTransactions({
-          search,
-          type: typeFilter as any,
-          method: methodFilter,
-          status: statusFilter
-        }),
-        adminService.payments.getPayoutRequests()
-      ]);
-      setTransactions(txns);
-      setPayouts(poList);
-    } catch (err) {
-      console.error("Failed to load payments data:", err);
-      setToastMessage("Failed to load payments from API. Showing local records.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   useEffect(() => {
-    loadData();
-  }, [search, typeFilter, methodFilter, statusFilter]);
+    let active = true;
+    Promise.all([
+      adminService.payments.getTransactions({
+        search,
+        type: typeFilter as AdminPaymentFilterParams["type"],
+        method: methodFilter,
+        status: statusFilter
+      }),
+      adminService.payments.getPayoutRequests()
+    ])
+      .then(([txns, poList]) => {
+        if (!active) return;
+        setTransactions(txns);
+        setPayouts(poList);
+      })
+      .catch((err) => {
+        console.error("Failed to load payments data:", err);
+        if (active) setToastMessage("Failed to load payments from API. Showing local records.");
+      })
+      .finally(() => {
+        if (active) setLoadedKey(queryKey);
+      });
+    return () => {
+      active = false;
+    };
+  }, [search, typeFilter, methodFilter, statusFilter, queryKey]);
 
   const handleProcessRefund = async () => {
     if (!refundModalTxn) return;

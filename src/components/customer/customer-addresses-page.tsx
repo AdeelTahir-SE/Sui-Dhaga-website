@@ -78,16 +78,23 @@ export function CustomerAddressesPage() {
   const [formIsDefault, setFormIsDefault] = useState<boolean>(false);
 
   useEffect(() => {
+    let active = true;
     // Read from localStorage or initialize
     if (typeof window !== "undefined") {
       try {
         const stored = localStorage.getItem("sui_dhaga_customer_addresses");
         if (stored) {
-          const parsed = JSON.parse(stored);
+          const parsed = JSON.parse(stored) as unknown;
           if (Array.isArray(parsed)) {
-            setAddresses(parsed);
-            setIsLoading(false);
-            return;
+            const list = parsed as CustomerAddressItem[];
+            queueMicrotask(() => {
+              if (!active) return;
+              setAddresses(list);
+              setIsLoading(false);
+            });
+            return () => {
+              active = false;
+            };
           }
         }
       } catch {}
@@ -98,6 +105,7 @@ export function CustomerAddressesPage() {
     if (hasToken) {
       // Try to populate from user profile
       userService.getMe().then((res) => {
+        if (!active) return;
         if (res?.data && res.data.address) {
           const singleAddr: CustomerAddressItem = {
             id: `addr-${Date.now()}`,
@@ -115,14 +123,20 @@ export function CustomerAddressesPage() {
           setAddresses([]);
         }
       }).catch(() => {
-        setAddresses([]);
+        if (active) setAddresses([]);
       }).finally(() => {
-        setIsLoading(false);
+        if (active) setIsLoading(false);
       });
     } else {
-      setAddresses(initialDummyAddresses);
-      setIsLoading(false);
+      queueMicrotask(() => {
+        if (!active) return;
+        setAddresses(initialDummyAddresses);
+        setIsLoading(false);
+      });
     }
+    return () => {
+      active = false;
+    };
   }, []);
 
   const saveAddressesToStorage = (list: CustomerAddressItem[]) => {

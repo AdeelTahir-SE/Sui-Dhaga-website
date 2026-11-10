@@ -80,8 +80,29 @@ export function AdminDashboardPage() {
   };
 
   useEffect(() => {
-    loadData();
-  }, []);
+    let active = true;
+    Promise.all([
+      adminService.dashboard.getStats(),
+      adminService.dashboard.getRevenueChart(selectedRange),
+      adminService.dashboard.getRecentActivities()
+    ])
+      .then(([loadedStats, loadedChart, loadedActs]) => {
+        if (!active) return;
+        setStats(loadedStats);
+        setChartData(loadedChart);
+        setActivities(loadedActs);
+      })
+      .catch((err) => {
+        console.error("Failed to load admin dashboard data:", err);
+        if (active) setToastMessage("Error loading data from API. Showing local state.");
+      })
+      .finally(() => {
+        if (active) setIsLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [selectedRange]);
 
   const handleExportSummary = () => {
     const csvContent =

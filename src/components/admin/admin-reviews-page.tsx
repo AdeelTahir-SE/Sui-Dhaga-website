@@ -13,21 +13,23 @@ export function AdminReviewsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  const loadReviews = async () => {
-    try {
-      setIsLoading(true);
-      const data = await adminService.reviews.getReviews();
-      setReviews(data);
-    } catch (err) {
-      console.error("Failed to load reviews:", err);
-      setToastMessage("Failed to load reviews from API.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   useEffect(() => {
-    loadReviews();
+    let active = true;
+    adminService.reviews
+      .getReviews()
+      .then((data) => {
+        if (active) setReviews(data);
+      })
+      .catch((err) => {
+        console.error("Failed to load reviews:", err);
+        if (active) setToastMessage("Failed to load reviews from API.");
+      })
+      .finally(() => {
+        if (active) setIsLoading(false);
+      });
+    return () => {
+      active = false;
+    };
   }, []);
 
   const handleToggleStatus = async (review: AdminReview) => {

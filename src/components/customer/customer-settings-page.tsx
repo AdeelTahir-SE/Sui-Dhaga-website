@@ -130,7 +130,7 @@ export function CustomerSettingsPage() {
           JSON.stringify({ ...existing, ...updates })
         );
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.warn("Update profile API error:", err);
       setStatusMessage({ type: "success", text: "Profile updated locally." });
     } finally {
@@ -159,8 +159,8 @@ export function CustomerSettingsPage() {
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
-    } catch (err: any) {
-      const msg = err?.message || "Failed to update password. Please check your credentials.";
+    } catch (err: unknown) {
+      const msg = err instanceof Error && err.message ? err.message : "Failed to update password. Please check your credentials.";
       setStatusMessage({ type: "error", text: msg });
     } finally {
       setIsSaving(false);

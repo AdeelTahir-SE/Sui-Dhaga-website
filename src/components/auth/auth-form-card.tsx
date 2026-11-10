@@ -174,8 +174,8 @@ export function AuthFormCard({ title, intro, fields, button, mode = "login" }: F
           router.push("/auth/login");
         }, 1200);
       }
-    } catch (err: any) {
-      setErrorMsg(err?.message || "An unexpected error occurred. Please try again.");
+    } catch (err: unknown) {
+      setErrorMsg(err instanceof Error ? err.message : "An unexpected error occurred. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -188,8 +188,8 @@ export function AuthFormCard({ title, intro, fields, button, mode = "login" }: F
       if (url) {
         window.location.href = url;
       }
-    } catch (err: any) {
-      setErrorMsg(err?.message || "Google authentication is unavailable.");
+    } catch (err: unknown) {
+      setErrorMsg(err instanceof Error ? err.message : "Google authentication is unavailable.");
       setLoading(false);
     }
   };

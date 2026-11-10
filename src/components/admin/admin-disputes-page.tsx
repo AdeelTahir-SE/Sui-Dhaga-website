@@ -28,21 +28,23 @@ export function AdminDisputesPage() {
   const [decisionNotesVal, setDecisionNotesVal] = useState("");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  const loadDisputes = async () => {
-    try {
-      setIsLoading(true);
-      const data = await adminService.disputes.getDisputes();
-      setDisputes(data);
-    } catch (err) {
-      console.error("Failed to load disputes:", err);
-      setToastMessage("Failed to load disputes from API.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   useEffect(() => {
-    loadDisputes();
+    let active = true;
+    adminService.disputes
+      .getDisputes()
+      .then((data) => {
+        if (active) setDisputes(data);
+      })
+      .catch((err) => {
+        console.error("Failed to load disputes:", err);
+        if (active) setToastMessage("Failed to load disputes from API.");
+      })
+      .finally(() => {
+        if (active) setIsLoading(false);
+      });
+    return () => {
+      active = false;
+    };
   }, []);
 
   const handleResolve = async (e: React.FormEvent) => {
@@ -203,7 +205,7 @@ export function AdminDisputesPage() {
                   </strong>
                 </div>
                 <p style={{ fontSize: "0.88rem", color: "#7F1D1D", margin: 0 }}>
-                  "{selectedDispute.customerStatement}"
+                  &ldquo;{selectedDispute.customerStatement}&rdquo;
                 </p>
               </div>
 
@@ -217,7 +219,7 @@ export function AdminDisputesPage() {
                     </strong>
                   </div>
                   <p style={{ fontSize: "0.88rem", color: "#1E3A8A", margin: 0 }}>
-                    "{selectedDispute.tailorStatement}"
+                    &ldquo;{selectedDispute.tailorStatement}&rdquo;
                   </p>
                 </div>
               )}
@@ -228,7 +230,7 @@ export function AdminDisputesPage() {
                   <label className="admin-form-label">Administrative Resolution</label>
                   <select
                     value={resolutionType}
-                    onChange={(e) => setResolutionType(e.target.value as any)}
+                    onChange={(e) => setResolutionType(e.target.value as ResolveDisputePayload["resolution"])}
                     className="admin-form-select"
                   >
                     <option value="refund_full">100% Full Refund to Customer (Debit Escrow)</option>

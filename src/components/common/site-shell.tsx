@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useRef, useMemo } from "react";
+import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { navItems } from "./data";
@@ -39,17 +39,20 @@ export function PublicNav({ navTheme }: { navTheme?: "default" | "velvet-gold" }
   const [scrolled, setScrolled] = useState(false);
   const [profileUrl, setProfileUrl] = useState("/auth/login");
   const [userInitials, setUserInitials] = useState<string | null>(null);
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchState, setSearchState] = useState<{ open: boolean; path: string }>({ open: false, path: pathname });
+  const isSearchOpen = searchState.open && searchState.path === pathname;
+  const setIsSearchOpen = useCallback((next: boolean | ((prev: boolean) => boolean)) => {
+    setSearchState((prev) => {
+      const currentOpen = prev.open && prev.path === pathname;
+      const open = typeof next === "function" ? next(currentOpen) : next;
+      return { open, path: pathname };
+    });
+  }, [pathname]);
   const [searchQuery, setSearchQuery] = useState("");
   const searchInputRef = useRef<HTMLInputElement>(null);
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const mobileSearchContainerRef = useRef<HTMLDivElement>(null);
   const isVelvetGold = navTheme === "velvet-gold" || pathname === "/download" || pathname === "/download-app" || pathname === "/sun-drop";
-
-  // Close search dropdown when navigating
-  useEffect(() => {
-    setIsSearchOpen(false);
-  }, [pathname]);
 
   // Close search dropdown on click outside
   useEffect(() => {
@@ -67,7 +70,7 @@ export function PublicNav({ navTheme }: { navTheme?: "default" | "velvet-gold" }
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [isSearchOpen]);
+  }, [isSearchOpen, setIsSearchOpen]);
 
   // Global Ctrl+K / Cmd+K and Esc keyboard shortcuts
   useEffect(() => {
@@ -82,7 +85,7 @@ export function PublicNav({ navTheme }: { navTheme?: "default" | "velvet-gold" }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isSearchOpen]);
+  }, [isSearchOpen, setIsSearchOpen]);
 
   // Focus search input whenever dropdown opens
   useEffect(() => {
@@ -129,30 +132,41 @@ export function PublicNav({ navTheme }: { navTheme?: "default" | "velvet-gold" }
   };
 
   useEffect(() => {
+    let active = true;
     try {
       const token = localStorage.getItem("sui_dhaga_auth_token");
       const rawUser = localStorage.getItem("sui_dhaga_user");
-      if (token && rawUser) {
-        const u = JSON.parse(rawUser);
-        const role = u.role || "customer";
-        if (role === "admin") setProfileUrl("/admin/dashboard");
-        else if (role === "tailor") setProfileUrl("/tailor/dashboard");
-        else setProfileUrl("/customer/dashboard");
+      const parsed = token && rawUser ? (JSON.parse(rawUser) as Record<string, unknown>) : null;
+      queueMicrotask(() => {
+        if (!active) return;
+        if (parsed) {
+          const role = typeof parsed.role === "string" ? parsed.role : "customer";
+          if (role === "admin") setProfileUrl("/admin/dashboard");
+          else if (role === "tailor") setProfileUrl("/tailor/dashboard");
+          else setProfileUrl("/customer/dashboard");
 
-        const name = u.name || u.full_name || u.email || "";
-        if (name) {
-          const parts = name.trim().split(" ");
-          const initials =
-            parts.length > 1
-              ? `${parts[0][0]}${parts[1][0]}`.toUpperCase()
-              : name.slice(0, 2).toUpperCase();
-          setUserInitials(initials);
+          const name =
+            (typeof parsed.name === "string" && parsed.name) ||
+            (typeof parsed.full_name === "string" && parsed.full_name) ||
+            (typeof parsed.email === "string" && parsed.email) ||
+            "";
+          if (name) {
+            const parts = name.trim().split(" ");
+            const initials =
+              parts.length > 1
+                ? `${parts[0][0]}${parts[1][0]}`.toUpperCase()
+                : name.slice(0, 2).toUpperCase();
+            setUserInitials(initials);
+          }
+        } else {
+          setProfileUrl("/auth/login");
+          setUserInitials(null);
         }
-      } else {
-        setProfileUrl("/auth/login");
-        setUserInitials(null);
-      }
+      });
     } catch {}
+    return () => {
+      active = false;
+    };
   }, [pathname]);
 
   useEffect(() => {

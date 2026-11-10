@@ -24,21 +24,23 @@ export function AdminSettingsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  const loadSettings = async () => {
-    try {
-      setIsLoading(true);
-      const data = await adminService.settings.getSettings();
-      setSettings(data);
-    } catch (err) {
-      console.error(err);
-      setToastMessage("Failed to load settings from API.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   useEffect(() => {
-    loadSettings();
+    let active = true;
+    adminService.settings
+      .getSettings()
+      .then((data) => {
+        if (active) setSettings(data);
+      })
+      .catch((err) => {
+        console.error(err);
+        if (active) setToastMessage("Failed to load settings from API.");
+      })
+      .finally(() => {
+        if (active) setIsLoading(false);
+      });
+    return () => {
+      active = false;
+    };
   }, []);
 
   const handleSave = async (e: React.FormEvent) => {
@@ -251,7 +253,7 @@ export function AdminSettingsPage() {
                         ...settings,
                         payouts: {
                           ...settings.payouts,
-                          payoutCycle: e.target.value as any
+                          payoutCycle: e.target.value as AdminPlatformSettings["payouts"]["payoutCycle"]
                         }
                       })
                     }

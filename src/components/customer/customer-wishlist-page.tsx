@@ -93,29 +93,34 @@ export function CustomerWishlistPage() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
+    let active = true;
     const hasToken = typeof window !== "undefined" && !!localStorage.getItem("sui_dhaga_auth_token");
+    let resolvedWishlist: WishlistItem[] | null = null;
     if (typeof window !== "undefined") {
       try {
         const stored = localStorage.getItem("sui_dhaga_customer_wishlist");
         if (stored) {
-          const parsed = JSON.parse(stored);
+          const parsed = JSON.parse(stored) as unknown;
           if (Array.isArray(parsed)) {
-            setWishlist(parsed);
-            setIsLoading(false);
-            return;
+            resolvedWishlist = parsed as WishlistItem[];
           }
         }
       } catch {}
     }
 
-    if (hasToken) {
-      // Authenticated new user starts clean
-      setWishlist([]);
-    } else {
-      // Demo guest user gets initial wishlist
-      setWishlist(initialWishlistItems);
+    if (resolvedWishlist === null) {
+      resolvedWishlist = hasToken ? [] : initialWishlistItems;
     }
-    setIsLoading(false);
+
+    const finalItems = resolvedWishlist;
+    queueMicrotask(() => {
+      if (!active) return;
+      setWishlist(finalItems);
+      setIsLoading(false);
+    });
+    return () => {
+      active = false;
+    };
   }, []);
 
   const handleRemove = (id: string, e: React.MouseEvent) => {
