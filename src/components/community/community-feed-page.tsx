@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import {
   Heart,
@@ -35,6 +35,7 @@ import {
   initialPosts,
   initialTrendingDesigns,
   initialFollowingUsers,
+  peekCommunityPosts,
   fetchCommunityPostsApi,
   togglePostLikeApi,
   togglePostSaveApi,
@@ -43,10 +44,21 @@ import {
   TrendingDesign,
   FollowingUser
 } from "@/lib/community-data";
+import { useCacheTick } from "@/lib/api/data-cache";
 
 export function CommunityFeedPage() {
+  const communityTick = useCacheTick("community");
   const [activeTab, setActiveTab] = useState<"for-you" | "following" | "trending" | "latest">("for-you");
-  const [posts, setPosts] = useState<CommunityPost[]>(initialPosts);
+  const cachedPosts = useMemo(
+    () => (communityTick >= 0 ? peekCommunityPosts(activeTab) : null),
+    [communityTick, activeTab]
+  );
+  const [localPostsState, setLocalPostsState] = useState<{
+    tab: string;
+    rev: number;
+    posts: CommunityPost[];
+  } | null>(null);
+  const [fallbackPosts, setFallbackPosts] = useState<CommunityPost[] | null>(null);
   const [trendingDesigns] = useState<TrendingDesign[]>(initialTrendingDesigns);
   const [followingUsers, setFollowingUsers] = useState<FollowingUser[]>(initialFollowingUsers);
   
@@ -61,18 +73,32 @@ export function CommunityFeedPage() {
   const [newPostTags, setNewPostTags] = useState<string>("");
   const [isPublishing, setIsPublishing] = useState<boolean>(false);
 
-  // Fetch API feed data on tab change
+  const posts =
+    (localPostsState?.tab === activeTab && localPostsState?.rev === communityTick
+      ? localPostsState.posts
+      : null) ??
+    cachedPosts ??
+    fallbackPosts ??
+    initialPosts;
+
+  const setPosts = (next: CommunityPost[] | ((prev: CommunityPost[]) => CommunityPost[])) => {
+    const updated = typeof next === "function" ? next(posts) : next;
+    setLocalPostsState({ tab: activeTab, rev: communityTick, posts: updated });
+  };
+
+  // Fetch API feed data only when cache misses or community domain invalidated
   useEffect(() => {
+    if (cachedPosts !== null) return;
     let isSubscribed = true;
     fetchCommunityPostsApi(activeTab).then((data) => {
       if (isSubscribed && data && data.length > 0) {
-        setPosts(data);
+        setFallbackPosts(data);
       }
     });
     return () => {
       isSubscribed = false;
     };
-  }, [activeTab]);
+  }, [activeTab, cachedPosts]);
 
   // Handle Like action
   const handleToggleLike = (postId: string) => {

@@ -1,3 +1,11 @@
+import { communityService } from "./api/community-service";
+import { getCachedValue, invalidateCacheDomain } from "./api/data-cache";
+import {
+  ApiResponse,
+  CommunityPost as ApiPost,
+  CommunityComment as ApiComment,
+} from "./api/types";
+
 export interface PostComment {
   id: string;
   author: string;
@@ -204,9 +212,6 @@ export const initialFollowingUsers: FollowingUser[] = [
   }
 ];
 
-import { communityService } from "./api/community-service";
-import { CommunityPost as ApiPost, CommunityComment as ApiComment } from "./api/types";
-
 export function mapBackendCommentToItem(c: ApiComment): PostComment {
   return {
     id: c.id,
@@ -277,7 +282,36 @@ export function getCommunityPostById(id: string): CommunityPost | undefined {
   };
 }
 
+export function peekCommunityPosts(tab = "for-you"): CommunityPost[] | null {
+  if (typeof window === "undefined") return null;
+  const cachedRes = getCachedValue<ApiResponse<ApiPost[]>>("community", "posts:{}", {
+    scope: "auth",
+  });
+  if (!cachedRes || !Array.isArray(cachedRes.data) || cachedRes.data.length === 0) {
+    return null;
+  }
+  const list = cachedRes.data.map(mapBackendPostToItem);
+  if (tab === "trending") {
+    return [...list].sort((a, b) => b.likesCount - a.likesCount);
+  }
+  return list;
+}
+
+export function peekCommunityPostById(id: string): CommunityPost | null {
+  if (typeof window === "undefined") return null;
+  const detailRes = getCachedValue<ApiResponse<ApiPost>>("community", `post:${id}`, {
+    scope: "auth",
+  });
+  if (detailRes?.data) {
+    return mapBackendPostToItem(detailRes.data);
+  }
+  return null;
+}
+
 export async function fetchCommunityPostByIdApi(id: string): Promise<CommunityPost | undefined> {
+  const cached = peekCommunityPostById(id);
+  if (cached) return cached;
+
   try {
     const res = await communityService.getPostById(id);
     if (res?.data) {
@@ -287,17 +321,28 @@ export async function fetchCommunityPostByIdApi(id: string): Promise<CommunityPo
     console.warn("[Community API] Fetch post detail failed, fallback to mock:", err);
   }
 
+  const cachedList = peekCommunityPosts();
+  const listMatch = cachedList?.find((p) => p.id === id);
+  if (listMatch) return listMatch;
+
   return getCommunityPostById(id);
 }
 
 /**
- * Async API fetcher for community feed posts.
+ * Async API fetcher for community feed posts (uses cache unless invalidated).
  */
 export async function fetchCommunityPostsApi(tab = "for-you"): Promise<CommunityPost[]> {
+  const cached = peekCommunityPosts(tab);
+  if (cached) return cached;
+
   try {
     const res = await communityService.getPosts();
     if (res?.data && Array.isArray(res.data) && res.data.length > 0) {
-      return res.data.map(mapBackendPostToItem);
+      const list = res.data.map(mapBackendPostToItem);
+      if (tab === "trending") {
+        return [...list].sort((a, b) => b.likesCount - a.likesCount);
+      }
+      return list;
     }
   } catch (err) {
     console.warn("[Community API] Backend feed endpoint unavailable, fallback to mock:", err);
@@ -307,6 +352,7 @@ export async function fetchCommunityPostsApi(tab = "for-you"): Promise<Community
 }
 
 export async function togglePostLikeApi(postId: string, isLiked: boolean): Promise<boolean> {
+  void isLiked;
   try {
     await communityService.toggleLike(postId);
     return true;
@@ -318,6 +364,7 @@ export async function togglePostLikeApi(postId: string, isLiked: boolean): Promi
 }
 
 export async function togglePostSaveApi(postId: string, isSaved: boolean): Promise<boolean> {
+  void isSaved;
   try {
     await communityService.toggleSave(postId);
     return true;
@@ -362,5 +409,6 @@ export async function createCommunityPostApi(postData: Partial<CommunityPost>): 
   };
 
   initialPosts.unshift(newPost);
+  invalidateCacheDomain("community");
   return { success: true, post: newPost };
 }

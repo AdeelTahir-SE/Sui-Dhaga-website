@@ -250,7 +250,7 @@ export function CommunityCreatePostPage() {
                 <div className="visibility-select-wrapper">
                   <select
                     value={visibility}
-                    onChange={(e) => setVisibility(e.target.value as any)}
+                    onChange={(e) => setVisibility(e.target.value as "Public" | "Followers" | "Private")}
                     className="visibility-select"
                   >
                     <option value="Public">Public</option>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
@@ -18,12 +18,14 @@ import {
 import { PublicShell } from "@/components/common/site-shell";
 import {
   getCommunityPostById,
+  peekCommunityPostById,
   fetchCommunityPostByIdApi,
   togglePostLikeApi,
   togglePostSaveApi,
   CommunityPost,
   PostComment
 } from "@/lib/community-data";
+import { useCacheTick } from "@/lib/api/data-cache";
 
 interface CommunityPostDetailPageProps {
   postId?: string;
@@ -33,25 +35,47 @@ export function CommunityPostDetailPage({ postId: propPostId }: CommunityPostDet
   const params = useParams();
   const router = useRouter();
   const activePostId = propPostId || (params?.postId as string) || "post-1";
+  const communityTick = useCacheTick("community");
 
-  const [post, setPost] = useState<CommunityPost | undefined>(() => getCommunityPostById(activePostId));
+  const cachedPost = useMemo(
+    () => (communityTick >= 0 ? peekCommunityPostById(activePostId) : null),
+    [communityTick, activePostId]
+  );
+
+  const [localPost, setLocalPost] = useState<CommunityPost | null>(null);
+  const [fallbackPost, setFallbackPost] = useState<CommunityPost | undefined>(undefined);
   const [activeImageIndex, setActiveImageIndex] = useState<number>(0);
   const [isFollowing, setIsFollowing] = useState<boolean>(false);
   const [commentInput, setCommentInput] = useState<string>("");
-  const [comments, setComments] = useState<PostComment[]>([]);
+  const [localComments, setLocalComments] = useState<PostComment[] | null>(null);
 
   useEffect(() => {
+    if (cachedPost !== null) return;
     let isSubscribed = true;
     fetchCommunityPostByIdApi(activePostId).then((data) => {
       if (isSubscribed && data) {
-        setPost(data);
-        setComments(data.comments || []);
+        setFallbackPost(data);
       }
     });
     return () => {
       isSubscribed = false;
     };
-  }, [activePostId]);
+  }, [activePostId, cachedPost]);
+
+  const post = localPost ?? cachedPost ?? fallbackPost ?? getCommunityPostById(activePostId);
+  const setPost = (
+    next: CommunityPost | ((prev: CommunityPost | undefined) => CommunityPost | undefined)
+  ) => {
+    const updated = typeof next === "function" ? next(post) : next;
+    if (updated) setLocalPost(updated);
+  };
+  const comments = localComments ?? post?.comments ?? [];
+  const setComments = (next: PostComment[] | ((prev: PostComment[]) => PostComment[])) => {
+    setLocalComments((prev) => {
+      const base = prev ?? comments;
+      return typeof next === "function" ? next(base) : next;
+    });
+  };
 
   if (!post) {
     return (
