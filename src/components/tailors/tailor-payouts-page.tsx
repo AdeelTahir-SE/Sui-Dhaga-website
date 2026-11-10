@@ -109,11 +109,15 @@ export function TailorPayoutsPage() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   useEffect(() => {
+    let active = true;
     if (typeof window !== "undefined") {
       try {
         const saved = localStorage.getItem(KEY_TAILOR_PAYOUTS);
         if (saved) {
-          setPayouts(JSON.parse(saved));
+          const parsed = JSON.parse(saved) as TailorPayoutRecord[];
+          queueMicrotask(() => {
+            if (active) setPayouts(parsed);
+          });
         } else {
           localStorage.setItem(KEY_TAILOR_PAYOUTS, JSON.stringify(initialPayouts));
         }
@@ -121,6 +125,9 @@ export function TailorPayoutsPage() {
         console.warn("Failed to load payouts from localStorage:", e);
       }
     }
+    return () => {
+      active = false;
+    };
   }, []);
 
   const displayedPayouts = showAll ? payouts : payouts.slice(0, 5);

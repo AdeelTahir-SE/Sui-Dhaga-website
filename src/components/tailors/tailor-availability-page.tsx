@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -19,6 +19,8 @@ import { AdminToast } from "@/components/admin/admin-toast";
 import { CardsGridSkeleton } from "@/components/common/shadow-skeleton";
 import { tailorService } from "@/lib/api/tailor-service";
 import { userService } from "@/lib/api/user-service";
+import { ApiResponse, AvailabilitySlot, UserProfile } from "@/lib/api/types";
+import { invalidateCacheDomain, useCachedEntry } from "@/lib/api/data-cache";
 import "@/styles/pages/tailor-availability-view.css";
 
 interface TimeSlot {
@@ -37,11 +39,19 @@ const defaultSlots: TimeSlot[] = [
 const KEY_TAILOR_AVAILABILITY = "sui_dhaga_tailor_availability";
 
 export function TailorAvailabilityPage() {
+  const cachedUser = useCachedEntry<ApiResponse<UserProfile>>("user", "me", { scope: "auth" });
+  const cachedTailorId = cachedUser?.data?.data?.id || null;
+  const cachedAvailability = useCachedEntry<ApiResponse<AvailabilitySlot[]>>(
+    "tailors",
+    cachedTailorId ? `availability:${cachedTailorId}` : "__none__",
+    { scope: "public" }
+  );
+
   const [selectedDay, setSelectedDay] = useState<number>(20);
   const [selectedMonth, setSelectedMonth] = useState<string>("May 2024");
-  const [slots, setSlots] = useState<TimeSlot[]>(defaultSlots);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [currentTailorId, setCurrentTailorId] = useState<string | null>(null);
+  const [slotsOverride, setSlotsOverride] = useState<TimeSlot[] | null>(null);
+  const [fallbackSlots, setFallbackSlots] = useState<TimeSlot[] | null>(null);
+  const [fetchedTailorId, setFetchedTailorId] = useState<string | null>(null);
   const [blockedDates, setBlockedDates] = useState<string[]>([
     "25 May 2024",
     "24 May 2024"
@@ -51,26 +61,44 @@ export function TailorAvailabilityPage() {
   const [newSlotEnd, setNewSlotEnd] = useState("08:00 PM");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Load from live database or fallback to localStorage
+  const currentTailorId = fetchedTailorId ?? cachedTailorId;
+
+  const cachedMappedSlots = useMemo(() => {
+    const raw = cachedAvailability?.data;
+    if (!Array.isArray(raw) || raw.length === 0) return null;
+    return raw.map((s) => ({
+      id: s.id,
+      label: `${s.startTime || "09:00 AM"} - ${s.endTime || "05:00 PM"}`,
+      enabled: s.isAvailable !== false
+    }));
+  }, [cachedAvailability]);
+
+  const slots = slotsOverride ?? cachedMappedSlots ?? fallbackSlots ?? defaultSlots;
+  const isLoading = slotsOverride === null && cachedMappedSlots === null && fallbackSlots === null;
+
+  // Load from live database only when cache misses, or fallback to localStorage
   useEffect(() => {
+    if (cachedMappedSlots) return;
+    let active = true;
+
     async function loadAvailability() {
-      setIsLoading(true);
       try {
         const userRes = await userService.getMe();
+        if (!active) return;
         if (userRes?.data?.id) {
-          setCurrentTailorId(userRes.data.id);
+          setFetchedTailorId(userRes.data.id);
           const avRes = await tailorService.getAvailability(userRes.data.id);
+          if (!active) return;
           if (avRes?.data && Array.isArray(avRes.data) && avRes.data.length > 0) {
             const mappedSlots: TimeSlot[] = avRes.data.map((s) => ({
               id: s.id,
               label: `${s.startTime || "09:00 AM"} - ${s.endTime || "05:00 PM"}`,
               enabled: s.isAvailable !== false
             }));
-            setSlots(mappedSlots);
+            setFallbackSlots(mappedSlots);
             if (typeof window !== "undefined") {
               localStorage.setItem(KEY_TAILOR_AVAILABILITY, JSON.stringify({ slots: mappedSlots, blockedDates }));
             }
-            setIsLoading(false);
             return;
           }
         }
@@ -78,30 +106,37 @@ export function TailorAvailabilityPage() {
         console.warn("Could not fetch availability schedule from backend:", err);
       }
 
+      if (!active) return;
       if (typeof window !== "undefined") {
         try {
           const saved = localStorage.getItem(KEY_TAILOR_AVAILABILITY);
           if (saved) {
-            const parsed = JSON.parse(saved);
-            if (parsed.slots) setSlots(parsed.slots);
+            const parsed = JSON.parse(saved) as { slots?: TimeSlot[]; blockedDates?: string[] };
             if (parsed.blockedDates) setBlockedDates(parsed.blockedDates);
+            if (parsed.slots) {
+              setFallbackSlots(parsed.slots);
+              return;
+            }
           }
         } catch (e) {
           console.warn("Failed to load availability from localStorage:", e);
         }
       }
-      setIsLoading(false);
+      setFallbackSlots(defaultSlots);
     }
 
     loadAvailability();
-  }, []);
+    return () => {
+      active = false;
+    };
+  }, [cachedMappedSlots, blockedDates]);
 
   const selectedDateString = `${selectedDay} ${selectedMonth}`;
   const isSelectedDateBlocked = blockedDates.includes(selectedDateString);
 
   const toggleSlotEnabled = (id: string) => {
-    setSlots((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, enabled: !s.enabled } : s))
+    setSlotsOverride(
+      slots.map((s) => (s.id === id ? { ...s, enabled: !s.enabled } : s))
     );
   };
 
@@ -127,7 +162,7 @@ export function TailorAvailabilityPage() {
       }
     }
 
-    setSlots([...slots, newSlot]);
+    setSlotsOverride([...slots, newSlot]);
     setIsAddSlotOpen(false);
     setToastMessage(`✓ Added time slot ${label}`);
   };
@@ -153,6 +188,7 @@ export function TailorAvailabilityPage() {
         console.warn("Failed to save availability:", e);
       }
     }
+    invalidateCacheDomain("tailors");
     setToastMessage("🎉 Working hours and booking availability saved successfully!");
   };
 

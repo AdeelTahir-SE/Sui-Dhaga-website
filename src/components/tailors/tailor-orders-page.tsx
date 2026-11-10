@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import {
   ShoppingBag,
@@ -21,6 +21,8 @@ import { TailorSidebar } from "@/components/tailors/tailor-sidebar";
 import { AdminToast } from "@/components/admin/admin-toast";
 import { TableSkeleton } from "@/components/common/shadow-skeleton";
 import { orderService } from "@/lib/api/order-service";
+import { ApiResponse, Order, OrderStatus } from "@/lib/api/types";
+import { useCachedEntry } from "@/lib/api/data-cache";
 import "@/styles/pages/tailor-orders-view.css";
 
 export type TailorOrderStatus = "new" | "in_progress" | "completed" | "cancelled";
@@ -237,90 +239,109 @@ const KEY_TAILOR_ORDERS = "sui_dhaga_tailor_orders_list";
 
 import { useRouter } from "next/navigation";
 
+// Map backend Order object to TailorOrderItem (pure helper)
+function mapBackendOrderToTailorOrder(
+  o: Order & { fabric_details?: string; total_amount?: number }
+): TailorOrderItem {
+  const num = o.id ? o.id.replace(/[^a-zA-Z0-9]/g, "").slice(-4).toUpperCase() : "1206";
+  const rawStatus = (o.status || "").toLowerCase();
+  const status: TailorOrderStatus =
+    ["pending", "confirmed"].includes(rawStatus) ? "new"
+    : ["in_progress", "cutting", "stitching", "quality_check"].includes(rawStatus) ? "in_progress"
+    : ["completed", "delivered", "ready"].includes(rawStatus) ? "completed"
+    : rawStatus === "cancelled" ? "cancelled"
+    : "new";
+
+  return {
+    id: o.id,
+    orderNumber: `SD${num}`,
+    customerName: o.customer?.full_name || o.customer?.name || "Verified Customer",
+    customerPhone: o.customer?.phone || "+92 300 1234567",
+    customerEmail: o.customer?.email || "customer@example.com",
+    customerAvatar: o.customer?.avatar_url || "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120&auto=format&fit=crop&q=80",
+    itemTitle: o.service?.title || o.notes?.slice(0, 30) || "Custom Bespoke Outfit",
+    category: o.service?.category || "Bespoke Wear",
+    fabricDetails: o.fabric_details || o.notes || "Customer Specified Fabric",
+    amount: o.total_price || o.total_amount || o.amount || 2500,
+    date: o.created_at ? new Date(o.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "Recent",
+    expectedDelivery: o.delivery_date ? new Date(o.delivery_date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "In 7 Days",
+    status,
+    measurementsSummary: o.measurements ? (typeof o.measurements === "object" ? Object.entries(o.measurements).map(([k, v]) => `${k}: ${v}`).join(", ") : String(o.measurements)) : undefined,
+    notes: o.notes || undefined
+  };
+}
+
 export function TailorOrdersPage() {
   const router = useRouter();
-  const [orders, setOrders] = useState<TailorOrderItem[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const cachedOrdersRes = useCachedEntry<ApiResponse<Order[]>>("orders", "list:{}", {
+    scope: "auth"
+  });
+  const [localOrders, setLocalOrders] = useState<TailorOrderItem[] | null>(null);
+  const [fallbackOrders, setFallbackOrders] = useState<TailorOrderItem[] | null>(null);
   const [activeTab, setActiveTab] = useState<string>("all");
   const [selectedOrder, setSelectedOrder] = useState<TailorOrderItem | null>(null);
   const [newStatus, setNewStatus] = useState<TailorOrderStatus>("in_progress");
   const [statusNote, setStatusNote] = useState("");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Map backend Order object to TailorOrderItem
-  const mapBackendOrderToTailorOrder = (o: any): TailorOrderItem => {
-    const num = o.id ? o.id.replace(/[^a-zA-Z0-9]/g, "").slice(-4).toUpperCase() : "1206";
-    const rawStatus = (o.status || "").toLowerCase();
-    const status: TailorOrderStatus =
-      ["pending", "confirmed"].includes(rawStatus) ? "new"
-      : ["in_progress", "cutting", "stitching", "quality_check"].includes(rawStatus) ? "in_progress"
-      : ["completed", "delivered", "ready"].includes(rawStatus) ? "completed"
-      : rawStatus === "cancelled" ? "cancelled"
-      : "new";
+  const orders = useMemo(() => {
+    if (localOrders) return localOrders;
+    if (cachedOrdersRes?.data && Array.isArray(cachedOrdersRes.data)) {
+      return cachedOrdersRes.data.map(mapBackendOrderToTailorOrder);
+    }
+    return fallbackOrders ?? [];
+  }, [localOrders, cachedOrdersRes, fallbackOrders]);
 
-    return {
-      id: o.id,
-      orderNumber: `SD${num}`,
-      customerName: o.customer?.full_name || o.customer?.name || "Verified Customer",
-      customerPhone: o.customer?.phone || "+92 300 1234567",
-      customerEmail: o.customer?.email || "customer@example.com",
-      customerAvatar: o.customer?.avatar_url || "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120&auto=format&fit=crop&q=80",
-      itemTitle: o.service?.title || o.notes?.slice(0, 30) || "Custom Bespoke Outfit",
-      category: o.service?.category || "Bespoke Wear",
-      fabricDetails: o.fabric_details || o.notes || "Customer Specified Fabric",
-      amount: o.total_price || o.total_amount || o.amount || 2500,
-      date: o.created_at ? new Date(o.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "Recent",
-      expectedDelivery: o.delivery_date ? new Date(o.delivery_date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "In 7 Days",
-      status,
-      measurementsSummary: o.measurements ? (typeof o.measurements === "object" ? Object.entries(o.measurements).map(([k, v]) => `${k}: ${v}`).join(", ") : String(o.measurements)) : undefined,
-      notes: o.notes || undefined
-    };
-  };
+  const isLoading = !cachedOrdersRes && fallbackOrders === null && localOrders === null;
 
-  // Load from live backend database or localStorage fallback
+  // Load from live backend database only when cache misses, or fallback to localStorage
   useEffect(() => {
+    if (cachedOrdersRes) return;
+    let active = true;
+
     async function loadOrders() {
-      setIsLoading(true);
       try {
         const hasToken = typeof window !== "undefined" && !!localStorage.getItem("sui_dhaga_auth_token");
         const res = await orderService.getOrders();
+        if (!active) return;
         if (res?.data && Array.isArray(res.data) && res.data.length > 0) {
           const liveOrders = res.data.map(mapBackendOrderToTailorOrder);
-          setOrders(liveOrders);
+          setFallbackOrders(liveOrders);
           if (typeof window !== "undefined") {
             localStorage.setItem(KEY_TAILOR_ORDERS, JSON.stringify(liveOrders));
           }
-          setIsLoading(false);
           return;
         } else if (hasToken && res?.data && Array.isArray(res.data)) {
-          setOrders([]);
-          setIsLoading(false);
+          setFallbackOrders([]);
           return;
         }
       } catch (err) {
         console.warn("Could not fetch live tailor orders from backend, checking cache/mock:", err);
       }
 
+      if (!active) return;
       if (typeof window !== "undefined") {
         try {
           const saved = localStorage.getItem(KEY_TAILOR_ORDERS);
           if (saved) {
-            setOrders(JSON.parse(saved));
-          } else {
-            setOrders(initialOrdersList);
+            setFallbackOrders(JSON.parse(saved) as TailorOrderItem[]);
+            return;
           }
         } catch (e) {
           console.warn("Failed to load orders from localStorage:", e);
         }
       }
-      setIsLoading(false);
+      setFallbackOrders(initialOrdersList);
     }
 
     loadOrders();
-  }, []);
+    return () => {
+      active = false;
+    };
+  }, [cachedOrdersRes]);
 
   const saveOrdersToStorage = (updated: TailorOrderItem[]) => {
-    setOrders(updated);
+    setLocalOrders(updated);
     if (typeof window !== "undefined") {
       try {
         localStorage.setItem(KEY_TAILOR_ORDERS, JSON.stringify(updated));
@@ -357,7 +378,7 @@ export function TailorOrdersPage() {
     if (!selectedOrder) return;
 
     // Persist status change to live backend endpoint
-    const backendStatusMap: Record<TailorOrderStatus, any> = {
+    const backendStatusMap: Record<TailorOrderStatus, OrderStatus> = {
       new: "confirmed",
       in_progress: "in_progress",
       completed: "completed",

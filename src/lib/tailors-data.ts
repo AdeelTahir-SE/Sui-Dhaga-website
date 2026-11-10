@@ -1,4 +1,10 @@
 import { tailorService, reviewService } from "./api";
+import {
+  getCachedValue,
+  invalidateCacheDomain,
+  setCachedValue,
+  stableCacheKey,
+} from "./api/data-cache";
 
 export interface TailorPackage {
   id: string;
@@ -368,16 +374,53 @@ export function getTailors(filters: FilterOptions = {}, page = 1, pageSize = 4):
   };
 }
 
+export function getTailorsCacheKey(
+  filters: FilterOptions = {},
+  page = 1,
+  pageSize = 4
+): string {
+  return `mapped-list:${stableCacheKey({ ...(filters as Record<string, unknown>), page, pageSize })}`;
+}
+
+export function getTailorDetailCacheKey(id: string): string {
+  return `mapped-item:${id}`;
+}
+
+export function getCachedTailors(
+  filters: FilterOptions = {},
+  page = 1,
+  pageSize = 4
+): PaginatedTailorsResponse | undefined {
+  return getCachedValue<PaginatedTailorsResponse>(
+    "tailors",
+    getTailorsCacheKey(filters, page, pageSize),
+    { scope: "public" }
+  );
+}
+
+export function getCachedTailorById(id: string): TailorItem | undefined {
+  return getCachedValue<TailorItem>("tailors", getTailorDetailCacheKey(id), {
+    scope: "public",
+  });
+}
+
 /**
  * Async API Data fetcher configured for seamless backend REST integration.
- * Automatically connects to process.env.NEXT_PUBLIC_API_URL if defined,
- * with graceful fallback to local data service if backend is offline.
+ * Automatically checks persistent cache first so unchanged queries do not refetch.
  */
 export async function fetchTailorsApi(
   filters: FilterOptions = {},
   page = 1,
   pageSize = 4
 ): Promise<PaginatedTailorsResponse> {
+  const mappedKey = getTailorsCacheKey(filters, page, pageSize);
+  const cached = getCachedValue<PaginatedTailorsResponse>("tailors", mappedKey, {
+    scope: "public",
+  });
+  if (cached) {
+    return cached;
+  }
+
   try {
     const res = await tailorService.getTailors({
       page,
@@ -391,13 +434,15 @@ export async function fetchTailorsApi(
     if (res?.success && Array.isArray(res.data) && res.data.length > 0) {
       const mapped = res.data.map((t, idx) => mapBackendTailorToItem(t, idx));
       const total = res.pagination?.total ?? mapped.length;
-      return {
+      const response: PaginatedTailorsResponse = {
         tailors: mapped,
         totalCount: total,
         hasMore: page * pageSize < total,
         page,
         pageSize,
       };
+      setCachedValue("tailors", mappedKey, response, { scope: "public" });
+      return response;
     }
   } catch (err) {
     console.warn("[Tailors API] Live endpoint fallback to mock data:", err);
@@ -407,10 +452,20 @@ export async function fetchTailorsApi(
 }
 
 export async function fetchTailorByIdApi(id: string): Promise<TailorItem | undefined> {
+  const detailKey = getTailorDetailCacheKey(id);
+  const cached = getCachedValue<TailorItem>("tailors", detailKey, {
+    scope: "public",
+  });
+  if (cached) {
+    return cached;
+  }
+
   try {
     const res = await tailorService.getTailorById(id);
     if (res?.success && res.data) {
-      return mapBackendTailorToItem(res.data);
+      const item = mapBackendTailorToItem(res.data);
+      setCachedValue("tailors", detailKey, item, { scope: "public" });
+      return item;
     }
   } catch (err) {
     console.warn("[Tailors API] Live tailor detail fallback to mock data:", err);
@@ -452,7 +507,7 @@ export async function createTailorProfileApi(
       return { success: true, tailor: mapBackendTailorToItem(res.data) };
     }
     return { success: false, error: res?.message || "Failed to create profile" };
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.warn("[Tailor Profile API] Create profile failed, using local mock:", err);
   }
 
@@ -468,6 +523,7 @@ export async function createTailorProfileApi(
     name: profileData.name || "Custom Tailor"
   };
   initialTailors.push(mockTailor);
+  invalidateCacheDomain("tailors");
   return { success: true, tailor: mockTailor };
 }
 
@@ -616,48 +672,53 @@ export function getTailorById(id: string): TailorItem | undefined {
 /**
  * Maps raw backend TailorProfile payload to UI TailorItem
  */
-export function mapBackendTailorToItem(t: any, index: number = 0): TailorItem {
+export function mapBackendTailorToItem(rawT: unknown, index: number = 0): TailorItem {
+  const t = rawT as Record<string, unknown>;
+  const servicesList = Array.isArray(t.services) ? (t.services as Array<Record<string, unknown>>) : undefined;
+  const specialtiesList = Array.isArray(t.specialties) ? (t.specialties as string[]) : undefined;
+  const firstPrice = servicesList?.[0]?.price;
+
   return {
-    id: t.id || `tailor-${index + 1}`,
-    name: t.shopName || t.shop_name || t.name || "Bespoke Tailor",
-    handle: `@${(t.shopName || t.shop_name || t.name || "tailor").toLowerCase().replace(/[^a-z0-9]/g, "-")}`,
-    owner: t.name || t.owner || "Master Craftsman",
+    id: String(t.id || `tailor-${index + 1}`),
+    name: String(t.shopName || t.shop_name || t.name || "Bespoke Tailor"),
+    handle: `@${String(t.shopName || t.shop_name || t.name || "tailor").toLowerCase().replace(/[^a-z0-9]/g, "-")}`,
+    owner: String(t.name || t.owner || "Master Craftsman"),
     rating: Number(t.rating) || 4.9,
     reviewsCount: Number(t.reviewsCount || t.review_count) || 120,
     distance: "2.4 km away",
     distanceKm: 2.4,
-    startingPrice: t.services?.[0]?.price ? `PKR ${t.services[0].price}` : "PKR 1,500",
-    priceValue: t.services?.[0]?.price ? Number(t.services[0].price) : 1500,
+    startingPrice: firstPrice ? `PKR ${firstPrice}` : "PKR 1,500",
+    priceValue: firstPrice ? Number(firstPrice) : 1500,
     turnaroundTime: "3-5 days",
-    specialties: t.specialties?.length ? t.specialties : ["Bespoke Tailoring", "Traditional Fits"],
-    services: t.services?.map((s: any) => s.title) || ["Custom Stitching", "Alterations"],
-    city: t.city || "Lahore",
-    locality: t.address || t.city || "City Center",
-    address: t.address || `${t.city || "Lahore"}, Pakistan`,
-    lat: t.lat || 31.5204 + index * 0.01,
-    lng: t.lng || 74.3587 + index * 0.01,
-    image: t.avatar_url || t.avatar || "https://images.unsplash.com/photo-1582533561751-ef6f6ab93a2e?w=800&auto=format&fit=crop&q=80",
+    specialties: specialtiesList?.length ? specialtiesList : ["Bespoke Tailoring", "Traditional Fits"],
+    services: servicesList?.map((s) => String(s.title)) || ["Custom Stitching", "Alterations"],
+    city: String(t.city || "Lahore"),
+    locality: String(t.address || t.city || "City Center"),
+    address: String(t.address || `${t.city || "Lahore"}, Pakistan`),
+    lat: Number(t.lat) || 31.5204 + index * 0.01,
+    lng: Number(t.lng) || 74.3587 + index * 0.01,
+    image: String(t.avatar_url || t.avatar || "https://images.unsplash.com/photo-1582533561751-ef6f6ab93a2e?w=800&auto=format&fit=crop&q=80"),
     topRated: true,
-    verified: t.isVerified ?? t.is_verified ?? true,
-    about: t.bio || "Dedicated tailor specializing in fine couture and handcrafted stitching.",
+    verified: Boolean(t.isVerified ?? t.is_verified ?? true),
+    about: String(t.bio || "Dedicated tailor specializing in fine couture and handcrafted stitching."),
     experience: t.experienceYears ? `${t.experienceYears}+ years` : "10+ years",
     happyCustomers: "500+",
     onTimeDelivery: "99%",
     similarOutfitPrice: "PKR 2,200",
     reviewsSummary: "Consistently rated top tier for precise measurements and craftsmanship.",
     gallery: [
-      t.banner_url || "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=800&auto=format&fit=crop&q=80",
+      String(t.banner_url || "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=800&auto=format&fit=crop&q=80"),
       "https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=800&auto=format&fit=crop&q=80",
       "https://images.unsplash.com/photo-1582533561751-ef6f6ab93a2e?w=800&auto=format&fit=crop&q=80"
     ],
-    packages: t.services?.map((s: any, sIdx: number) => ({
-      id: s.id || `pkg-${sIdx + 1}`,
-      name: s.title,
+    packages: servicesList?.map((s, sIdx: number) => ({
+      id: String(s.id || `pkg-${sIdx + 1}`),
+      name: String(s.title || "Stitching Service"),
       price: `PKR ${s.price}`,
       priceValue: Number(s.price),
       turnaround: "3-5 days",
       popular: sIdx === 0,
-      features: [s.description || "Fine Stitching", "Perfect Fit Guarantee", "1 Free Alteration"]
+      features: [String(s.description || "Fine Stitching"), "Perfect Fit Guarantee", "1 Free Alteration"]
     })) || [
       {
         id: "pkg-basic",

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   DollarSign,
   TrendingUp,
@@ -18,6 +18,8 @@ import { TailorSidebar } from "@/components/tailors/tailor-sidebar";
 import { AdminToast } from "@/components/admin/admin-toast";
 import { DashboardStatsSkeleton, NotificationListSkeleton } from "@/components/common/shadow-skeleton";
 import { orderService } from "@/lib/api/order-service";
+import { ApiResponse, Order } from "@/lib/api/types";
+import { useCachedEntry } from "@/lib/api/data-cache";
 import "@/styles/pages/tailor-earnings-view.css";
 
 interface WithdrawalRecord {
@@ -46,33 +48,74 @@ const chartPointsData = [
 const KEY_TAILOR_EARNINGS = "sui_dhaga_tailor_earnings_records";
 
 export function TailorEarningsPage() {
-  const [totalEarnings, setTotalEarnings] = useState(0);
-  const [monthlyEarnings, setMonthlyEarnings] = useState(0);
-  const [completedOrders, setCompletedOrders] = useState(0);
-  const [pendingPayments, setPendingPayments] = useState(0);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-
-  const [withdrawals, setWithdrawals] = useState<WithdrawalRecord[]>(initialWithdrawals);
+  const cachedOrdersRes = useCachedEntry<ApiResponse<Order[]>>("orders", "list:{}", {
+    scope: "auth"
+  });
+  const [fallbackMetrics, setFallbackMetrics] = useState<{
+    totalEarnings: number;
+    monthlyEarnings: number;
+    completedOrders: number;
+    pendingPayments: number;
+    withdrawals?: WithdrawalRecord[];
+  } | null>(null);
+  const [monthlyOverride, setMonthlyOverride] = useState<number | null>(null);
+  const [withdrawalsOverride, setWithdrawalsOverride] = useState<WithdrawalRecord[] | null>(null);
   const [selectedPoint, setSelectedPoint] = useState(chartPointsData[3]); // 20 May (₹2,850) matching screenshot
   const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState("5000");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Load from live database or fallback to localStorage
+  const computedFromCache = useMemo(() => {
+    const orders = cachedOrdersRes?.data;
+    if (!Array.isArray(orders) || orders.length === 0) return null;
+    const completedList = orders.filter((o) =>
+      ["completed", "delivered", "ready"].includes((o.status || "").toLowerCase())
+    );
+    const inProgressList = orders.filter(
+      (o) => !["completed", "delivered", "ready", "cancelled"].includes((o.status || "").toLowerCase())
+    );
+    const completedEarnings = completedList.reduce(
+      (acc, o) => acc + (o.total_price || o.total_amount || o.amount || 0),
+      0
+    );
+    const pendingEarnings = inProgressList.reduce(
+      (acc, o) => acc + (o.total_price || o.total_amount || o.amount || 0),
+      0
+    );
+    const computedTotal = completedEarnings + pendingEarnings;
+    if (computedTotal <= 0) return null;
+    return {
+      totalEarnings: computedTotal,
+      monthlyEarnings: completedEarnings || computedTotal,
+      completedOrders: completedList.length,
+      pendingPayments: pendingEarnings
+    };
+  }, [cachedOrdersRes]);
+
+  const totalEarnings = computedFromCache?.totalEarnings ?? fallbackMetrics?.totalEarnings ?? 0;
+  const monthlyEarnings = monthlyOverride ?? computedFromCache?.monthlyEarnings ?? fallbackMetrics?.monthlyEarnings ?? 0;
+  const completedOrders = computedFromCache?.completedOrders ?? fallbackMetrics?.completedOrders ?? 0;
+  const pendingPayments = computedFromCache?.pendingPayments ?? fallbackMetrics?.pendingPayments ?? 0;
+  const withdrawals = withdrawalsOverride ?? fallbackMetrics?.withdrawals ?? initialWithdrawals;
+  const isLoading = !computedFromCache && fallbackMetrics === null;
+
+  // Load from live database only when cache misses, or fallback to localStorage
   useEffect(() => {
+    if (computedFromCache) return;
+    let active = true;
+
     async function loadEarningsFromOrders() {
-      setIsLoading(true);
       try {
         const res = await orderService.getOrders();
+        if (!active) return;
         if (res?.data && Array.isArray(res.data) && res.data.length > 0) {
           const orders = res.data;
           const completedList = orders.filter((o) =>
             ["completed", "delivered", "ready"].includes((o.status || "").toLowerCase())
           );
-          const inProgressList = orders.filter((o) =>
-            !["completed", "delivered", "ready", "cancelled"].includes((o.status || "").toLowerCase())
+          const inProgressList = orders.filter(
+            (o) => !["completed", "delivered", "ready", "cancelled"].includes((o.status || "").toLowerCase())
           );
-
           const completedEarnings = completedList.reduce(
             (acc, o) => acc + (o.total_price || o.total_amount || o.amount || 0),
             0
@@ -82,13 +125,13 @@ export function TailorEarningsPage() {
             0
           );
           const computedTotal = completedEarnings + pendingEarnings;
-
           if (computedTotal > 0) {
-            setTotalEarnings(computedTotal);
-            setMonthlyEarnings(completedEarnings || computedTotal);
-            setCompletedOrders(completedList.length);
-            setPendingPayments(pendingEarnings);
-            setIsLoading(false);
+            setFallbackMetrics({
+              totalEarnings: computedTotal,
+              monthlyEarnings: completedEarnings || computedTotal,
+              completedOrders: completedList.length,
+              pendingPayments: pendingEarnings
+            });
             return;
           }
         }
@@ -96,29 +139,42 @@ export function TailorEarningsPage() {
         console.warn("Could not calculate live earnings from backend orders:", err);
       }
 
+      if (!active) return;
       if (typeof window !== "undefined") {
         try {
           const saved = localStorage.getItem(KEY_TAILOR_EARNINGS);
           if (saved) {
-            const parsed = JSON.parse(saved);
-            if (parsed.withdrawals) setWithdrawals(parsed.withdrawals);
-            if (parsed.totalEarnings) setTotalEarnings(parsed.totalEarnings);
-            if (parsed.monthlyEarnings) setMonthlyEarnings(parsed.monthlyEarnings);
-          } else {
-            setTotalEarnings(48650);
-            setMonthlyEarnings(38250);
-            setCompletedOrders(42);
-            setPendingPayments(6400);
+            const parsed = JSON.parse(saved) as {
+              withdrawals?: WithdrawalRecord[];
+              totalEarnings?: number;
+              monthlyEarnings?: number;
+            };
+            setFallbackMetrics({
+              totalEarnings: parsed.totalEarnings || 48650,
+              monthlyEarnings: parsed.monthlyEarnings || 38250,
+              completedOrders: 42,
+              pendingPayments: 6400,
+              withdrawals: parsed.withdrawals
+            });
+            return;
           }
         } catch (e) {
           console.warn("Failed to load earnings from localStorage:", e);
         }
       }
-      setIsLoading(false);
+      setFallbackMetrics({
+        totalEarnings: 48650,
+        monthlyEarnings: 38250,
+        completedOrders: 42,
+        pendingPayments: 6400
+      });
     }
 
     loadEarningsFromOrders();
-  }, []);
+    return () => {
+      active = false;
+    };
+  }, [computedFromCache]);
 
   const handleWithdrawSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -137,8 +193,8 @@ export function TailorEarningsPage() {
 
     const updatedWithdrawals = [newRecord, ...withdrawals];
     const newMonthly = monthlyEarnings - amountNum;
-    setWithdrawals(updatedWithdrawals);
-    setMonthlyEarnings(newMonthly);
+    setWithdrawalsOverride(updatedWithdrawals);
+    setMonthlyOverride(newMonthly);
 
     if (typeof window !== "undefined") {
       try {

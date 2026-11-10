@@ -19,7 +19,14 @@ import {
 } from "lucide-react";
 import { PublicShell } from "@/components/common/site-shell";
 import { ProfileHeaderSkeleton, CardsGridSkeleton } from "@/components/common/shadow-skeleton";
-import { getTailorById, fetchTailorByIdApi, toggleWishlistApi, TailorItem } from "@/lib/tailors-data";
+import {
+  getTailorById,
+  fetchTailorByIdApi,
+  getTailorDetailCacheKey,
+  toggleWishlistApi,
+  TailorItem
+} from "@/lib/tailors-data";
+import { useCachedEntry } from "@/lib/api/data-cache";
 
 interface TailorProfilePageProps {
   tailorId?: string;
@@ -29,33 +36,41 @@ export function TailorProfilePage({ tailorId: propTailorId }: TailorProfilePageP
   const params = useParams();
   const activeId = propTailorId || (params?.tailorId as string) || "rekha-tailors";
 
-  const [tailor, setTailor] = useState<TailorItem | undefined>(() => getTailorById(activeId));
+  const detailKey = getTailorDetailCacheKey(activeId);
+  const cachedEntry = useCachedEntry<TailorItem>("tailors", detailKey, { scope: "public" });
+  const [fallbackState, setFallbackState] = useState<{
+    id: string;
+    data: TailorItem | undefined;
+  } | null>(null);
   const [activeImageIndex, setActiveImageIndex] = useState<number>(0);
   const [isWishlisted, setIsWishlisted] = useState<boolean>(false);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   useEffect(() => {
+    if (cachedEntry) return;
     let isSubscribed = true;
-    setIsLoading(true);
 
     fetchTailorByIdApi(activeId)
       .then((data) => {
-        if (isSubscribed && data) {
-          setTailor(data);
-          setIsLoading(false);
+        if (isSubscribed) {
+          setFallbackState({ id: activeId, data: data ?? getTailorById(activeId) });
         }
       })
       .catch((err) => {
         if (isSubscribed) {
           console.error("[Tailor Profile] Fetch error:", err);
-          setIsLoading(false);
+          setFallbackState({ id: activeId, data: getTailorById(activeId) });
         }
       });
 
     return () => {
       isSubscribed = false;
     };
-  }, [activeId]);
+  }, [activeId, cachedEntry]);
+
+  const tailor =
+    cachedEntry?.data ??
+    (fallbackState?.id === activeId ? fallbackState.data : getTailorById(activeId));
+  const isLoading = !cachedEntry && fallbackState?.id !== activeId;
 
   if (isLoading && !tailor) {
     return (

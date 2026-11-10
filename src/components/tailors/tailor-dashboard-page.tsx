@@ -19,28 +19,41 @@ import { TailorSidebar } from "@/components/tailors/tailor-sidebar";
 import { Skeleton, DashboardStatsSkeleton } from "@/components/common/shadow-skeleton";
 import {
   tailorDashboardService,
+  TAILOR_DASHBOARD_CACHE_KEY,
   TailorDashboardData,
   initialTailorDashboardData
 } from "@/lib/tailor-dashboard-data";
+import { useCachedEntry } from "@/lib/api/data-cache";
 import "@/styles/pages/tailor-dashboard-view.css";
 
 export function TailorDashboardPage() {
-  const [data, setData] = useState<TailorDashboardData>(initialTailorDashboardData);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const cachedEntry = useCachedEntry<TailorDashboardData>("dashboard", TAILOR_DASHBOARD_CACHE_KEY, {
+    scope: "auth"
+  });
+  const [fallbackData, setFallbackData] = useState<TailorDashboardData | null>(null);
 
   useEffect(() => {
+    if (cachedEntry) return;
+    let active = true;
+
     async function loadData() {
       try {
         const res = await tailorDashboardService.getDashboardData();
-        setData(res);
+        if (active) setFallbackData(res);
       } catch (err) {
         console.error("Failed to fetch tailor dashboard data:", err);
-      } finally {
-        setIsLoading(false);
+        if (active) setFallbackData(initialTailorDashboardData);
       }
     }
     loadData();
-  }, []);
+
+    return () => {
+      active = false;
+    };
+  }, [cachedEntry]);
+
+  const data = cachedEntry?.data ?? fallbackData ?? initialTailorDashboardData;
+  const isLoading = !cachedEntry && !fallbackData;
 
   const { tailor, overview, todayAppointments, newOrders, recentMessages, earningsSummary } = data;
 

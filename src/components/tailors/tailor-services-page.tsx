@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Plus,
   Edit2,
@@ -18,6 +18,8 @@ import { AdminToast } from "@/components/admin/admin-toast";
 import { TableSkeleton } from "@/components/common/shadow-skeleton";
 import { tailorService } from "@/lib/api/tailor-service";
 import { userService } from "@/lib/api/user-service";
+import { ApiResponse, TailorProfile, TailorService, UserProfile } from "@/lib/api/types";
+import { invalidateCacheDomain, useCachedEntry } from "@/lib/api/data-cache";
 import "@/styles/pages/tailor-services-view.css";
 
 export interface TailorServiceRecord {
@@ -83,13 +85,23 @@ const initialTailorServices: TailorServiceRecord[] = [
 const KEY_TAILOR_SERVICES = "sui_dhaga_tailor_services_list";
 
 export function TailorServicesPage() {
-  const [services, setServices] = useState<TailorServiceRecord[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [currentTailorId, setCurrentTailorId] = useState<string | null>(null);
+  const cachedUser = useCachedEntry<ApiResponse<UserProfile>>("user", "me", { scope: "auth" });
+  const tailorIdFromCache = cachedUser?.data?.data?.id || null;
+  const cachedTailor = useCachedEntry<ApiResponse<TailorProfile>>(
+    "tailors",
+    tailorIdFromCache ? `detail:${tailorIdFromCache}` : "__none__",
+    { scope: "public" }
+  );
+
+  const [localServices, setLocalServices] = useState<TailorServiceRecord[] | null>(null);
+  const [fallbackServices, setFallbackServices] = useState<TailorServiceRecord[] | null>(null);
+  const [fetchedTailorId, setFetchedTailorId] = useState<string | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingService, setEditingService] = useState<TailorServiceRecord | null>(null);
   const [deletingService, setDeletingService] = useState<TailorServiceRecord | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const currentTailorId = fetchedTailorId ?? tailorIdFromCache;
 
   // Form State for Add / Edit
   const [formData, setFormData] = useState({
@@ -100,29 +112,54 @@ export function TailorServicesPage() {
     status: "active" as "active" | "inactive"
   });
 
-  // Load from live database or localStorage fallback
+  const cachedMappedServices = useMemo(() => {
+    const rawSvcs = cachedTailor?.data?.data?.services;
+    if (!Array.isArray(rawSvcs) || rawSvcs.length === 0) return null;
+    return rawSvcs.map((s) => {
+      const svc = s as TailorService & { deliveryTime?: string };
+      return {
+        id: svc.id,
+        name: svc.title || svc.name || "Bespoke Garment",
+        category: svc.category || "Tailored Wear",
+        startingPrice: svc.price || 1500,
+        deliveryTime: svc.deliveryTime || "5 - 7 days",
+        status: "active" as const
+      };
+    });
+  }, [cachedTailor]);
+
+  const services = localServices ?? cachedMappedServices ?? fallbackServices ?? [];
+  const isLoading = localServices === null && cachedMappedServices === null && fallbackServices === null;
+
+  // Load from live database only when cache misses, or fallback to localStorage
   useEffect(() => {
+    if (cachedMappedServices) return;
+    let active = true;
+
     async function loadLiveServices() {
-      setIsLoading(true);
       try {
         const userRes = await userService.getMe();
+        if (!active) return;
         if (userRes?.data?.id) {
-          setCurrentTailorId(userRes.data.id);
+          setFetchedTailorId(userRes.data.id);
           const tailorRes = await tailorService.getTailorById(userRes.data.id);
+          if (!active) return;
           if (tailorRes?.data?.services && Array.isArray(tailorRes.data.services) && tailorRes.data.services.length > 0) {
-            const liveList: TailorServiceRecord[] = tailorRes.data.services.map((s) => ({
-              id: s.id,
-              name: s.title || (s as any).name || "Bespoke Garment",
-              category: s.category || "Tailored Wear",
-              startingPrice: s.price || 1500,
-              deliveryTime: (s as any).deliveryTime || "5 - 7 days",
-              status: "active"
-            }));
-            setServices(liveList);
+            const liveList: TailorServiceRecord[] = tailorRes.data.services.map((s) => {
+              const svc = s as TailorService & { deliveryTime?: string };
+              return {
+                id: svc.id,
+                name: svc.title || svc.name || "Bespoke Garment",
+                category: svc.category || "Tailored Wear",
+                startingPrice: svc.price || 1500,
+                deliveryTime: svc.deliveryTime || "5 - 7 days",
+                status: "active"
+              };
+            });
+            setFallbackServices(liveList);
             if (typeof window !== "undefined") {
               localStorage.setItem(KEY_TAILOR_SERVICES, JSON.stringify(liveList));
             }
-            setIsLoading(false);
             return;
           }
         }
@@ -130,26 +167,29 @@ export function TailorServicesPage() {
         console.warn("Could not fetch tailor services from backend:", err);
       }
 
+      if (!active) return;
       if (typeof window !== "undefined") {
         try {
           const saved = localStorage.getItem(KEY_TAILOR_SERVICES);
           if (saved) {
-            setServices(JSON.parse(saved));
-          } else {
-            setServices(initialTailorServices);
+            setFallbackServices(JSON.parse(saved) as TailorServiceRecord[]);
+            return;
           }
         } catch (e) {
           console.warn("Failed to load services from localStorage:", e);
         }
       }
-      setIsLoading(false);
+      setFallbackServices(initialTailorServices);
     }
 
     loadLiveServices();
-  }, []);
+    return () => {
+      active = false;
+    };
+  }, [cachedMappedServices]);
 
   const saveServicesToStorage = (updated: TailorServiceRecord[]) => {
-    setServices(updated);
+    setLocalServices(updated);
     if (typeof window !== "undefined") {
       try {
         localStorage.setItem(KEY_TAILOR_SERVICES, JSON.stringify(updated));
@@ -157,6 +197,7 @@ export function TailorServicesPage() {
         console.warn("Failed to save services to localStorage:", e);
       }
     }
+    invalidateCacheDomain("tailors");
   };
 
   const handleOpenAdd = () => {

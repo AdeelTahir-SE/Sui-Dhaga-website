@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import Link from "next/link";
 import {
   Star,
@@ -24,98 +24,130 @@ import { AdminToast } from "@/components/admin/admin-toast";
 import { ProfileHeaderSkeleton, CardsGridSkeleton } from "@/components/common/shadow-skeleton";
 import { userService } from "@/lib/api/user-service";
 import { tailorService } from "@/lib/api/tailor-service";
+import { ApiResponse, TailorProfile, UserProfile } from "@/lib/api/types";
+import { useCachedEntry } from "@/lib/api/data-cache";
 import "@/styles/pages/tailor-profile-view.css";
 
+const defaultBusinessProfile = {
+  shopName: "Verma Stitch Studio",
+  ownerName: "Arjun Verma",
+  avatar: "/images/tailor-onboarding-avatar.jpg",
+  rating: 4.8,
+  reviewsCount: 128,
+  memberSince: "May 2023",
+  specializesSummary: "Ethnic Wear, Wedding Wear, Men's Wear",
+  about:
+    "With over 8 years of experience, we bring your style to life with perfect stitching and attention to detail.",
+  specialties: [
+    "Anarkali Suits",
+    "Lehengas",
+    "Blouses",
+    "Sherwanis",
+    "Kurta Sets",
+    "Alterations"
+  ],
+  city: "Jaipur",
+  province: "Rajasthan",
+  address: "Shop #14, Main Market, Fashion Enclave",
+  servingRadiusKm: 15,
+  phone: "+91 98765-43210",
+  email: "arjunverma@email.com",
+  isVerified: true
+};
+
+type BusinessProfileState = typeof defaultBusinessProfile;
+
+function buildBusinessProfile(
+  rawUser: UserProfile,
+  tailorData: TailorProfile | null
+): BusinessProfileState {
+  const u = rawUser as UserProfile & {
+    shop_name?: string;
+    rating?: number;
+    reviewsCount?: number;
+    province?: string;
+  };
+  const tailorName = u.full_name || u.name || "Master Tailor";
+  return {
+    shopName: tailorData?.shopName || u.shop_name || `${tailorName}'s Studio`,
+    ownerName: tailorName,
+    avatar: u.avatar_url || tailorData?.avatar_url || "/images/tailor-onboarding-avatar.jpg",
+    rating: tailorData?.rating || u.rating || 4.8,
+    reviewsCount: tailorData?.reviewsCount || u.reviewsCount || 128,
+    memberSince: "May 2023",
+    specializesSummary: tailorData?.specialties
+      ? tailorData.specialties.join(", ")
+      : "Ethnic Wear, Wedding Wear, Men's Wear",
+    about:
+      tailorData?.bio ||
+      "With over 8 years of experience, we bring your style to life with perfect stitching and attention to detail.",
+    specialties: tailorData?.specialties || defaultBusinessProfile.specialties,
+    city: tailorData?.city || u.city || "Jaipur",
+    province: u.province || "Rajasthan",
+    address: tailorData?.address || u.address || "Shop #14, Main Market, Fashion Enclave",
+    servingRadiusKm: 15,
+    phone: u.phone || "+91 98765-43210",
+    email: u.email || "arjunverma@email.com",
+    isVerified: true
+  };
+}
+
 export function TailorBusinessProfilePage() {
+  const cachedUser = useCachedEntry<ApiResponse<UserProfile>>("user", "me", { scope: "auth" });
+  const uid = cachedUser?.data?.data?.id || null;
+  const cachedTailor = useCachedEntry<ApiResponse<TailorProfile>>(
+    "tailors",
+    uid ? `detail:${uid}` : "__none__",
+    { scope: "public" }
+  );
+
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [localProfile, setLocalProfile] = useState<BusinessProfileState | null>(null);
+  const [fallbackProfile, setFallbackProfile] = useState<BusinessProfileState | null>(null);
 
-  // Tailor Profile State
-  const [businessProfile, setBusinessProfile] = useState({
-    shopName: "Verma Stitch Studio",
-    ownerName: "Arjun Verma",
-    avatar: "/images/tailor-onboarding-avatar.jpg",
-    rating: 4.8,
-    reviewsCount: 128,
-    memberSince: "May 2023",
-    specializesSummary: "Ethnic Wear, Wedding Wear, Men's Wear",
-    about:
-      "With over 8 years of experience, we bring your style to life with perfect stitching and attention to detail.",
-    specialties: [
-      "Anarkali Suits",
-      "Lehengas",
-      "Blouses",
-      "Sherwanis",
-      "Kurta Sets",
-      "Alterations"
-    ],
-    city: "Jaipur",
-    province: "Rajasthan",
-    address: "Shop #14, Main Market, Fashion Enclave",
-    servingRadiusKm: 15,
-    phone: "+91 98765-43210",
-    email: "arjunverma@email.com",
-    isVerified: true
-  });
+  const cachedBuiltProfile = useMemo(() => {
+    if (!cachedUser?.data?.data) return null;
+    return buildBusinessProfile(cachedUser.data.data, cachedTailor?.data?.data ?? null);
+  }, [cachedUser, cachedTailor]);
+
+  const businessProfile = localProfile ?? cachedBuiltProfile ?? fallbackProfile ?? defaultBusinessProfile;
+  const isLoading = localProfile === null && cachedBuiltProfile === null && fallbackProfile === null;
 
   // Edit Form Temp State
-  const [editForm, setEditForm] = useState({ ...businessProfile });
+  const [editForm, setEditForm] = useState<BusinessProfileState>(businessProfile);
   const [newSpecialtyTag, setNewSpecialtyTag] = useState("");
-  const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  // Load from live backend
+  // Load from live backend only when cache misses
   React.useEffect(() => {
+    if (cachedBuiltProfile && cachedTailor) return;
+    let active = true;
+
     async function loadProfile() {
-      setIsLoading(true);
       try {
         const userRes = await userService.getMe();
+        if (!active) return;
         if (userRes?.data) {
-          const u = userRes.data;
-          const tailorName = u.full_name || u.name || "Master Tailor";
-          let tailorData: any = null;
+          let tailorData: TailorProfile | null = null;
           try {
-            const tRes = await tailorService.getTailorById(u.id);
-            tailorData = tRes?.data;
+            const tRes = await tailorService.getTailorById(userRes.data.id);
+            tailorData = tRes?.data ?? null;
           } catch {}
-
-          const profileData = {
-            shopName: tailorData?.shopName || (u as any).shop_name || `${tailorName}'s Studio`,
-            ownerName: tailorName,
-            avatar: u.avatar_url || tailorData?.avatar_url || "/images/tailor-onboarding-avatar.jpg",
-            rating: tailorData?.rating || (u as any).rating || 4.8,
-            reviewsCount: tailorData?.reviewsCount || (u as any).reviewsCount || 128,
-            memberSince: "May 2023",
-            specializesSummary: tailorData?.specialties ? tailorData.specialties.join(", ") : "Ethnic Wear, Wedding Wear, Men's Wear",
-            about: tailorData?.bio || "With over 8 years of experience, we bring your style to life with perfect stitching and attention to detail.",
-            specialties: tailorData?.specialties || [
-              "Anarkali Suits",
-              "Lehengas",
-              "Blouses",
-              "Sherwanis",
-              "Kurta Sets",
-              "Alterations"
-            ],
-            city: tailorData?.city || (u as any).city || "Jaipur",
-            province: (u as any).province || "Rajasthan",
-            address: tailorData?.address || (u as any).address || "Shop #14, Main Market, Fashion Enclave",
-            servingRadiusKm: 15,
-            phone: u.phone || "+91 98765-43210",
-            email: u.email || "arjunverma@email.com",
-            isVerified: true
-          };
-
-          setBusinessProfile(profileData);
-          setEditForm(profileData);
+          if (!active) return;
+          setFallbackProfile(buildBusinessProfile(userRes.data, tailorData));
+          return;
         }
       } catch (err) {
         console.warn("Could not load tailor profile from backend:", err);
-      } finally {
-        setIsLoading(false);
       }
+      if (active) setFallbackProfile(defaultBusinessProfile);
     }
 
     loadProfile();
-  }, []);
+    return () => {
+      active = false;
+    };
+  }, [cachedBuiltProfile, cachedTailor]);
 
   const handleOpenEdit = () => {
     setEditForm({ ...businessProfile });
@@ -124,7 +156,7 @@ export function TailorBusinessProfilePage() {
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    setBusinessProfile({ ...editForm });
+    setLocalProfile({ ...editForm });
     setIsEditModalOpen(false);
     setToastMessage("🎉 Business profile updated successfully!");
 

@@ -19,11 +19,12 @@ import { PublicShell } from "@/components/common/site-shell";
 import {
   getTailors,
   fetchTailorsApi,
+  getTailorsCacheKey,
   toggleWishlistApi,
-  TailorItem,
   FilterOptions,
   PaginatedTailorsResponse
 } from "@/lib/tailors-data";
+import { useCachedEntry } from "@/lib/api/data-cache";
 import { TailorsGoogleMap } from "./tailors-google-map";
 import { CardsGridSkeleton } from "@/components/common/shadow-skeleton";
 
@@ -32,16 +33,15 @@ export function TailorsMarketplacePage() {
   const urlQuery = searchParams?.get("q") || searchParams?.get("search") || "";
 
   // Search and Filter State
-  const [searchInput, setSearchInput] = useState<string>(urlQuery);
-  const [searchQuery, setSearchQuery] = useState<string>(urlQuery);
+  const [searchInputOverride, setSearchInputOverride] = useState<{ base: string; value: string } | null>(null);
+  const [searchQueryOverride, setSearchQueryOverride] = useState<{ base: string; value: string } | null>(null);
+  const searchInput =
+    searchInputOverride && searchInputOverride.base === urlQuery ? searchInputOverride.value : urlQuery;
+  const searchQuery =
+    searchQueryOverride && searchQueryOverride.base === urlQuery ? searchQueryOverride.value : urlQuery;
+  const setSearchInput = (value: string) => setSearchInputOverride({ base: urlQuery, value });
+  const setSearchQuery = (value: string) => setSearchQueryOverride({ base: urlQuery, value });
 
-  useEffect(() => {
-    if (urlQuery !== searchQuery) {
-      setSearchInput(urlQuery);
-      setSearchQuery(urlQuery);
-      setPage(1);
-    }
-  }, [urlQuery]);
   const [location, setLocation] = useState<string>("all");
   const [specialty, setSpecialty] = useState<string>("all");
   const [service, setService] = useState<string>("all");
@@ -51,7 +51,18 @@ export function TailorsMarketplacePage() {
   const [sortBy, setSortBy] = useState<FilterOptions["sortBy"]>("top-rated");
 
   // Interactive UI State
-  const [page, setPage] = useState<number>(1);
+  const [pageOverride, setPageOverride] = useState<{ base: string; value: number }>({
+    base: urlQuery,
+    value: 1
+  });
+  const page = pageOverride.base === urlQuery ? pageOverride.value : 1;
+  const setPage = (next: number | ((prev: number) => number)) => {
+    setPageOverride((prev) => {
+      const current = prev.base === urlQuery ? prev.value : 1;
+      const value = typeof next === "function" ? next(current) : next;
+      return { base: urlQuery, value };
+    });
+  };
   const [pageSize] = useState<number>(4);
   const [wishlist, setWishlist] = useState<Record<string, boolean>>({});
   const [hoveredTailorId, setHoveredTailorId] = useState<string | null>(null);
@@ -74,34 +85,42 @@ export function TailorsMarketplacePage() {
     [searchQuery, location, specialty, service, priceRange, ratingMin, moreFilter, sortBy]
   );
 
-  // Backend-ready data state (synchronous initial render + async API sync)
-  const [tailorsData, setTailorsData] = useState<PaginatedTailorsResponse>(() =>
-    getTailors(filterOptions, page, pageSize)
-  );
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  // Backend-ready cache-first data state (instant render when cached, skeleton only on cache miss)
+  const queryKey = getTailorsCacheKey(filterOptions, page, pageSize);
+  const cachedEntry = useCachedEntry<PaginatedTailorsResponse>("tailors", queryKey, {
+    scope: "public"
+  });
+  const [fallbackState, setFallbackState] = useState<{
+    key: string;
+    data: PaginatedTailorsResponse;
+  } | null>(null);
 
   useEffect(() => {
+    if (cachedEntry) return;
     let isSubscribed = true;
-    setIsLoading(true);
 
     fetchTailorsApi(filterOptions, page, pageSize)
       .then((data) => {
         if (isSubscribed) {
-          setTailorsData(data);
-          setIsLoading(false);
+          setFallbackState({ key: queryKey, data });
         }
       })
       .catch((err) => {
         if (isSubscribed) {
           console.error("[Tailors Page] Failed to fetch tailors from backend:", err);
-          setIsLoading(false);
+          setFallbackState({ key: queryKey, data: getTailors(filterOptions, page, pageSize) });
         }
       });
 
     return () => {
       isSubscribed = false;
     };
-  }, [filterOptions, page, pageSize]);
+  }, [cachedEntry, filterOptions, page, pageSize, queryKey]);
+
+  const tailorsData =
+    cachedEntry?.data ??
+    (fallbackState?.key === queryKey ? fallbackState.data : getTailors(filterOptions, page, pageSize));
+  const isLoading = !cachedEntry && fallbackState?.key !== queryKey;
 
   const { tailors, totalCount, hasMore } = tailorsData;
 
@@ -332,7 +351,7 @@ export function TailorsMarketplacePage() {
               <div className="filter-select-wrapper sort-select-wrapper">
                 <select
                   value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as any)}
+                  onChange={(e) => setSortBy(e.target.value as FilterOptions["sortBy"])}
                 >
                   <option value="top-rated">Sort by: Top Rated</option>
                   <option value="nearest">Sort by: Nearest First</option>

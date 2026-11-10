@@ -20,11 +20,13 @@ import { PublicShell } from "@/components/common/site-shell";
 import {
   getTailors,
   fetchTailorsApi,
+  getTailorsCacheKey,
   toggleWishlistApi,
   TailorItem,
   FilterOptions,
   PaginatedTailorsResponse
 } from "@/lib/tailors-data";
+import { useCachedEntry } from "@/lib/api/data-cache";
 
 export function TailorsMapViewPage() {
   // Filters state
@@ -66,21 +68,24 @@ export function TailorsMapViewPage() {
     };
   }, [searchQuery, location, selectedSpecialties, priceMax, ratingMin]);
 
-  // Data fetching (synchronous fallback + async API)
-  const [tailorsData, setTailorsData] = useState<PaginatedTailorsResponse>(() =>
-    getTailors(filterOptions, 1, 50)
-  );
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  // Data fetching (cache-first instant render + fetch only when cache misses/invalidates)
+  const queryKey = getTailorsCacheKey(filterOptions, 1, 50);
+  const cachedEntry = useCachedEntry<PaginatedTailorsResponse>("tailors", queryKey, {
+    scope: "public"
+  });
+  const [fallbackState, setFallbackState] = useState<{
+    key: string;
+    data: PaginatedTailorsResponse;
+  } | null>(null);
 
   useEffect(() => {
+    if (cachedEntry) return;
     let isSubscribed = true;
-    setIsLoading(true);
 
     fetchTailorsApi(filterOptions, 1, 50)
       .then((data) => {
         if (isSubscribed) {
-          setTailorsData(data);
-          setIsLoading(false);
+          setFallbackState({ key: queryKey, data });
           if (data.tailors.length > 0 && !data.tailors.some(t => t.id === selectedTailorId)) {
             setSelectedTailorId(data.tailors[0].id);
           }
@@ -89,14 +94,19 @@ export function TailorsMapViewPage() {
       .catch((err) => {
         if (isSubscribed) {
           console.error("[Map Page] API Fetch Error:", err);
-          setIsLoading(false);
+          setFallbackState({ key: queryKey, data: getTailors(filterOptions, 1, 50) });
         }
       });
 
     return () => {
       isSubscribed = false;
     };
-  }, [filterOptions]);
+  }, [cachedEntry, filterOptions, queryKey]);
+
+  const tailorsData =
+    cachedEntry?.data ??
+    (fallbackState?.key === queryKey ? fallbackState.data : getTailors(filterOptions, 1, 50));
+  const isLoading = !cachedEntry && fallbackState?.key !== queryKey;
 
   const { tailors } = tailorsData;
 

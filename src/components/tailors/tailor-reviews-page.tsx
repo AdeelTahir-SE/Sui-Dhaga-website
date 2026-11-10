@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Star,
   MessageSquare,
@@ -16,6 +16,8 @@ import { AdminToast } from "@/components/admin/admin-toast";
 import { NotificationListSkeleton } from "@/components/common/shadow-skeleton";
 import { reviewService } from "@/lib/api/review-service";
 import { userService } from "@/lib/api/user-service";
+import { ApiResponse, TailorReview, UserProfile } from "@/lib/api/types";
+import { useCachedEntry } from "@/lib/api/data-cache";
 import "@/styles/pages/tailor-reviews-view.css";
 
 interface ReviewItem {
@@ -96,34 +98,62 @@ const initialTailorReviews: ReviewItem[] = [
   }
 ];
 
+function mapBackendReviewList(list: TailorReview[]): ReviewItem[] {
+  return list.map((r) => {
+    const rev = r as TailorReview & { orderTitle?: string; orderNumber?: string };
+    return {
+      id: rev.id,
+      authorName: rev.author_name || rev.user?.full_name || rev.user?.name || "Customer",
+      avatar: rev.author_avatar || rev.user?.avatar_url || "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120&auto=format&fit=crop&q=80",
+      rating: rev.rating || 5,
+      date: rev.created_at ? new Date(rev.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "Recent",
+      orderTitle: rev.orderTitle || "Custom Tailoring",
+      orderNumber: rev.orderNumber || "SD1256",
+      comment: rev.comment || "",
+      photos: rev.images || []
+    };
+  });
+}
+
 export function TailorReviewsPage() {
-  const [reviews, setReviews] = useState<ReviewItem[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const cachedUser = useCachedEntry<ApiResponse<UserProfile>>("user", "me", { scope: "auth" });
+  const uid = cachedUser?.data?.data?.id || null;
+  const cachedReviews = useCachedEntry<ApiResponse<TailorReview[]>>(
+    "tailors",
+    uid ? `reviews:${uid}` : "__none__",
+    { scope: "public" }
+  );
+
+  const [localReviews, setLocalReviews] = useState<ReviewItem[] | null>(null);
+  const [fallbackReviews, setFallbackReviews] = useState<ReviewItem[] | null>(null);
   const [activeTab, setActiveTab] = useState<string>("all");
   const [replyTextMap, setReplyTextMap] = useState<Record<string, string>>({});
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  const cachedMappedReviews = useMemo(() => {
+    const rawList = cachedReviews?.data?.data;
+    if (!Array.isArray(rawList) || rawList.length === 0) {
+      return null;
+    }
+    return mapBackendReviewList(rawList);
+  }, [cachedReviews]);
+
+  const reviews = localReviews ?? cachedMappedReviews ?? fallbackReviews ?? [];
+  const isLoading = localReviews === null && cachedMappedReviews === null && fallbackReviews === null;
+
   React.useEffect(() => {
+    if (cachedMappedReviews) return;
+    let active = true;
+
     async function loadReviews() {
-      setIsLoading(true);
       try {
         const userRes = await userService.getMe();
+        if (!active) return;
         if (userRes?.data?.id) {
           const revRes = await reviewService.getTailorReviews(userRes.data.id);
+          if (!active) return;
           if (revRes?.data && Array.isArray(revRes.data) && revRes.data.length > 0) {
-            const mapped: ReviewItem[] = revRes.data.map((r) => ({
-              id: r.id,
-              authorName: r.author_name || r.user?.full_name || r.user?.name || "Customer",
-              avatar: r.author_avatar || r.user?.avatar_url || "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120&auto=format&fit=crop&q=80",
-              rating: r.rating || 5,
-              date: r.created_at ? new Date(r.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "Recent",
-              orderTitle: (r as any).orderTitle || "Custom Tailoring",
-              orderNumber: (r as any).orderNumber || "SD1256",
-              comment: r.comment || "",
-              photos: r.images || []
-            }));
-            setReviews(mapped);
-            setIsLoading(false);
+            setFallbackReviews(mapBackendReviewList(revRes.data));
             return;
           }
         }
@@ -131,12 +161,14 @@ export function TailorReviewsPage() {
         console.warn("Could not load reviews from backend API:", err);
       }
 
-      setReviews(initialTailorReviews);
-      setIsLoading(false);
+      if (active) setFallbackReviews(initialTailorReviews);
     }
 
     loadReviews();
-  }, []);
+    return () => {
+      active = false;
+    };
+  }, [cachedMappedReviews]);
 
   const filteredReviews = reviews.filter((r) => {
     if (activeTab === "all") return true;
@@ -151,8 +183,8 @@ export function TailorReviewsPage() {
     const text = replyTextMap[reviewId]?.trim();
     if (!text) return;
 
-    setReviews((prev) =>
-      prev.map((r) =>
+    setLocalReviews(
+      reviews.map((r) =>
         r.id === reviewId
           ? {
               ...r,

@@ -19,6 +19,8 @@ import { PublicNav, PublicFooter } from "@/components/common/site-shell";
 import { AdminToast } from "@/components/admin/admin-toast";
 import { CardsGridSkeleton, ProfileHeaderSkeleton } from "@/components/common/shadow-skeleton";
 import { orderService } from "@/lib/api/order-service";
+import { Order, OrderStatus } from "@/lib/api/types";
+import type { TailorOrderItem } from "@/components/tailors/tailor-orders-page";
 import "@/styles/pages/tailor-order-detail-view.css";
 
 export function TailorOrderDetailPage() {
@@ -95,7 +97,7 @@ export function TailorOrderDetailPage() {
         const res = await orderService.getOrders();
         if (res?.data && Array.isArray(res.data) && res.data.length > 0) {
           const match = res.data.find(
-            (o: any) =>
+            (o: Order) =>
               o.id?.toLowerCase() === orderId.toLowerCase() ||
               `SD${o.id?.replace(/[^a-zA-Z0-9]/g, "").slice(-4).toUpperCase()}`.toLowerCase() === orderId.toLowerCase()
           );
@@ -147,9 +149,9 @@ export function TailorOrderDetailPage() {
       if (typeof window !== "undefined") {
         try {
           const saved = localStorage.getItem("sui_dhaga_tailor_orders_list");
-          const list = saved ? JSON.parse(saved) : [];
+          const list = (saved ? JSON.parse(saved) : []) as Array<Partial<TailorOrderItem>>;
           const match = list.find(
-            (o: any) =>
+            (o) =>
               o.orderNumber?.replace("#", "").toLowerCase() === orderId.toLowerCase() ||
               o.id?.toLowerCase() === orderId.toLowerCase()
           );
@@ -199,13 +201,13 @@ export function TailorOrderDetailPage() {
 
     // Sync to backend status API if possible
     try {
-      const backendStatus =
+      const backendStatus: OrderStatus =
         selectedStatus === "Completed" || selectedStatus === "Delivered" ? "completed"
         : selectedStatus === "Ready for Trial" ? "quality_check"
         : selectedStatus === "Cancelled" ? "cancelled"
         : "in_progress";
 
-      await orderService.updateOrderStatus(order.orderNumber, backendStatus as any, `Updated to ${selectedStatus}`);
+      await orderService.updateOrderStatus(order.orderNumber, backendStatus, `Updated to ${selectedStatus}`);
     } catch (err) {
       console.warn("Backend status update error:", err);
     }

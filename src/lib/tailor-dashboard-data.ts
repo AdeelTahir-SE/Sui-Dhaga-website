@@ -7,6 +7,7 @@ import { userService } from "./api/user-service";
 import { orderService } from "./api/order-service";
 import { appointmentService } from "./api/appointment-service";
 import { conversationService } from "./api/conversation-service";
+import { fetchWithCache, getCachedValue, invalidateCacheDomain } from "./api/data-cache";
 
 export interface TailorAppointmentSummary {
   id: string;
@@ -180,23 +181,36 @@ export const initialTailorDashboardData: TailorDashboardData = {
 
 const KEY_TAILOR_DASHBOARD = "sui_dhaga_tailor_dashboard";
 
+export const TAILOR_DASHBOARD_CACHE_KEY = "tailor-home";
+
+export function peekTailorDashboardCache(): TailorDashboardData | undefined {
+  return getCachedValue<TailorDashboardData>("dashboard", TAILOR_DASHBOARD_CACHE_KEY, {
+    scope: "auth",
+  });
+}
+
 export const tailorDashboardService = {
   getDashboardData: async (): Promise<TailorDashboardData> => {
-    let dashboardState: TailorDashboardData = { ...initialTailorDashboardData };
+    return fetchWithCache(
+      "dashboard",
+      TAILOR_DASHBOARD_CACHE_KEY,
+      async () => {
+        const dashboardState: TailorDashboardData = { ...initialTailorDashboardData };
 
     // 1. Fetch user/tailor profile from live database
     try {
       const userRes = await userService.getMe();
       if (userRes?.data) {
-        const u = userRes.data;
-        const tailorName = u.full_name || u.name || "Master Tailor";
-        const shopName = (u as any).shop_name || (u as any).shopName || (u as any).tailorProfile?.shopName || `${tailorName}'s Studio`;
-        const avatar = u.avatar_url || (u as any).tailorProfile?.avatar_url || "/images/tailor-onboarding-avatar.jpg";
-        const rating = (u as any).rating || (u as any).tailorProfile?.rating || 4.9;
-        const reviewsCount = (u as any).reviewsCount || (u as any).tailorProfile?.reviewsCount || 94;
+        const u = userRes.data as unknown as Record<string, unknown>;
+        const tp = u.tailorProfile as Record<string, unknown> | undefined;
+        const tailorName = String(u.full_name || u.name || "Master Tailor");
+        const shopName = String(u.shop_name || u.shopName || tp?.shopName || `${tailorName}'s Studio`);
+        const avatar = String(u.avatar_url || tp?.avatar_url || "/images/tailor-onboarding-avatar.jpg");
+        const rating = Number(u.rating || tp?.rating) || 4.9;
+        const reviewsCount = Number(u.reviewsCount || tp?.reviewsCount) || 94;
 
         dashboardState.tailor = {
-          id: u.id,
+          id: String(u.id),
           name: tailorName,
           shopName,
           avatar,
@@ -278,18 +292,26 @@ export const tailorDashboardService = {
     try {
       const convRes = await conversationService.getConversations();
       if (convRes?.data && Array.isArray(convRes.data) && convRes.data.length > 0) {
-        dashboardState.recentMessages = convRes.data.slice(0, 4).map((c) => ({
-          id: c.id,
-          customerName: c.client?.full_name || c.client?.name || (c as any).participantName || "Client",
-          avatar: c.client?.avatar_url || (c as any).participantAvatar || "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120&auto=format&fit=crop&q=80",
-          lastMessage: (c as any).lastMessage || (c as any).last_message?.text || "Latest message",
-          timeAgo: c.updated_at ? new Date(c.updated_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "Recent",
-          unreadCount: (c as any).unreadCount || 0
-        }));
+        dashboardState.recentMessages = convRes.data.slice(0, 4).map((rawC) => {
+          const c = rawC as unknown as Record<string, unknown>;
+          const client = c.client as Record<string, unknown> | undefined;
+          const lastMsgObj = c.last_message as Record<string, unknown> | undefined;
+          return {
+            id: String(c.id),
+            customerName: String(client?.full_name || client?.name || c.participantName || "Client"),
+            avatar: String(client?.avatar_url || c.participantAvatar || "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120&auto=format&fit=crop&q=80"),
+            lastMessage: String(c.lastMessage || lastMsgObj?.text || "Latest message"),
+            timeAgo: c.updated_at ? new Date(String(c.updated_at)).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "Recent",
+            unreadCount: Number(c.unreadCount) || 0
+          };
+        });
       }
     } catch {}
 
-    return dashboardState;
+        return dashboardState;
+      },
+      { scope: "auth" }
+    );
   },
 
   updateProfileCompletion: async (newPercent: number): Promise<void> => {
@@ -298,6 +320,7 @@ export const tailorDashboardService = {
         const current = await tailorDashboardService.getDashboardData();
         current.tailor.profileCompletion = newPercent;
         localStorage.setItem(KEY_TAILOR_DASHBOARD, JSON.stringify(current));
+        invalidateCacheDomain("dashboard");
       } catch (e) {
         console.warn("Failed to update profile completion in localStorage:", e);
       }

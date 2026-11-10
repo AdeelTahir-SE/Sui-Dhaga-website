@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import {
   Calendar,
@@ -21,6 +21,8 @@ import { TailorSidebar } from "@/components/tailors/tailor-sidebar";
 import { AdminToast } from "@/components/admin/admin-toast";
 import { TableSkeleton } from "@/components/common/shadow-skeleton";
 import { appointmentService } from "@/lib/api/appointment-service";
+import { ApiResponse, Appointment } from "@/lib/api/types";
+import { useCachedEntry } from "@/lib/api/data-cache";
 import "@/styles/pages/tailor-appointments-view.css";
 
 export type AppointmentStatus = "upcoming" | "request" | "completed" | "rejected";
@@ -185,83 +187,99 @@ const initialAppointmentsList: TailorAppointmentItem[] = [
 
 const KEY_TAILOR_APPOINTMENTS = "sui_dhaga_tailor_appointments_list";
 
+function mapBackendAppointment(a: Appointment): TailorAppointmentItem {
+  const rawStatus = (a.status || "").toLowerCase();
+  const status: AppointmentStatus =
+    rawStatus === "pending" ? "request"
+    : rawStatus === "confirmed" ? "upcoming"
+    : rawStatus === "completed" ? "completed"
+    : rawStatus === "cancelled" ? "rejected"
+    : "upcoming";
+
+  return {
+    id: a.id,
+    customerName: a.customer?.full_name || a.customer?.name || "Client",
+    customerPhone: a.customer?.phone || "+92 300 0000000",
+    customerEmail: a.customer?.email || "client@example.com",
+    customerAvatar: a.customer?.avatar_url || "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120&auto=format&fit=crop&q=80",
+    serviceName: a.service?.title || a.notes || "Tailor Fitting Session",
+    type: "In-Shop Fitting",
+    date: a.appointment_date ? new Date(a.appointment_date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "Upcoming",
+    time: a.appointment_time || "10:00 AM",
+    address: a.tailor?.address || "Shop #14, Main Market, Fashion Enclave",
+    notes: a.notes || undefined,
+    status
+  };
+}
+
 export function TailorAppointmentsPage() {
-  const [appointments, setAppointments] = useState<TailorAppointmentItem[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [activeTab, setActiveTab] = useState<string>("all_view"); // "all_view" shows the curated table from the screenshot, or specific tab filters
+  const cachedAptsRes = useCachedEntry<ApiResponse<Appointment[]>>("appointments", "list:{}", {
+    scope: "auth"
+  });
+  const [localApts, setLocalApts] = useState<TailorAppointmentItem[] | null>(null);
+  const [fallbackApts, setFallbackApts] = useState<TailorAppointmentItem[] | null>(null);
+  const [activeTab, setActiveTab] = useState<string>("all_view");
   const [selectedAppointment, setSelectedAppointment] = useState<TailorAppointmentItem | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Map backend Appointment model to TailorAppointmentItem
-  const mapBackendAppointment = (a: any): TailorAppointmentItem => {
-    const rawStatus = (a.status || "").toLowerCase();
-    const status: AppointmentStatus =
-      rawStatus === "pending" ? "request"
-      : rawStatus === "confirmed" ? "upcoming"
-      : rawStatus === "completed" ? "completed"
-      : rawStatus === "cancelled" ? "rejected"
-      : "upcoming";
+  const appointments = useMemo(() => {
+    if (localApts) return localApts;
+    if (cachedAptsRes?.data && Array.isArray(cachedAptsRes.data)) {
+      return cachedAptsRes.data.map(mapBackendAppointment);
+    }
+    return fallbackApts ?? [];
+  }, [localApts, cachedAptsRes, fallbackApts]);
 
-    return {
-      id: a.id,
-      customerName: a.customer?.full_name || a.customer?.name || "Client",
-      customerPhone: a.customer?.phone || "+92 300 0000000",
-      customerEmail: a.customer?.email || "client@example.com",
-      customerAvatar: a.customer?.avatar_url || "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120&auto=format&fit=crop&q=80",
-      serviceName: a.service?.title || a.notes || "Tailor Fitting Session",
-      type: "In-Shop Fitting",
-      date: a.appointment_date ? new Date(a.appointment_date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "Upcoming",
-      time: a.appointment_time || "10:00 AM",
-      address: a.tailor?.address || "Shop #14, Main Market, Fashion Enclave",
-      notes: a.notes || undefined,
-      status
-    };
-  };
+  const isLoading = !cachedAptsRes && fallbackApts === null && localApts === null;
 
-  // Load from live database or fallback to localStorage
+  // Load from live database only when cache misses, or fallback to localStorage
   useEffect(() => {
+    if (cachedAptsRes) return;
+    let active = true;
+
     async function loadAppointments() {
-      setIsLoading(true);
       try {
         const hasToken = typeof window !== "undefined" && !!localStorage.getItem("sui_dhaga_auth_token");
         const res = await appointmentService.getAppointments();
+        if (!active) return;
         if (res?.data && Array.isArray(res.data) && res.data.length > 0) {
           const liveList = res.data.map(mapBackendAppointment);
-          setAppointments(liveList);
+          setFallbackApts(liveList);
           if (typeof window !== "undefined") {
             localStorage.setItem(KEY_TAILOR_APPOINTMENTS, JSON.stringify(liveList));
           }
-          setIsLoading(false);
           return;
         } else if (hasToken && res?.data && Array.isArray(res.data)) {
-          setAppointments([]);
-          setIsLoading(false);
+          setFallbackApts([]);
           return;
         }
       } catch (err) {
         console.warn("Could not fetch live appointments from backend, using cache/mock:", err);
       }
 
+      if (!active) return;
       if (typeof window !== "undefined") {
         try {
           const saved = localStorage.getItem(KEY_TAILOR_APPOINTMENTS);
           if (saved) {
-            setAppointments(JSON.parse(saved));
-          } else {
-            setAppointments(initialAppointmentsList);
+            setFallbackApts(JSON.parse(saved) as TailorAppointmentItem[]);
+            return;
           }
         } catch (e) {
           console.warn("Failed to load appointments from localStorage:", e);
         }
       }
-      setIsLoading(false);
+      setFallbackApts(initialAppointmentsList);
     }
 
     loadAppointments();
-  }, []);
+    return () => {
+      active = false;
+    };
+  }, [cachedAptsRes]);
 
   const saveAppointmentsToStorage = (updated: TailorAppointmentItem[]) => {
-    setAppointments(updated);
+    setLocalApts(updated);
     if (typeof window !== "undefined") {
       try {
         localStorage.setItem(KEY_TAILOR_APPOINTMENTS, JSON.stringify(updated));

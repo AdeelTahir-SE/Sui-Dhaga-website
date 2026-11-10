@@ -25,84 +25,94 @@ import {
   TailorItem
 } from "@/lib/tailors-data";
 import { tailorService } from "@/lib/api/tailor-service";
+import { stableCacheKey, useCachedEntry } from "@/lib/api/data-cache";
+import { ApiResponse, TailorProfile } from "@/lib/api/types";
 import { TailorsCompareSkeleton } from "@/components/common/shadow-skeleton";
 import "@/styles/pages/tailors.css";
+
+const COMPARE_LIST_CACHE_KEY = `list:${stableCacheKey({ limit: 50 })}`;
 
 export function TailorsComparePage() {
   const searchParams = useSearchParams();
   const urlIds = searchParams?.get("ids") || searchParams?.get("tailors") || "";
 
-  // All tailors loaded from live database or fallback catalog
-  const [allTailors, setAllTailors] = useState<TailorItem[]>(initialTailors);
-  const [selectedIds, setSelectedIds] = useState<string[]>(() => {
+  const cachedListEntry = useCachedEntry<ApiResponse<TailorProfile[]>>(
+    "tailors",
+    COMPARE_LIST_CACHE_KEY,
+    { scope: "public" }
+  );
+  const [extraTailors, setExtraTailors] = useState<TailorItem[]>([]);
+  const [fallbackSettled, setFallbackSettled] = useState(false);
+
+  const allTailors = useMemo(() => {
+    const base =
+      cachedListEntry?.data?.data && Array.isArray(cachedListEntry.data.data) && cachedListEntry.data.data.length > 0
+        ? cachedListEntry.data.data.map((t, idx) => mapBackendTailorToItem(t, idx))
+        : initialTailors;
+    if (extraTailors.length === 0) return base;
+    const ids = new Set(base.map((t) => t.id));
+    return [...base, ...extraTailors.filter((e) => !ids.has(e.id))];
+  }, [cachedListEntry, extraTailors]);
+
+  const [selectedOverride, setSelectedOverride] = useState<string[] | null>(null);
+  const selectedIds = useMemo(() => {
+    if (selectedOverride) return selectedOverride;
     if (urlIds) {
       const parsed = urlIds.split(",").map((s) => s.trim()).filter(Boolean);
       if (parsed.length > 0) return parsed.slice(0, 4);
     }
+    if (cachedListEntry?.data?.data && cachedListEntry.data.data.length > 0) {
+      return cachedListEntry.data.data.slice(0, 3).map((t, idx) => mapBackendTailorToItem(t, idx).id);
+    }
     return ["rekha-tailors", "stitch-craft", "aarav-bespoke"];
-  });
+  }, [selectedOverride, urlIds, cachedListEntry]);
+
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
   const [modalSearchInput, setModalSearchInput] = useState<string>("");
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const isLoading = !cachedListEntry && !fallbackSettled;
 
-  // Load live tailors from backend database
+  // Load live tailors from backend database only when cache misses
   useEffect(() => {
+    if (cachedListEntry) return;
     let isSubscribed = true;
 
-    async function loadLiveTailors() {
-      try {
-        const res = await tailorService.getTailors({ limit: 50 });
-        if (res?.success && Array.isArray(res.data) && res.data.length > 0 && isSubscribed) {
-          const liveList = res.data.map((t, idx) => mapBackendTailorToItem(t, idx));
-          setAllTailors(liveList);
-
-          // If URL params are present, honor them
-          if (urlIds) {
-            const parsed = urlIds.split(",").map((s) => s.trim()).filter(Boolean);
-            if (parsed.length > 0) {
-              setSelectedIds(parsed.slice(0, 4));
-              setIsLoading(false);
-              return;
-            }
-          }
-
-          // Pre-select the top 3 live tailors from the database
-          setSelectedIds(liveList.slice(0, 3).map((t) => t.id));
-          setIsLoading(false);
-          return;
-        }
-      } catch (err) {
+    tailorService
+      .getTailors({ limit: 50 })
+      .catch((err) => {
         console.warn("[Tailors Compare] Live tailors fetch error, using fallback catalog:", err);
-      }
-
-      if (isSubscribed) {
-        setIsLoading(false);
-      }
-    }
-
-    loadLiveTailors();
+      })
+      .finally(() => {
+        if (isSubscribed) {
+          setFallbackSettled(true);
+        }
+      });
 
     return () => {
       isSubscribed = false;
     };
-  }, [urlIds]);
+  }, [cachedListEntry]);
 
   // If any selected ID is not in allTailors (e.g. from deep link), fetch it individually
   useEffect(() => {
+    if (isLoading) return;
+    let isSubscribed = true;
     selectedIds.forEach(async (id) => {
       const exists = allTailors.some((t) => t.id === id);
       if (!exists) {
         try {
           const fetched = await fetchTailorByIdApi(id);
-          if (fetched) {
-            setAllTailors((prev) => (prev.some((p) => p.id === fetched.id) ? prev : [...prev, fetched]));
+          if (fetched && isSubscribed) {
+            setExtraTailors((prev) => (prev.some((p) => p.id === fetched.id) ? prev : [...prev, fetched]));
           }
         } catch (e) {
           console.warn("Could not fetch individual tailor:", id, e);
         }
       }
     });
-  }, [selectedIds, allTailors]);
+    return () => {
+      isSubscribed = false;
+    };
+  }, [selectedIds, allTailors, isLoading]);
 
   // Get full tailor objects for selected IDs
   const selectedTailors = useMemo(() => {
@@ -125,12 +135,12 @@ export function TailorsComparePage() {
 
   const handleRemoveTailor = (id: string) => {
     if (selectedIds.length <= 1) return; // Keep at least 1 tailor
-    setSelectedIds((prev) => prev.filter((item) => item !== id));
+    setSelectedOverride(selectedIds.filter((item) => item !== id));
   };
 
   const handleAddTailor = (id: string) => {
     if (selectedIds.length >= 4) return;
-    setSelectedIds((prev) => [...prev, id]);
+    setSelectedOverride([...selectedIds, id]);
     setIsAddModalOpen(false);
     setModalSearchInput("");
   };
