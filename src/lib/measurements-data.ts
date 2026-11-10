@@ -129,12 +129,17 @@ export const MEASURING_INSTRUCTIONS_STEPS = [
 import { measurementService } from "./api/measurement-service";
 import { MeasurementProfile as ApiMeasurementProfile } from "./api/types";
 
-function mapApiToMeasurementProfile(apiProf: any): MeasurementProfile {
+function mapApiToMeasurementProfile(apiProf: Partial<ApiMeasurementProfile>): MeasurementProfile {
+  const dateRaw = apiProf.updated_at || apiProf.created_at;
   return {
-    id: String(apiProf.id),
-    name: apiProf.title || apiProf.profile_name || apiProf.profileName || "My Profile",
-    lastUpdated: apiProf.updated_at || apiProf.created_at
-      ? new Date(apiProf.updated_at || apiProf.created_at).toLocaleDateString("en-US", {
+    id: String(apiProf.id || `prof-${Date.now()}`),
+    name:
+      apiProf.title ||
+      apiProf.profile_name ||
+      apiProf.profileName ||
+      "My Profile",
+    lastUpdated: dateRaw
+      ? new Date(dateRaw).toLocaleDateString("en-US", {
           day: "numeric",
           month: "short",
           year: "numeric",
@@ -233,13 +238,13 @@ export async function saveMeasurementProfileApi(
       try {
         if (typeof window !== "undefined") {
           const storedJson = localStorage.getItem("sui_dhaga_measurements");
-          let list = storedJson ? JSON.parse(storedJson) : [...initialMeasurementProfiles];
-          const idx = list.findIndex((p: any) => p.id === profile.id || p.id === mapped.id);
+          const list: MeasurementProfile[] = storedJson ? JSON.parse(storedJson) : [...initialMeasurementProfiles];
+          const idx = list.findIndex((p) => p.id === profile.id || p.id === mapped.id);
           if (idx >= 0) list[idx] = mapped;
           else list.push(mapped);
           localStorage.setItem("sui_dhaga_measurements", JSON.stringify(list));
         }
-      } catch (e) {}
+      } catch {}
       return { success: true, profile: mapped };
     }
   } catch (err) {
@@ -250,8 +255,8 @@ export async function saveMeasurementProfileApi(
   try {
     if (typeof window !== "undefined") {
       const storedJson = localStorage.getItem("sui_dhaga_measurements");
-      let list = storedJson ? JSON.parse(storedJson) : [...initialMeasurementProfiles];
-      const existingIdx = list.findIndex((p: any) => p.id === profile.id);
+      const list: MeasurementProfile[] = storedJson ? JSON.parse(storedJson) : [...initialMeasurementProfiles];
+      const existingIdx = list.findIndex((p) => p.id === profile.id);
       if (existingIdx >= 0) {
         list[existingIdx] = profile;
       } else {
@@ -259,7 +264,7 @@ export async function saveMeasurementProfileApi(
       }
       localStorage.setItem("sui_dhaga_measurements", JSON.stringify(list));
     }
-  } catch (e) {
+  } catch {
     // ignore
   }
 
@@ -282,12 +287,12 @@ export async function deleteMeasurementProfileApi(profileId: string): Promise<{ 
     if (typeof window !== "undefined") {
       const storedJson = localStorage.getItem("sui_dhaga_measurements");
       if (storedJson) {
-        let list = JSON.parse(storedJson);
-        list = list.filter((p: any) => p.id !== profileId);
-        localStorage.setItem("sui_dhaga_measurements", JSON.stringify(list));
+        const list: MeasurementProfile[] = JSON.parse(storedJson);
+        const filtered = list.filter((p) => p.id !== profileId);
+        localStorage.setItem("sui_dhaga_measurements", JSON.stringify(filtered));
       }
     }
-  } catch (e) {
+  } catch {
     // ignore
   }
 

@@ -9,7 +9,7 @@ import { ApiResponse, ApiErrorResponse, PaginationMeta, UserRole } from "./types
 
 export type { UserRole };
 
-export interface PaginatedResponse<T = any> {
+export interface PaginatedResponse<T = unknown> {
   success: boolean;
   data: T[];
   total: number;
@@ -54,7 +54,7 @@ export interface AdminActivityItem {
   description: string;
   timestamp: string;
   timeAgo: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 // ---------------------------------------------------------------------------

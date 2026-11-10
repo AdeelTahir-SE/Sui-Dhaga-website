@@ -367,34 +367,34 @@ export async function fetchCustomerAppointmentsApi(
           if (raw) {
             const parsed = JSON.parse(raw);
             if (Array.isArray(parsed)) {
-              localList = parsed.map((apt: any) => ({
-                id: apt.id || `apt-${Date.now()}`,
-                referenceNo: apt.referenceNo || `APT${Math.floor(1000 + Math.random() * 9000)}`,
-                tailorId: apt.tailorId || "rekha-tailors",
-                tailorName: apt.tailorName || "Rekha Tailors",
-                tailorAvatar: apt.tailorImage || "/images/home/tailor-rekha.png",
+              localList = parsed.map((apt: Record<string, unknown>) => ({
+                id: String(apt.id || `apt-${Date.now()}`),
+                referenceNo: String(apt.referenceNo || `APT${Math.floor(1000 + Math.random() * 9000)}`),
+                tailorId: String(apt.tailorId || "rekha-tailors"),
+                tailorName: String(apt.tailorName || "Rekha Tailors"),
+                tailorAvatar: String(apt.tailorImage || "/images/home/tailor-rekha.png"),
                 tailorRating: 4.8,
                 tailorReviewsCount: 128,
-                tailorAddress: apt.tailorAddress || "Commercial Area, Faisalabad",
+                tailorAddress: String(apt.tailorAddress || "Commercial Area, Faisalabad"),
                 distance: "0.6 km away",
-                serviceId: apt.serviceId || "srv-custom-stitching",
-                serviceName: apt.serviceName || "Custom Stitching",
+                serviceId: String(apt.serviceId || "srv-custom-stitching"),
+                serviceName: String(apt.serviceName || "Custom Stitching"),
                 serviceCategory: "Women's Wear",
-                price: apt.price || "Rs. 2,000",
-                priceValue: apt.priceValue || 2000,
-                date: apt.date || "20 May, 2024",
-                time: apt.timeSlot || "2:00 PM",
+                price: String(apt.price || "Rs. 2,000"),
+                priceValue: Number(apt.priceValue) || 2000,
+                date: String(apt.date || "20 May, 2024"),
+                time: String(apt.timeSlot || "2:00 PM"),
                 duration: "45 mins",
-                deliveryTime: apt.deliveryTime || "7-10 days",
-                status: apt.status || "Upcoming",
-                notes: apt.notes || "",
-                referenceImages: apt.referenceImages || [
+                deliveryTime: String(apt.deliveryTime || "7-10 days"),
+                status: (apt.status as AppointmentItem["status"]) || "Upcoming",
+                notes: String(apt.notes || ""),
+                referenceImages: (Array.isArray(apt.referenceImages) ? apt.referenceImages : [
                   "/images/booking/ref-pink-kurti.jpg",
                   "/images/booking/ref-peach-gown.jpg",
                   "/images/booking/ref-neckline-detail.jpg",
                   "/images/booking/ref-gold-anarkali.jpg"
-                ],
-                createdAt: apt.createdAt || new Date().toISOString()
+                ]) as string[],
+                createdAt: String(apt.createdAt || new Date().toISOString())
               }));
             }
           }
@@ -415,34 +415,34 @@ export async function fetchCustomerAppointmentsApi(
       const storedJson = localStorage.getItem("sui_dhaga_appointments");
       if (storedJson) {
         const storedList = JSON.parse(storedJson);
-        const mappedStored: AppointmentItem[] = storedList.map((apt: any) => ({
-          id: apt.id || `apt-${Date.now()}`,
-          referenceNo: apt.referenceNo || `APT${Math.floor(1000 + Math.random() * 9000)}`,
-          tailorId: apt.tailorId || "rekha-tailors",
-          tailorName: apt.tailorName || "Rekha Tailors",
-          tailorAvatar: apt.tailorImage || "/images/home/tailor-rekha.png",
+        const mappedStored: AppointmentItem[] = storedList.map((apt: Record<string, unknown>) => ({
+          id: String(apt.id || `apt-${Date.now()}`),
+          referenceNo: String(apt.referenceNo || `APT${Math.floor(1000 + Math.random() * 9000)}`),
+          tailorId: String(apt.tailorId || "rekha-tailors"),
+          tailorName: String(apt.tailorName || "Rekha Tailors"),
+          tailorAvatar: String(apt.tailorImage || "/images/home/tailor-rekha.png"),
           tailorRating: 4.8,
           tailorReviewsCount: 128,
-          tailorAddress: apt.tailorAddress || "Commercial Area, Faisalabad",
+          tailorAddress: String(apt.tailorAddress || "Commercial Area, Faisalabad"),
           distance: "0.6 km away",
-          serviceId: apt.serviceId || "srv-custom-stitching",
-          serviceName: apt.serviceName || "Custom Stitching",
+          serviceId: String(apt.serviceId || "srv-custom-stitching"),
+          serviceName: String(apt.serviceName || "Custom Stitching"),
           serviceCategory: "Women's Wear",
-          price: apt.price || "Rs. 2,000",
-          priceValue: apt.priceValue || 2000,
-          date: apt.date || "20 May, 2024",
-          time: apt.timeSlot || "2:00 PM",
+          price: String(apt.price || "Rs. 2,000"),
+          priceValue: Number(apt.priceValue) || 2000,
+          date: String(apt.date || "20 May, 2024"),
+          time: String(apt.timeSlot || "2:00 PM"),
           duration: "45 mins",
-          deliveryTime: apt.deliveryTime || "7-10 days",
-          status: apt.status || "Upcoming",
-          notes: apt.notes || "",
-          referenceImages: apt.referenceImages || [
+          deliveryTime: String(apt.deliveryTime || "7-10 days"),
+          status: (apt.status as AppointmentItem["status"]) || "Upcoming",
+          notes: String(apt.notes || ""),
+          referenceImages: (Array.isArray(apt.referenceImages) ? apt.referenceImages : [
             "/images/booking/ref-pink-kurti.jpg",
             "/images/booking/ref-peach-gown.jpg",
             "/images/booking/ref-neckline-detail.jpg",
             "/images/booking/ref-gold-anarkali.jpg"
-          ],
-          createdAt: apt.createdAt || new Date().toISOString()
+          ]) as string[],
+          createdAt: String(apt.createdAt || new Date().toISOString())
         }));
 
         appointmentsList = mappedStored;
@@ -500,7 +500,7 @@ export async function rescheduleCustomerAppointmentApi(
     if (res?.data) {
       return { success: true, appointment: mapBackendAppointmentToItem(res.data) };
     }
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.warn("[Appointments API] Reschedule failed on backend, updating locally:", err);
   }
 
@@ -509,8 +509,8 @@ export async function rescheduleCustomerAppointmentApi(
     if (typeof window !== "undefined") {
       const storedJson = localStorage.getItem("sui_dhaga_appointments");
       if (storedJson) {
-        const list = JSON.parse(storedJson);
-        const target = list.find((a: any) => a.id === appointmentId);
+        const list: Array<Record<string, unknown>> = JSON.parse(storedJson);
+        const target = list.find((a) => a.id === appointmentId);
         if (target) {
           target.date = newDate;
           target.timeSlot = newTime;
@@ -544,8 +544,8 @@ export async function cancelCustomerAppointmentApi(
     if (typeof window !== "undefined") {
       const storedJson = localStorage.getItem("sui_dhaga_appointments");
       if (storedJson) {
-        const list = JSON.parse(storedJson);
-        const target = list.find((a: any) => a.id === appointmentId);
+        const list: Array<Record<string, unknown>> = JSON.parse(storedJson);
+        const target = list.find((a) => a.id === appointmentId);
         if (target) {
           target.status = "Cancelled";
           target.cancelReason = reason;

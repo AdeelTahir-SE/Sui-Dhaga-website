@@ -266,12 +266,12 @@ export async function fetchDashboardStatsApi(): Promise<DashboardStats> {
         ? measRes.value.data
         : [];
 
-    const inProgressCount = orders.filter((o: any) => {
+    const inProgressCount = orders.filter((o) => {
       const s = (o.status || "").toLowerCase();
       return s !== "completed" && s !== "delivered" && s !== "cancelled";
     }).length;
 
-    const upcomingCount = appts.filter((a: any) => {
+    const upcomingCount = appts.filter((a) => {
       const s = (a.status || "").toLowerCase();
       return s !== "cancelled" && s !== "completed";
     }).length;
@@ -301,23 +301,32 @@ export async function fetchRecentOrdersApi(): Promise<RecentOrderSummary[]> {
   try {
     const res = await orderService.getOrders({ page: 1, limit: 5 });
     if (res?.success && Array.isArray(res.data)) {
-      return res.data.map((order: any, idx: number) => {
-        const orderNum = order.order_number || `#SD${String(order.id).slice(-4).toUpperCase()}`;
+      return res.data.map((rawOrder, idx: number) => {
+        const order = rawOrder as unknown as Record<string, unknown>;
+        const orderTailor = order.tailor as Record<string, unknown> | undefined;
+        const orderServiceObj = order.service as Record<string, unknown> | undefined;
+        const orderDesign = order.design as Record<string, unknown> | undefined;
+        const orderNum =
+          (order.order_number as string) ||
+          `#SD${String(order.id).slice(-4).toUpperCase()}`;
         const itemTitle =
-          order.item_title ||
-          order.garment_type ||
-          order.service?.title ||
-          order.title ||
+          (order.item_title as string) ||
+          (order.garment_type as string) ||
+          (orderServiceObj?.title as string) ||
+          (order.title as string) ||
           "Custom Stitch";
-        const tailorName = order.tailor?.shop_name || order.tailor?.name || "Bespoke Tailor";
+        const tailorName =
+          (orderTailor?.shop_name as string) ||
+          (orderTailor?.name as string) ||
+          "Bespoke Tailor";
         const image =
-          order.reference_image_url ||
-          order.design?.preview_url ||
-          order.image ||
+          (order.reference_image_url as string) ||
+          (orderDesign?.preview_url as string) ||
+          (order.image as string) ||
           "/images/booking/ref-gold-anarkali.jpg";
 
         let status: RecentOrderSummary["status"] = "In Progress";
-        const rawStatus = (order.status || "").toLowerCase();
+        const rawStatus = String(order.status || "").toLowerCase();
         if (rawStatus.includes("deliver") || rawStatus === "completed") {
           status = "Delivered";
         } else if (rawStatus.includes("out") || rawStatus.includes("transit")) {
@@ -327,17 +336,17 @@ export async function fetchRecentOrdersApi(): Promise<RecentOrderSummary[]> {
         }
 
         const dateStr = order.created_at
-          ? new Date(order.created_at).toLocaleDateString("en-US", {
+          ? new Date(String(order.created_at)).toLocaleDateString("en-US", {
               day: "numeric",
               month: "short",
               year: "numeric",
             })
           : "Recent";
 
-        const amountStr =
-          order.total_amount || order.amount
-            ? `Rs. ${Number(order.total_amount || order.amount).toLocaleString()}`
-            : "Rs. 2,500";
+        const rawAmt = order.total_amount || order.amount;
+        const amountStr = rawAmt
+          ? `Rs. ${Number(rawAmt).toLocaleString()}`
+          : "Rs. 2,500";
 
         return {
           id: String(order.id || `ord-${idx + 1}`),
@@ -381,19 +390,31 @@ export async function fetchUpcomingAppointmentsApi(): Promise<UpcomingAppointmen
   try {
     const res = await appointmentService.getAppointments({ page: 1, limit: 5 });
     if (res?.success && Array.isArray(res.data)) {
-      return res.data.map((apt: any, idx: number) => {
-        const tailorName = apt.tailor?.shop_name || apt.tailor?.name || "Bespoke Tailor";
+      return res.data.map((rawApt, idx: number) => {
+        const apt = rawApt as unknown as Record<string, unknown>;
+        const aptTailor = apt.tailor as Record<string, unknown> | undefined;
+        const aptService = apt.service as Record<string, unknown> | undefined;
+        const tailorName =
+          (aptTailor?.shop_name as string) ||
+          (aptTailor?.name as string) ||
+          "Bespoke Tailor";
         const tailorImage =
-          apt.tailor?.avatar_url || apt.tailor?.banner_url || "/images/home/tailor-rekha.png";
-        const serviceName = apt.service?.title || apt.service_name || apt.notes || "Custom Consultation";
+          (aptTailor?.avatar_url as string) ||
+          (aptTailor?.banner_url as string) ||
+          "/images/home/tailor-rekha.png";
+        const serviceName =
+          (aptService?.title as string) ||
+          (apt.service_name as string) ||
+          (apt.notes as string) ||
+          "Custom Consultation";
 
         let status: UpcomingAppointmentSummary["status"] = "Upcoming";
-        const rawStatus = (apt.status || "").toLowerCase();
+        const rawStatus = String(apt.status || "").toLowerCase();
         if (rawStatus === "confirmed") status = "Confirmed";
         else if (rawStatus === "pending") status = "Pending";
 
-        const dateStr = apt.appointment_date || apt.date || "Upcoming";
-        const timeStr = apt.appointment_time || apt.time || "11:00 AM";
+        const dateStr = String(apt.appointment_date || apt.date || "Upcoming");
+        const timeStr = String(apt.appointment_time || apt.time || "11:00 AM");
 
         return {
           id: String(apt.id || `apt-${idx + 1}`),
@@ -418,14 +439,14 @@ export async function fetchUpcomingAppointmentsApi(): Promise<UpcomingAppointmen
       if (json) {
         const storedList = JSON.parse(json);
         if (Array.isArray(storedList) && storedList.length > 0) {
-          return storedList.map((apt: any) => ({
+          return storedList.map((apt: Record<string, unknown>) => ({
             id: String(apt.id),
-            date: apt.date || "Upcoming",
-            time: apt.timeSlot || apt.time || "11:00 AM",
+            date: String(apt.date || "Upcoming"),
+            time: String(apt.timeSlot || apt.time || "11:00 AM"),
             tailorId: String(apt.tailorId || ""),
-            tailorName: apt.tailorName || "Bespoke Tailor",
-            tailorImage: apt.tailorImage || "/images/home/tailor-rekha.png",
-            serviceName: apt.serviceName || "Tailoring Consultation",
+            tailorName: String(apt.tailorName || "Bespoke Tailor"),
+            tailorImage: String(apt.tailorImage || "/images/home/tailor-rekha.png"),
+            serviceName: String(apt.serviceName || "Tailoring Consultation"),
             status: "Upcoming",
           }));
         }
@@ -448,19 +469,22 @@ export async function fetchSavedDesignsApi(): Promise<SavedDesignSummary[]> {
   try {
     const res = await designService.getDesigns();
     if (res?.success && Array.isArray(res.data)) {
-      const mapped = res.data.map((dsg: any, idx: number) => ({
-        id: String(dsg.id || `dsg-${idx + 1}`),
-        title: dsg.title || dsg.name || "AI Generated Outfit",
-        type: dsg.garment_type || dsg.style || "Custom",
-        image: dsg.preview_url || dsg.previewUrl || dsg.image_url || "/images/booking/ref-pink-kurti.jpg",
-        savedDate: dsg.created_at
-          ? new Date(dsg.created_at).toLocaleDateString("en-US", {
-              day: "numeric",
-              month: "short",
-              year: "numeric",
-            })
-          : "Saved",
-      }));
+      const mapped = res.data.map((rawDsg, idx: number) => {
+        const dsg = rawDsg as unknown as Record<string, unknown>;
+        return {
+          id: String(dsg.id || `dsg-${idx + 1}`),
+          title: String(dsg.title || dsg.name || "AI Generated Outfit"),
+          type: String(dsg.garment_type || dsg.style || "Custom"),
+          image: String(dsg.preview_url || dsg.previewUrl || dsg.image_url || "/images/booking/ref-pink-kurti.jpg"),
+          savedDate: dsg.created_at
+            ? new Date(String(dsg.created_at)).toLocaleDateString("en-US", {
+                day: "numeric",
+                month: "short",
+                year: "numeric",
+              })
+            : "Saved",
+        };
+      });
 
       // Check localStorage for AI Studio designs saved on client
       let localList: SavedDesignSummary[] = [];
@@ -470,12 +494,12 @@ export async function fetchSavedDesignsApi(): Promise<SavedDesignSummary[]> {
           if (raw) {
             const list = JSON.parse(raw);
             if (Array.isArray(list)) {
-              localList = list.map((item: any, idx: number) => ({
-                id: item.id || `local-dsg-${idx + 1}`,
-                title: item.title || item.name || "AI Studio Design",
-                type: item.garmentType || item.type || "Custom",
-                image: item.image || item.imageUrl || "/images/booking/ref-pink-kurti.jpg",
-                savedDate: item.date || item.savedDate || "Saved",
+              localList = list.map((item: Record<string, unknown>, idx: number) => ({
+                id: String(item.id || `local-dsg-${idx + 1}`),
+                title: String(item.title || item.name || "AI Studio Design"),
+                type: String(item.garmentType || item.type || "Custom"),
+                image: String(item.image || item.imageUrl || "/images/booking/ref-pink-kurti.jpg"),
+                savedDate: String(item.date || item.savedDate || "Saved"),
               }));
             }
           }
@@ -495,12 +519,12 @@ export async function fetchSavedDesignsApi(): Promise<SavedDesignSummary[]> {
       if (raw) {
         const list = JSON.parse(raw);
         if (Array.isArray(list) && list.length > 0) {
-          return list.map((item: any, idx: number) => ({
-            id: item.id || `local-dsg-${idx + 1}`,
-            title: item.title || item.name || "AI Studio Design",
-            type: item.garmentType || item.type || "Custom",
-            image: item.image || item.imageUrl || "/images/booking/ref-pink-kurti.jpg",
-            savedDate: item.date || "Saved",
+          return list.map((item: Record<string, unknown>, idx: number) => ({
+            id: String(item.id || `local-dsg-${idx + 1}`),
+            title: String(item.title || item.name || "AI Studio Design"),
+            type: String(item.garmentType || item.type || "Custom"),
+            image: String(item.image || item.imageUrl || "/images/booking/ref-pink-kurti.jpg"),
+            savedDate: String(item.date || "Saved"),
           }));
         }
       }
@@ -522,19 +546,23 @@ export async function fetchRecommendedOutfitsApi(): Promise<RecommendedOutfit[]>
   try {
     const res = await tailorService.getTailors({ limit: 4 });
     if (res?.success && Array.isArray(res.data) && res.data.length > 0) {
-      return res.data.map((tailor: any, idx: number) => {
-        const s = tailor.services?.[0];
+      return res.data.map((rawTailor, idx: number) => {
+        const tailor = rawTailor as unknown as Record<string, unknown>;
+        const services = Array.isArray(tailor.services) ? tailor.services as Array<Record<string, unknown>> : undefined;
+        const s = services?.[0];
+        const specialties = Array.isArray(tailor.specialties) ? tailor.specialties as string[] : undefined;
         return {
           id: String(tailor.id || `rec-${idx + 1}`),
-          title: s?.title || tailor.specialties?.[0] || "Custom Couture",
+          title: String(s?.title || specialties?.[0] || "Custom Couture"),
           startingPrice: s?.price ? `Rs. ${Number(s.price).toLocaleString()}` : "Rs. 2,000",
           priceValue: Number(s?.price) || 2000,
-          image:
+          image: String(
             tailor.banner_url ||
             tailor.avatar_url ||
-            "/images/booking/ref-peach-gown.jpg",
+            "/images/booking/ref-peach-gown.jpg"
+          ),
           tailorId: String(tailor.id),
-          tailorName: tailor.shop_name || tailor.name || "Bespoke Master",
+          tailorName: String(tailor.shop_name || tailor.name || "Bespoke Master"),
         };
       });
     }

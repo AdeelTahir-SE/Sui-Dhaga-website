@@ -15,7 +15,8 @@ import {
   ChevronUp,
   Sparkles,
   ArrowRight,
-  HelpCircle
+  HelpCircle,
+  type LucideIcon
 } from "lucide-react";
 import { PublicShell } from "@/components/common/site-shell";
 
@@ -25,7 +26,7 @@ export interface RefundSection {
   title: string;
   badge: string;
   summary: string;
-  icon: any;
+  icon: LucideIcon;
   subClauses: {
     heading: string;
     text: string;

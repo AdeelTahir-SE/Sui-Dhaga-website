@@ -17,7 +17,8 @@ import {
   CheckCircle2,
   HelpCircle,
   ArrowRight,
-  Sparkles
+  Sparkles,
+  type LucideIcon
 } from "lucide-react";
 import { PublicShell } from "@/components/common/site-shell";
 
@@ -27,7 +28,7 @@ export interface TermsSection {
   title: string;
   badge: string;
   summary: string;
-  icon: any;
+  icon: LucideIcon;
   subClauses: {
     heading: string;
     text: string;

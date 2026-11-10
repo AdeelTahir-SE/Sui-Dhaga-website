@@ -192,74 +192,103 @@ function getCurrentUserId(): string | undefined {
   return undefined;
 }
 
-export function mapBackendMessageToChat(msg: any, currentUserId?: string): ChatMessage {
+type RawRecord = Record<string, unknown>;
+
+export function mapBackendMessageToChat(rawMsg: ApiChatMessage | RawRecord, currentUserId?: string): ChatMessage {
+  const msg = rawMsg as RawRecord;
   const myId = currentUserId || getCurrentUserId();
-  const senderId = msg.sender_id || msg.senderId;
+  const senderId = (msg.sender_id || msg.senderId) as string | undefined;
   const isUserSender = myId && senderId ? senderId === myId : (msg.sender === "user" || msg.sender_role === "client");
 
-  const rawImages = msg.attachments || msg.images || [];
+  const rawImages = (msg.attachments || msg.images || []) as unknown[];
   const images = Array.isArray(rawImages)
-    ? rawImages.map((a: any) => (typeof a === "string" ? a : a.url || a.fileUrl || "")).filter(Boolean)
+    ? rawImages
+        .map((a) => {
+          if (typeof a === "string") return a;
+          const obj = a as Record<string, unknown>;
+          return String(obj?.url || obj?.fileUrl || "");
+        })
+        .filter(Boolean)
     : [];
 
   return {
     id: String(msg.id),
     sender: isUserSender ? "user" : "tailor",
-    text: msg.text || msg.message || "",
+    text: String(msg.text || msg.message || ""),
     timestamp: msg.created_at
-      ? new Date(msg.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+      ? new Date(String(msg.created_at)).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
       : "Just now",
     images,
     readStatus: Boolean(msg.read_status || msg.is_read || msg.isRead)
   };
 }
 
-export function mapBackendConversationToItem(conv: any): ConversationItem {
-  const myId = getCurrentUserId();
-  const tailorName =
-    conv.tailor?.shopName ||
-    conv.tailor?.shop_name ||
-    conv.participant?.full_name ||
-    conv.participant?.name ||
-    conv.tailor?.name ||
-    conv.client?.full_name ||
-    conv.customer?.full_name ||
-    "Master Tailor";
+export function mapBackendConversationToItem(rawConv: ApiConversation | RawRecord): ConversationItem {
+  const conv = rawConv as RawRecord;
+  const tailorObj = conv.tailor as RawRecord | undefined;
+  const participantObj = conv.participant as RawRecord | undefined;
+  const clientObj = conv.client as RawRecord | undefined;
+  const customerObj = conv.customer as RawRecord | undefined;
 
-  const avatar =
-    conv.tailor?.avatar_url ||
-    conv.participant?.avatar_url ||
-    conv.client?.avatar_url ||
-    conv.customer?.avatar_url ||
-    "/images/home/tailor-rekha.png";
+  const myId = getCurrentUserId();
+  const tailorName = String(
+    tailorObj?.shopName ||
+    tailorObj?.shop_name ||
+    participantObj?.full_name ||
+    participantObj?.name ||
+    tailorObj?.name ||
+    clientObj?.full_name ||
+    customerObj?.full_name ||
+    "Master Tailor"
+  );
+
+  const avatar = String(
+    tailorObj?.avatar_url ||
+    participantObj?.avatar_url ||
+    clientObj?.avatar_url ||
+    customerObj?.avatar_url ||
+    "/images/home/tailor-rekha.png"
+  );
 
   const lastMsgRaw = conv.last_message ?? conv.lastMessage;
   const lastMsg =
     typeof lastMsgRaw === "string"
       ? lastMsgRaw
-      : lastMsgRaw?.text || lastMsgRaw?.message || "Started conversation";
+      : String((lastMsgRaw as RawRecord | undefined)?.text || (lastMsgRaw as RawRecord | undefined)?.message || "Started conversation");
 
-  const timestamp = conv.updated_at || conv.created_at
-    ? new Date(conv.updated_at || conv.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+  const timeRaw = (conv.updated_at || conv.created_at) as string | undefined;
+  const timestamp = timeRaw
+    ? new Date(timeRaw).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
     : "Recently";
+
+  const rawMsgs = conv.messages as Array<ApiChatMessage | RawRecord> | undefined;
+  const rawOrderStatus = String(conv.order_status || conv.orderStatus || "In Progress").toLowerCase();
+  const orderStatus: ConversationItem["orderStatus"] =
+    rawOrderStatus.includes("deliver") || rawOrderStatus.includes("complet")
+      ? "Delivered"
+      : rawOrderStatus.includes("confirm")
+      ? "Confirmed"
+      : rawOrderStatus.includes("pend")
+      ? "Pending"
+      : "In Progress";
 
   return {
     id: String(conv.id),
     tailorName,
     handle: `@${tailorName.toLowerCase().replace(/[^a-z0-9]/g, "")}`,
     avatar,
-    rating: conv.tailor?.rating || 4.8,
-    reviewsCount: conv.tailor?.reviewsCount || 120,
+    rating: Number(tailorObj?.rating) || 4.8,
+    reviewsCount: Number(tailorObj?.reviewsCount) || 120,
     isOnline: true,
     isTyping: false,
     lastMessage: lastMsg,
     timestamp,
-    unreadCount: conv.unread_count || conv.unreadCount || 0,
-    orderNumber: conv.order_number || conv.orderNumber || "#SD1256",
-    outfitTitle: conv.outfit_title || conv.outfitTitle || "Custom Stitching",
-    outfitImage: conv.outfit_image || conv.outfitImage || "/images/home/hero-float-pastel-anarkali.png",
-    orderStatus: conv.order_status || conv.orderStatus || "In Progress",
-    messages: conv.messages ? conv.messages.map((m: any) => mapBackendMessageToChat(m, myId)) : []
+    unreadCount: Number(conv.unread_count || conv.unreadCount) || 0,
+    orderNumber: String(conv.order_number || conv.orderNumber || "#SD1256"),
+    outfitTitle: String(conv.outfit_title || conv.outfitTitle || "Custom Stitching"),
+    outfitImage: String(conv.outfit_image || conv.outfitImage || "/images/home/hero-float-pastel-anarkali.png"),
+    orderStatus,
+    messages: Array.isArray(rawMsgs) ? rawMsgs.map((m) => mapBackendMessageToChat(m, myId)) : []
   };
 }
 
@@ -394,7 +423,7 @@ export async function startConversationApi(
       const mapped = mapBackendConversationToItem(res.data);
       return { success: true, conversation: mapped };
     }
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.warn("[Messages API] Start conversation on backend failed:", err);
   }
   return { success: false, error: "Failed to start conversation" };

@@ -100,7 +100,9 @@ export const authService = {
   /**
    * Authenticate with Google payload / token
    */
-  loginWithGoogle: async (payload: any): Promise<ApiResponse<AuthSessionData>> => {
+  loginWithGoogle: async (
+    payload: { idToken?: string; accessToken?: string; code?: string } & Record<string, unknown>
+  ): Promise<ApiResponse<AuthSessionData>> => {
     const res = await apiClient.post<ApiResponse<AuthSessionData>>("/auth/google", payload);
     const token =
       res?.data?.accessToken ||

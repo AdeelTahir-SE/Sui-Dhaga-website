@@ -3,7 +3,7 @@
  * Based on OpenAPI Schema v1.0.0
  */
 
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   message?: string;
   data: T;
@@ -11,7 +11,7 @@ export interface ApiResponse<T = any> {
   error?: {
     code?: string;
     message: string;
-    details?: any;
+    details?: unknown;
   };
 }
 
@@ -27,7 +27,7 @@ export interface ApiErrorResponse {
   error: {
     code?: string;
     message: string;
-    details?: any;
+    details?: unknown;
   };
 }
 
@@ -280,16 +280,29 @@ export interface Design {
   id: string;
   user_id?: string;
   title: string;
+  name?: string;
   prompt?: string;
+  description?: string;
   preview_url?: string;
   previewUrl?: string;
   image_url?: string;
+  imageUrl?: string;
+  thumbnail_url?: string;
   category?: string;
   fabric_type?: string;
+  fabric?: string;
   color?: string;
-  customization_options?: Record<string, any>;
+  color_palette?: string[];
+  estimated_cost?: string;
+  customization_options?: Record<string, unknown>;
   tags?: string[];
+  is_favorite?: boolean;
+  isFavorite?: boolean;
+  is_trash?: boolean;
+  isTrash?: boolean;
+  likes_count?: number;
   created_at?: string;
+  updated_at?: string;
 }
 
 // -------------------------------------------------------------

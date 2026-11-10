@@ -209,7 +209,7 @@ export async function fetchTailorServicesApi(tailorId: string): Promise<TailorBo
   try {
     const res = await tailorService.getTailorById(tailorId);
     if (res?.data?.services && Array.isArray(res.data.services) && res.data.services.length > 0) {
-      return res.data.services.map((s: any) => ({
+      return res.data.services.map((s) => ({
         id: s.id,
         name: s.title || s.name || "Custom Stitching",
         category: s.category || "General",
@@ -301,7 +301,7 @@ export async function createBookingAppointmentApi(
 
       return { success: true, appointment };
     }
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.warn("[Booking API] Backend booking error, saving locally:", err);
   }
 

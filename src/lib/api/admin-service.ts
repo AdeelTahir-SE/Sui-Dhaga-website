@@ -102,7 +102,7 @@ export const adminService = {
       if (IS_BACKEND_CONFIGURED) {
         try {
           return await apiClient.get<PaginatedResponse<AdminUser>>("/api/admin/users", {
-            params: params as any
+            params: params ? { ...params } : undefined
           });
         } catch (e) {
           console.warn("Backend API unavailable, using local mock for users:", e);
@@ -245,7 +245,7 @@ export const adminService = {
       if (IS_BACKEND_CONFIGURED) {
         try {
           return await apiClient.get<PaginatedResponse<AdminTailor>>("/api/admin/tailors", {
-            params: params as any
+            params: params ? { ...params } : undefined
           });
         } catch (e) {
           console.warn("Backend API unavailable, using local mock for tailors:", e);
@@ -358,7 +358,7 @@ export const adminService = {
       if (IS_BACKEND_CONFIGURED) {
         try {
           return await apiClient.get<PaginatedResponse<AdminOrder>>("/api/admin/orders", {
-            params: params as any
+            params: params ? { ...params } : undefined
           });
         } catch (e) {
           console.warn("Backend API unavailable, using local mock for orders:", e);
@@ -380,13 +380,14 @@ export const adminService = {
       }
 
       if (params?.status && params.status !== "all") {
-        if (params.status === "in_progress" as any) {
+        const statusStr = String(params.status);
+        if (statusStr === "in_progress") {
           list = list.filter((o) =>
             ["stitching", "cutting", "measuring", "fabric_sourcing", "quality_check"].includes(o.status)
           );
-        } else if (params.status === "completed" as any) {
+        } else if (statusStr === "completed") {
           list = list.filter((o) => ["completed", "delivered"].includes(o.status));
-        } else if (params.status === "pending" as any) {
+        } else if (statusStr === "pending") {
           list = list.filter((o) => ["pending_approval", "pending"].includes(o.status));
         } else {
           list = list.filter((o) => o.status === params.status);
@@ -492,7 +493,7 @@ export const adminService = {
         try {
           const res = await apiClient.get<ApiResponse<AdminPaymentTransaction[]>>(
             "/api/admin/payments/transactions",
-            { params: params as any }
+            { params: params ? { ...params } : undefined }
           );
           return res.data || res;
         } catch (e) {
