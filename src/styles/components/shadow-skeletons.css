@@ -114,3 +114,41 @@
   padding: 24px;
 }
 
+/* AI Design Studio Card Skeleton */
+.sd-studio-card-skeleton {
+  background: #FFFFFF;
+  border: 1px solid #EAE6DF;
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.sd-studio-card-skeleton.compact {
+  border-radius: 14px;
+  padding: 12px;
+  gap: 12px;
+}
+
+.sd-studio-thumb-skeleton {
+  width: 100%;
+  aspect-ratio: 3 / 3.8;
+}
+
+.sd-studio-thumb-skeleton.compact {
+  aspect-ratio: 3 / 3.9;
+  border-radius: 10px;
+}
+
+.sd-studio-meta-skeleton {
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sd-studio-meta-skeleton.compact {
+  padding: 2px 4px;
+}
+
+

@@ -1,8 +1,21 @@
 /**
  * AI Design Studio Data & API Layer for Sui Dhāga
- * Connects to process.env.NEXT_PUBLIC_API_URL or process.env.NEXT_PUBLIC_BACKEND_URL
- * with robust local storage synchronization and mock fallback data.
+ * Connects directly to live database endpoints (/designs, /community/posts,
+ * /measurements, /uploads/image) via authenticated API services,
+ * with clean local persistence and guest-only demo fallbacks.
  */
+
+import { getAuthToken } from "./api/client";
+import { designService } from "./api/design-service";
+import { communityService } from "./api/community-service";
+import { measurementService } from "./api/measurement-service";
+import { getCachedValue, notifyCacheDomain } from "./api/data-cache";
+import {
+  ApiResponse,
+  CommunityPost as ApiCommunityPost,
+  Design as ApiDesign,
+  MeasurementProfile as ApiMeasurementProfile,
+} from "./api/types";
 
 export interface StudioDesignItem {
   id: string;
@@ -422,189 +435,594 @@ export const sampleTechPacks: Record<string, TechPackData> = {
 };
 
 // ---------------------------------------------------------------------------
-// LocalStorage Persistence Helpers
+// Mapping & Local Persistence Helpers
 // ---------------------------------------------------------------------------
 
-const LOCAL_DESIGNS_KEY = "sui_dhaga_studio_recent_designs";
+const LOCAL_CREATED_DESIGNS_KEY = "sui_dhaga_studio_created_designs";
+const LOCAL_PREFS_KEY = "sui_dhaga_studio_design_prefs";
+const LEGACY_LOCAL_DESIGNS_KEY = "sui_dhaga_studio_recent_designs";
 
-function getLocalDesigns(): StudioDesignItem[] {
-  if (typeof window === "undefined") return initialRecentDesigns;
-  try {
-    const raw = localStorage.getItem(LOCAL_DESIGNS_KEY);
-    if (raw) {
-      return JSON.parse(raw);
-    }
-  } catch (e) {
-    console.warn("Could not read local studio designs:", e);
-  }
-  return initialRecentDesigns;
+interface StudioDesignPrefs {
+  favorites: Record<string, boolean>;
+  trash: Record<string, boolean>;
+  edits: Record<string, Partial<StudioDesignItem>>;
 }
 
-function saveLocalDesigns(list: StudioDesignItem[]) {
+const VALID_STUDIO_CATEGORIES: StudioDesignItem["category"][] = [
+  "Ethnic Wear",
+  "Anarkali",
+  "Kurta Set",
+  "Lehenga",
+  "Indo-Western",
+  "Saree",
+  "Sherwani"
+];
+
+function normalizeStudioCategory(raw?: string): StudioDesignItem["category"] {
+  if (!raw) return "Ethnic Wear";
+  const matched = VALID_STUDIO_CATEGORIES.find(
+    (c) => c.toLowerCase() === raw.toLowerCase()
+  );
+  if (matched) return matched;
+  const lower = raw.toLowerCase();
+  if (lower.includes("anarkali") || lower.includes("gown")) return "Anarkali";
+  if (lower.includes("lehenga")) return "Lehenga";
+  if (lower.includes("saree")) return "Saree";
+  if (lower.includes("sherwani") || lower.includes("men")) return "Sherwani";
+  if (lower.includes("kurta") || lower.includes("sharara") || lower.includes("co-ord")) return "Kurta Set";
+  if (lower.includes("indo")) return "Indo-Western";
+  return "Ethnic Wear";
+}
+
+function formatRelativeAgo(isoDate?: string): string {
+  if (!isoDate) return "Edited recently";
+  const dateMs = new Date(isoDate).getTime();
+  if (Number.isNaN(dateMs)) return "Edited recently";
+  const diffDays = Math.floor((Date.now() - dateMs) / (1000 * 60 * 60 * 24));
+  if (diffDays <= 0) return "Edited today";
+  if (diffDays === 1) return "Edited 1 day ago";
+  if (diffDays < 7) return `Edited ${diffDays} days ago`;
+  const diffWeeks = Math.floor(diffDays / 7);
+  return `Edited ${diffWeeks} week${diffWeeks > 1 ? "s" : ""} ago`;
+}
+
+/**
+ * Map a backend Design DTO into StudioDesignItem
+ */
+export function mapBackendDesignToStudioItem(des: ApiDesign): StudioDesignItem {
+  const opts = des.customization_options || {};
+  const palette: string[] = Array.isArray(des.color_palette)
+    ? des.color_palette
+    : Array.isArray(opts.colorPalette)
+    ? opts.colorPalette
+    : des.color
+    ? [des.color, "#FAF8F5", "#D5B069", "#334155"]
+    : ["#078B87", "#D5B069", "#FAF8F5", "#334155"];
+
+  return {
+    id: des.id,
+    title: des.title || des.name || "Custom AI Design",
+    category: normalizeStudioCategory(des.category),
+    editedAgo: formatRelativeAgo(des.updated_at || des.created_at),
+    savedDate: des.created_at
+      ? new Date(des.created_at).toLocaleDateString("en-GB", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric"
+        })
+      : "Recently",
+    image:
+      des.preview_url ||
+      des.previewUrl ||
+      des.image_url ||
+      des.imageUrl ||
+      des.thumbnail_url ||
+      "/images/design-studio/recent/anarkali-gold.jpg",
+    prompt: des.prompt || des.description || "Custom tailored AI outfit design.",
+    fabric:
+      des.fabric_type ||
+      des.fabric ||
+      (typeof opts.fabric === "string" && opts.fabric) ||
+      "Pure Silk & Organza",
+    colorPalette: palette,
+    estimatedCost:
+      des.estimated_cost ||
+      (typeof opts.estimatedCost === "string" && opts.estimatedCost) ||
+      "Rs. 14,500 - Rs. 20,000",
+    tags:
+      Array.isArray(des.tags) && des.tags.length > 0
+        ? des.tags
+        : [des.category || "Custom", "AI Studio"],
+    isFavorite: Boolean(des.is_favorite ?? des.isFavorite ?? false),
+    isTrash: Boolean(des.is_trash ?? des.isTrash ?? false),
+    likesCount: des.likes_count ?? 0
+  };
+}
+
+function getDesignPrefs(): StudioDesignPrefs {
+  if (typeof window === "undefined") {
+    return { favorites: {}, trash: {}, edits: {} };
+  }
+  try {
+    const raw = localStorage.getItem(LOCAL_PREFS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      return {
+        favorites: parsed.favorites || {},
+        trash: parsed.trash || {},
+        edits: parsed.edits || {}
+      };
+    }
+  } catch (e) {
+    console.warn("Could not read studio design prefs:", e);
+  }
+  return { favorites: {}, trash: {}, edits: {} };
+}
+
+function saveDesignPrefs(prefs: StudioDesignPrefs): void {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(LOCAL_DESIGNS_KEY, JSON.stringify(list));
+    localStorage.setItem(LOCAL_PREFS_KEY, JSON.stringify(prefs));
   } catch (e) {
-    console.warn("Could not write local studio designs:", e);
+    console.warn("Could not save studio design prefs:", e);
   }
 }
 
-// ---------------------------------------------------------------------------
-// Exported API Functions
-// ---------------------------------------------------------------------------
-
-/**
- * Fetch Recent Designs for AI Design Studio
- */
-export async function fetchStudioRecentDesignsApi(): Promise<StudioDesignItem[]> {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_BACKEND_URL;
-
-  if (apiUrl) {
-    try {
-      const res = await fetch(`${apiUrl}/api/design-studio/recent`, {
-        headers: { "Content-Type": "application/json" },
-        cache: "no-store"
-      });
-      if (res.ok) {
-        const data = await res.json();
-        return data.designs || data.data || [];
-      }
-    } catch (err) {
-      console.warn("[Design Studio API] Backend not reachable, using local sync:", err);
+function getCreatedLocalDesigns(): StudioDesignItem[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(LOCAL_CREATED_DESIGNS_KEY) || localStorage.getItem(LEGACY_LOCAL_DESIGNS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
     }
+  } catch (e) {
+    console.warn("Could not read local created designs:", e);
+  }
+  return [];
+}
+
+function saveCreatedLocalDesigns(list: StudioDesignItem[]): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(LOCAL_CREATED_DESIGNS_KEY, JSON.stringify(list));
+  } catch (e) {
+    console.warn("Could not save local created designs:", e);
+  }
+}
+
+function applyDesignPrefs(item: StudioDesignItem, prefs: StudioDesignPrefs): StudioDesignItem {
+  const edits = prefs.edits[item.id] || {};
+  const isFavorite =
+    item.id in prefs.favorites ? prefs.favorites[item.id] : item.isFavorite;
+  const isTrash = item.id in prefs.trash ? prefs.trash[item.id] : Boolean(item.isTrash);
+  return { ...item, ...edits, isFavorite, isTrash };
+}
+
+// ---------------------------------------------------------------------------
+// Exported Cache & API Functions
+// ---------------------------------------------------------------------------
+
+function resolveRecentDesignsFromRaw(
+  dbDesigns: ApiDesign[] | null,
+  options?: { includeTrash?: boolean; onlyTrash?: boolean }
+): StudioDesignItem[] {
+  const { includeTrash = false, onlyTrash = false } = options || {};
+  const prefs = getDesignPrefs();
+  const localCreated = getCreatedLocalDesigns();
+
+  let combined: StudioDesignItem[];
+  if (dbDesigns) {
+    const dbItems = dbDesigns.map(mapBackendDesignToStudioItem);
+    const dbIds = new Set(dbItems.map((d) => d.id));
+    combined = [...localCreated.filter((l) => !dbIds.has(l.id)), ...dbItems];
+  } else if (getAuthToken()) {
+    combined = localCreated;
+  } else {
+    const localIds = new Set(localCreated.map((d) => d.id));
+    combined = [...localCreated, ...initialRecentDesigns.filter((d) => !localIds.has(d.id))];
   }
 
-  return getLocalDesigns().filter((d) => !d.isTrash);
+  const resolved = combined.map((item) => applyDesignPrefs(item, prefs));
+  if (onlyTrash) return resolved.filter((d) => d.isTrash);
+  if (includeTrash) return resolved;
+  return resolved.filter((d) => !d.isTrash);
 }
 
 /**
- * Fetch AI Suggestions
+ * Synchronously builds studio recent designs if raw DB designs are already cached
+ * (or immediately for guest sessions). Returns null only if an authenticated fetch is needed.
+ */
+export function peekStudioRecentDesigns(options?: {
+  includeTrash?: boolean;
+  onlyTrash?: boolean;
+}): StudioDesignItem[] | null {
+  if (typeof window === "undefined") return null;
+  if (!getAuthToken()) {
+    return resolveRecentDesignsFromRaw(null, options);
+  }
+  const cachedRes = getCachedValue<ApiResponse<ApiDesign[]>>("designs", "raw-list", {
+    scope: "auth",
+  });
+  if (!cachedRes || !Array.isArray(cachedRes.data)) return null;
+  return resolveRecentDesignsFromRaw(cachedRes.data, options);
+}
+
+/**
+ * Fetch user studio designs from live database (/designs),
+ * using cached results unless cache was invalidated.
+ */
+export async function fetchStudioRecentDesignsApi(options?: {
+  includeTrash?: boolean;
+  onlyTrash?: boolean;
+}): Promise<StudioDesignItem[]> {
+  if (!getAuthToken()) {
+    return resolveRecentDesignsFromRaw(null, options);
+  }
+
+  try {
+    const res = await designService.getDesigns();
+    if (res?.success && Array.isArray(res.data)) {
+      return resolveRecentDesignsFromRaw(res.data, options);
+    }
+  } catch (err) {
+    console.warn("[Design Studio API] Failed fetching /designs, falling back to local session items:", err);
+  }
+
+  return resolveRecentDesignsFromRaw(null, options);
+}
+
+function buildAiSuggestionsFromPosts(posts?: ApiCommunityPost[]): AiSuggestionItem[] {
+  const dbSuggestions: AiSuggestionItem[] = [];
+  if (Array.isArray(posts)) {
+    posts.forEach((p) => {
+      if (p.images && p.images.length > 0) {
+        dbSuggestions.push({
+          id: `comm-sugg-${p.id}`,
+          title: p.title,
+          subtitle: p.tags?.[0] || "Community Pick",
+          image: p.images[0],
+          category: p.tags?.[0] || "Ethnic Wear",
+          prompt: p.content,
+          tags: p.tags || ["Inspired"],
+          fabric: "Pure Silk"
+        });
+      }
+    });
+  }
+
+  if (dbSuggestions.length >= 5) {
+    return dbSuggestions.slice(0, 5);
+  }
+
+  const seen = new Set(dbSuggestions.map((s) => s.id));
+  return [
+    ...dbSuggestions,
+    ...initialAiSuggestions.filter((s) => !seen.has(s.id))
+  ].slice(0, 5);
+}
+
+/**
+ * Synchronously derive AI suggestions when community posts cache is warm.
+ */
+export function peekStudioAiSuggestions(): AiSuggestionItem[] | null {
+  if (typeof window === "undefined") return null;
+  const cachedPosts = getCachedValue<ApiResponse<ApiCommunityPost[]>>("community", "posts:{}", {
+    scope: "auth",
+  });
+  if (!cachedPosts || !Array.isArray(cachedPosts.data)) return null;
+  return buildAiSuggestionsFromPosts(cachedPosts.data);
+}
+
+/**
+ * Fetch AI Suggestions & Community Style Inspirations (cache-backed)
  */
 export async function fetchStudioAiSuggestionsApi(): Promise<AiSuggestionItem[]> {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_BACKEND_URL;
-
-  if (apiUrl) {
-    try {
-      const res = await fetch(`${apiUrl}/api/design-studio/suggestions`, {
-        headers: { "Content-Type": "application/json" },
-        cache: "no-store"
-      });
-      if (res.ok) {
-        const data = await res.json();
-        return data.suggestions || data.data || [];
-      }
-    } catch (err) {
-      console.warn("[Design Studio API] Suggestions backend fallback:", err);
+  try {
+    const postRes = await communityService.getPosts();
+    if (postRes?.success && Array.isArray(postRes.data)) {
+      return buildAiSuggestionsFromPosts(postRes.data);
     }
+  } catch (err) {
+    console.warn("[Design Studio API] Community suggestions fallback:", err);
   }
 
-  return initialAiSuggestions;
+  return buildAiSuggestionsFromPosts();
 }
 
-/**
- * Fetch Templates by Category
- */
-export async function fetchStudioTemplatesApi(
-  category: string = "All"
-): Promise<StudioTemplate[]> {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_BACKEND_URL;
-
-  if (apiUrl) {
-    try {
-      const res = await fetch(
-        `${apiUrl}/api/design-studio/templates?category=${encodeURIComponent(category)}`,
-        {
-          headers: { "Content-Type": "application/json" },
-          cache: "no-store"
-        }
-      );
-      if (res.ok) {
-        const data = await res.json();
-        return data.templates || data.data || [];
+function filterAndSortTemplates(
+  posts: ApiCommunityPost[] | undefined,
+  category: string,
+  tab: string
+): StudioTemplate[] {
+  const communityTemplates: StudioTemplate[] = [];
+  if (Array.isArray(posts)) {
+    posts.forEach((p) => {
+      if (p.images && p.images.length > 0) {
+        communityTemplates.push({
+          id: `comm-tmpl-${p.id}`,
+          title: p.title,
+          category: "Trending",
+          image: p.images[0],
+          description: p.content,
+          fabric: "Bespoke Silk & Georgette",
+          estimatedPrice: "Rs. 16,000",
+          usageCount: p.likes_count || p.likesCount || 45,
+          tags: p.tags && p.tags.length > 0 ? p.tags : ["Trending", "Community"]
+        });
       }
-    } catch (err) {
-      console.warn("[Design Studio API] Templates backend fallback:", err);
-    }
+    });
   }
 
-  if (category === "All") return initialTemplates;
-  return initialTemplates.filter(
-    (t) => t.category.toLowerCase() === category.toLowerCase()
+  let pool: StudioTemplate[] = [...communityTemplates, ...initialTemplates];
+
+  if (tab.toLowerCase() === "trending") {
+    pool = [...pool].sort((a, b) => b.usageCount - a.usageCount);
+  } else if (tab.toLowerCase() === "new arrivals") {
+    pool = [...pool].reverse();
+  }
+
+  if (category === "All" || category === "All Templates") return pool;
+  if (category === "Men's Wear") {
+    return pool.filter((t) => t.tags.includes("Men's Wear") || t.category === "Men's");
+  }
+  return pool.filter(
+    (t) =>
+      t.category.toLowerCase() === category.toLowerCase() ||
+      t.tags.some((tg) => tg.toLowerCase() === category.toLowerCase()) ||
+      t.title.toLowerCase().includes(category.toLowerCase())
   );
 }
 
 /**
- * Get a specific design by ID
+ * Synchronously filter/sort studio templates when community posts are already cached.
+ */
+export function peekStudioTemplates(
+  category: string = "All Templates",
+  tab: string = "Popular"
+): StudioTemplate[] | null {
+  if (typeof window === "undefined") return null;
+  const cachedPosts = getCachedValue<ApiResponse<ApiCommunityPost[]>>("community", "posts:{}", {
+    scope: "auth",
+  });
+  if (!cachedPosts || !Array.isArray(cachedPosts.data)) return null;
+  return filterAndSortTemplates(cachedPosts.data, category, tab);
+}
+
+/**
+ * Fetch Studio Templates & Community Inspirations by Category / Tab (uses cached community feed)
+ */
+export async function fetchStudioTemplatesApi(
+  category: string = "All Templates",
+  tab: string = "Popular"
+): Promise<StudioTemplate[]> {
+  try {
+    const postRes = await communityService.getPosts();
+    if (postRes?.success && Array.isArray(postRes.data)) {
+      return filterAndSortTemplates(postRes.data, category, tab);
+    }
+  } catch (err) {
+    console.warn("[Design Studio API] Templates/inspiration DB fetch fallback:", err);
+  }
+
+  return filterAndSortTemplates(undefined, category, tab);
+}
+
+function findLocalOrTemplateDesign(id: string): StudioDesignItem | null {
+  const prefs = getDesignPrefs();
+  const isDefaultPlaceholder = id === "DS67234" || id === "DSK1234" || id === "latest";
+
+  const created = getCreatedLocalDesigns();
+  const localMatch = created.find((d) => d.id === id);
+  if (localMatch) return applyDesignPrefs(localMatch, prefs);
+
+  const tmplMatch = initialTemplates.find((t) => t.id === id);
+  if (tmplMatch) {
+    return applyDesignPrefs(
+      {
+        id: tmplMatch.id,
+        title: tmplMatch.title,
+        category: normalizeStudioCategory(tmplMatch.category),
+        editedAgo: "Verified Template",
+        savedDate: "Curated",
+        image: tmplMatch.image,
+        prompt: tmplMatch.description,
+        fabric: tmplMatch.fabric,
+        colorPalette: ["#078B87", "#FAF8F5", "#D5B069", "#111111"],
+        estimatedCost: tmplMatch.estimatedPrice,
+        tags: tmplMatch.tags,
+        isFavorite: false
+      },
+      prefs
+    );
+  }
+
+  const demoMatch = initialRecentDesigns.find((d) => d.id === id);
+  if (demoMatch) return applyDesignPrefs(demoMatch, prefs);
+
+  if (isDefaultPlaceholder) {
+    return applyDesignPrefs(initialRecentDesigns[0], prefs);
+  }
+
+  return null;
+}
+
+/**
+ * Synchronously checks cached detail, cached list, local session items, or templates.
+ * Returns undefined only when an authenticated fetch is still required.
+ */
+export function peekDesignById(id: string): StudioDesignItem | null | undefined {
+  if (typeof window === "undefined") return undefined;
+  const prefs = getDesignPrefs();
+  const hasToken = !!getAuthToken();
+  const isDefaultPlaceholder = id === "DS67234" || id === "DSK1234" || id === "latest";
+
+  if (hasToken && !id.startsWith("des-") && !id.startsWith("tmpl-")) {
+    const cachedList = peekStudioRecentDesigns();
+    if (isDefaultPlaceholder) {
+      if (!cachedList) return undefined;
+      if (cachedList.length > 0) return cachedList[0];
+    } else {
+      const listMatch = cachedList?.find((d) => d.id === id);
+      if (listMatch) return listMatch;
+
+      const cachedDetail = getCachedValue<ApiResponse<ApiDesign>>("designs", `raw-detail:${id}`, {
+        scope: "auth",
+      });
+      if (cachedDetail?.data) {
+        return applyDesignPrefs(mapBackendDesignToStudioItem(cachedDetail.data), prefs);
+      }
+      if (!cachedList) return undefined;
+    }
+  }
+
+  return findLocalOrTemplateDesign(id);
+}
+
+/**
+ * Fetch a specific design by ID from database (/designs/{designId}), cache, local session, or templates
  */
 export async function fetchDesignByIdApi(
   id: string
 ): Promise<StudioDesignItem | null> {
-  const list = getLocalDesigns();
-  const found = list.find((d) => d.id === id);
-  if (found) return found;
+  const cached = peekDesignById(id);
+  if (cached !== undefined) {
+    return cached;
+  }
 
-  const foundRecent = initialRecentDesigns.find((d) => d.id === id);
-  return foundRecent || null;
+  const prefs = getDesignPrefs();
+  const hasToken = !!getAuthToken();
+  const isDefaultPlaceholder = id === "DS67234" || id === "DSK1234" || id === "latest";
+
+  if (hasToken && !id.startsWith("des-") && !id.startsWith("tmpl-")) {
+    if (isDefaultPlaceholder) {
+      const userDesigns = await fetchStudioRecentDesignsApi();
+      if (userDesigns.length > 0) return userDesigns[0];
+    } else {
+      // Reuse raw list cache before hitting /designs/{id} individually
+      const cachedListRes = getCachedValue<ApiResponse<ApiDesign[]>>("designs", "raw-list", {
+        scope: "auth",
+      });
+      const listMatch = cachedListRes?.data?.find((d) => d.id === id);
+      if (listMatch) {
+        return applyDesignPrefs(mapBackendDesignToStudioItem(listMatch), prefs);
+      }
+
+      try {
+        const res = await designService.getDesignById(id);
+        if (res?.success && res.data) {
+          return applyDesignPrefs(mapBackendDesignToStudioItem(res.data), prefs);
+        }
+      } catch (err) {
+        console.warn(`[Design Studio API] Failed fetching design ${id}:`, err);
+      }
+    }
+  }
+
+  return findLocalOrTemplateDesign(id);
 }
 
 /**
- * Toggle favorite on a design
+ * Toggle favorite status and notify studio views without invalidating raw DB list cache
  */
 export async function toggleFavoriteStudioDesignApi(
-  id: string
+  id: string,
+  currentState?: boolean
 ): Promise<boolean> {
-  const list = getLocalDesigns();
-  const target = list.find((d) => d.id === id);
-  if (target) {
-    target.isFavorite = !target.isFavorite;
-    saveLocalDesigns(list);
-    return target.isFavorite;
-  }
-  return false;
+  const prefs = getDesignPrefs();
+  const baseVal =
+    id in prefs.favorites
+      ? prefs.favorites[id]
+      : currentState !== undefined
+      ? currentState
+      : Boolean(initialRecentDesigns.find((d) => d.id === id)?.isFavorite);
+  const nextVal = !baseVal;
+  prefs.favorites[id] = nextVal;
+  saveDesignPrefs(prefs);
+  notifyCacheDomain("designs");
+  return nextVal;
 }
 
 /**
- * Soft delete or restore a design to trash
+ * Move a design to Trash or Restore it and notify studio views cleanly
  */
 export async function toggleTrashStudioDesignApi(
   id: string,
   moveToTrash: boolean = true
 ): Promise<boolean> {
-  const list = getLocalDesigns();
-  const target = list.find((d) => d.id === id);
-  if (target) {
-    target.isTrash = moveToTrash;
-    saveLocalDesigns(list);
-    return true;
-  }
-  return false;
+  const prefs = getDesignPrefs();
+  prefs.trash[id] = moveToTrash;
+  saveDesignPrefs(prefs);
+  notifyCacheDomain("designs");
+  return true;
 }
 
 /**
- * Generate Design from Prompt
+ * Persist edits made inside the Studio Design Editor and notify studio views cleanly
+ */
+export async function saveStudioDesignEditsApi(
+  id: string,
+  updates: Partial<StudioDesignItem>
+): Promise<boolean> {
+  const prefs = getDesignPrefs();
+  prefs.edits[id] = { ...(prefs.edits[id] || {}), ...updates, editedAgo: "Edited just now" };
+  saveDesignPrefs(prefs);
+
+  // Also update in local created array if present
+  const created = getCreatedLocalDesigns();
+  const idx = created.findIndex((d) => d.id === id);
+  if (idx >= 0) {
+    created[idx] = { ...created[idx], ...updates, editedAgo: "Edited just now" };
+    saveCreatedLocalDesigns(created);
+  }
+  notifyCacheDomain("designs");
+  return true;
+}
+
+/**
+ * Save a design into Studio My Designs + Customer Saved Designs storage
+ */
+export async function saveStudioDesignItemApi(
+  design: StudioDesignItem
+): Promise<StudioDesignItem> {
+  const created = getCreatedLocalDesigns();
+  const filtered = created.filter((d) => d.id !== design.id);
+  const updated = [design, ...filtered];
+  saveCreatedLocalDesigns(updated);
+
+  // Sync with /customer/saved-designs local store
+  if (typeof window !== "undefined") {
+    try {
+      const savedRaw = localStorage.getItem("sui_dhaga_saved_designs");
+      const savedList = savedRaw ? JSON.parse(savedRaw) : [];
+      if (Array.isArray(savedList) && !savedList.some((s: { id?: string }) => s.id === design.id)) {
+        savedList.unshift({
+          id: design.id,
+          title: design.title,
+          category: "Outfits",
+          savedDate: design.savedDate || "Today",
+          image: design.image,
+          prompt: design.prompt,
+          fabric: design.fabric,
+          estimatedCost: design.estimatedCost,
+          tags: design.tags,
+          isFavorite: design.isFavorite
+        });
+        localStorage.setItem("sui_dhaga_saved_designs", JSON.stringify(savedList));
+      }
+    } catch {}
+  }
+
+  notifyCacheDomain("designs");
+  return design;
+}
+
+/**
+ * Generate Design Concept from Prompt / Reference / Sketch and persist to session
  */
 export async function generateDesignFromPromptApi(
   payload: DesignGenerationPayload
 ): Promise<StudioDesignItem> {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_BACKEND_URL;
-
-  if (apiUrl) {
-    try {
-      const res = await fetch(`${apiUrl}/api/design-studio/generate`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-      if (res.ok) {
-        const data = await res.json();
-        return data.design || data.data;
-      }
-    } catch (err) {
-      console.warn("[Design Studio API] Generate endpoint fallback:", err);
-    }
-  }
-
-  // Simulate AI generation locally
   const imagePool = [
     "/images/design-studio/recent/anarkali-gold.jpg",
     "/images/design-studio/recent/kurta-mint.jpg",
@@ -612,12 +1030,22 @@ export async function generateDesignFromPromptApi(
     "/images/design-studio/recent/indowestern-sage.jpg",
     "/images/design-studio/previews/royal-blue-lehenga.png"
   ];
-  const selectedImage = imagePool[Math.floor(Math.random() * imagePool.length)];
+  const promptLower = (payload.prompt || "").toLowerCase();
+  let selectedImage = imagePool[Math.floor(Math.random() * imagePool.length)];
+  if (promptLower.includes("mint") || promptLower.includes("green")) {
+    selectedImage = "/images/design-studio/recent/kurta-mint.jpg";
+  } else if (promptLower.includes("blue") || promptLower.includes("sapphire")) {
+    selectedImage = "/images/design-studio/previews/royal-blue-lehenga.png";
+  } else if (promptLower.includes("pink") || promptLower.includes("rose") || promptLower.includes("peach")) {
+    selectedImage = "/images/design-studio/generated-pink-anarkali.jpg";
+  } else if (promptLower.includes("gold") || promptLower.includes("champagne")) {
+    selectedImage = "/images/design-studio/recent/anarkali-gold.jpg";
+  }
 
   const newDesign: StudioDesignItem = {
     id: `des-gen-${Date.now()}`,
     title: payload.garmentType || "Custom AI Creation",
-    category: (payload.garmentType as any) || "Ethnic Wear",
+    category: normalizeStudioCategory(payload.garmentType),
     editedAgo: "Just now",
     savedDate: new Date().toLocaleDateString("en-GB", {
       day: "2-digit",
@@ -628,81 +1056,139 @@ export async function generateDesignFromPromptApi(
     prompt: payload.prompt || "AI generated custom outfit design.",
     fabric: payload.fabric || "Pure Silk & Georgette",
     colorPalette: [payload.colorPreference || "#078B87", "#E7C0A0", "#F1EEE8", "#334155"],
-    estimatedCost: "₹14,000 - ₹20,000",
+    estimatedCost: "Rs. 14,000 - Rs. 20,000",
     tags: [payload.style || "Custom Style", payload.occasion || "Festive", "AI Concept"],
     isFavorite: false,
     isTrash: false,
     likesCount: 1
   };
 
-  const list = getLocalDesigns();
-  list.unshift(newDesign);
-  saveLocalDesigns(list);
-
+  await saveStudioDesignItemApi(newDesign);
   return newDesign;
 }
 
+function buildTechPackFromData(
+  designId: string,
+  design: StudioDesignItem | null,
+  profile: ApiMeasurementProfile | null
+): TechPackData {
+  const base: TechPackData = sampleTechPacks[designId]
+    ? { ...sampleTechPacks[designId] }
+    : {
+        id: `tp-${design?.id || designId}`,
+        designId: design?.id || designId,
+        designName: design?.title || "Custom AI Outfit Tech Pack",
+        category: design?.category || "Bespoke Ethnic",
+        type: design?.category || "Custom Garment",
+        occasion: design?.tags?.[0] || "Festive & Wedding",
+        createdOn:
+          design?.savedDate ||
+          new Date().toLocaleDateString("en-GB", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric"
+          }),
+        previewImage: design?.image || "/images/design-studio/recent/anarkali-gold.jpg",
+        sizeChart: [
+          { size: "S", chest: "34 in", waist: "28 in", hip: "38 in", length: "50 in" },
+          { size: "M", chest: "36 in", waist: "30 in", hip: "40 in", length: "51 in" },
+          { size: "L", chest: "38 in", waist: "32 in", hip: "42 in", length: "52 in" },
+          { size: "XL", chest: "40 in", waist: "34 in", hip: "44 in", length: "53 in" },
+          { size: "Custom", chest: "Tailor Fit", waist: "Tailor Fit", hip: "Tailor Fit", length: "Tailor Fit" }
+        ],
+        colorPalette: (design?.colorPalette || ["#078B87", "#F1EEE8", "#D5B069"]).map(
+          (hex, idx) => ({
+            name: idx === 0 ? "Primary Tone" : idx === 1 ? "Accent Base" : `Highlight ${idx}`,
+            hex
+          })
+        ),
+        fabrics: [
+          {
+            name: design?.fabric || "Pure Raw Silk",
+            composition: "100% Natural Silk",
+            yardage: "4.2 Meters"
+          },
+          {
+            name: "Breathable Santoon Lining",
+            composition: "100% Cotton Blend",
+            yardage: "3.5 Meters"
+          }
+        ],
+        embroideryDetails:
+          design?.prompt ||
+          "Custom border embroidery with metallic zari thread and hand-finishing.",
+        liningDetails: "Breathable natural santoon lining throughout bodice and skirt.",
+        stitchingNotes:
+          "Tailored precision cut with 2-inch seam margin allowance and French seam finishing."
+      };
+
+  if (design) {
+    base.designId = design.id;
+    base.designName = design.title;
+    base.category = design.category;
+    base.previewImage = design.image;
+    base.createdOn = design.savedDate || base.createdOn;
+    if (design.prompt) base.embroideryDetails = design.prompt;
+  }
+
+  if (profile) {
+    const unit = profile.unit || "in";
+    const customRow = {
+      size: `Custom (${profile.title || profile.profile_name || profile.profileName || "My Fit"})`,
+      chest: profile.chest ? `${profile.chest} ${unit}` : "Tailor Fit",
+      waist: profile.waist ? `${profile.waist} ${unit}` : "Tailor Fit",
+      hip: profile.hips ? `${profile.hips} ${unit}` : "Tailor Fit",
+      length: profile.height ? `${profile.height} ${unit}` : "Tailor Fit"
+    };
+    const withoutOldCustom = base.sizeChart.filter((r) => !r.size.startsWith("Custom"));
+    base.sizeChart = [...withoutOldCustom, customRow];
+  }
+
+  return base;
+}
+
 /**
- * Fetch Tech Pack Data for a design
+ * Synchronously builds Tech Pack when design and measurements caches are warm.
+ */
+export function peekTechPackByDesignId(designId: string): TechPackData | null {
+  if (typeof window === "undefined") return null;
+  const cachedDesign = peekDesignById(designId);
+  if (cachedDesign === undefined) return null;
+
+  let profile: ApiMeasurementProfile | null = null;
+  if (getAuthToken()) {
+    const cachedMeas = getCachedValue<ApiResponse<ApiMeasurementProfile[]>>(
+      "measurements",
+      "list",
+      { scope: "auth" }
+    );
+    if (!cachedMeas) return null;
+    if (cachedMeas.success && Array.isArray(cachedMeas.data) && cachedMeas.data.length > 0) {
+      profile = cachedMeas.data[0];
+    }
+  }
+
+  return buildTechPackFromData(designId, cachedDesign, profile);
+}
+
+/**
+ * Fetch Tech Pack Data built from live design details (/designs/{id})
+ * and authenticated customer body measurements (/measurements), using cache when available.
  */
 export async function fetchTechPackByDesignIdApi(
   designId: string
 ): Promise<TechPackData> {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_BACKEND_URL;
+  const [design, measurementsRes] = await Promise.all([
+    fetchDesignByIdApi(designId),
+    getAuthToken()
+      ? measurementService.getMeasurements().catch(() => null)
+      : Promise.resolve(null)
+  ]);
 
-  if (apiUrl) {
-    try {
-      const res = await fetch(
-        `${apiUrl}/api/design-studio/tech-pack/${encodeURIComponent(designId)}`,
-        {
-          headers: { "Content-Type": "application/json" },
-          cache: "no-store"
-        }
-      );
-      if (res.ok) {
-        const data = await res.json();
-        return data.techPack || data.data;
-      }
-    } catch (err) {
-      console.warn("[Design Studio API] Tech Pack backend fallback:", err);
-    }
-  }
+  const profile =
+    measurementsRes?.success && Array.isArray(measurementsRes.data) && measurementsRes.data.length > 0
+      ? measurementsRes.data[0]
+      : null;
 
-  if (sampleTechPacks[designId]) {
-    return sampleTechPacks[designId];
-  }
-
-  // Generic fallback tech pack
-  return {
-    id: `tp-gen-${designId}`,
-    designId,
-    designName: "Custom AI Outfit Tech Pack",
-    category: "Bespoke Ethnic",
-    type: "Custom Garment",
-    occasion: "Special Occasion",
-    createdOn: new Date().toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric"
-    }),
-    previewImage: "/images/design-studio/recent/anarkali-gold.jpg",
-    sizeChart: [
-      { size: "S", chest: "34 in", waist: "28 in", hip: "38 in", length: "50 in" },
-      { size: "M", chest: "36 in", waist: "30 in", hip: "40 in", length: "51 in" },
-      { size: "L", chest: "38 in", waist: "32 in", hip: "42 in", length: "52 in" },
-      { size: "Custom", chest: "Tailor Fit", waist: "Tailor Fit", hip: "Tailor Fit", length: "Tailor Fit" }
-    ],
-    colorPalette: [
-      { name: "Primary Tone", hex: "#078B87" },
-      { name: "Accent Cream", hex: "#F1EEE8" },
-      { name: "Gold Border", hex: "#D5B069" }
-    ],
-    fabrics: [
-      { name: "Pure Silk", composition: "100% Natural Silk", yardage: "4.0 Meters" },
-      { name: "Soft Lining", composition: "100% Cotton Santoon", yardage: "3.5 Meters" }
-    ],
-    embroideryDetails: "Custom border embroidery with metallic zari thread and sequin embellishments.",
-    liningDetails: "Breathable natural santoon lining throughout bodice and skirt.",
-    stitchingNotes: "Tailored precision cut with margin allowance of 2 inches on both side seams."
-  };
+  return buildTechPackFromData(designId, design, profile);
 }

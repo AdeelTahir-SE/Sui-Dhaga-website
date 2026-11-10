@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import {
   LayoutTemplate,
@@ -25,41 +25,92 @@ import {
   Save
 } from "lucide-react";
 import { PublicShell } from "@/components/common/site-shell";
+import { Skeleton, StudioEditorSkeleton } from "@/components/common/shadow-skeleton";
 import {
-  initialRecentDesigns,
+  peekDesignById,
+  fetchDesignByIdApi,
+  saveStudioDesignEditsApi,
   StudioDesignItem
 } from "@/lib/design-studio-data";
+import { useCacheTick } from "@/lib/api/data-cache";
 
 interface StudioEditorPageProps {
   designId?: string;
 }
 
 export function StudioEditorPage({ designId = "DS67234" }: StudioEditorPageProps) {
-  // Find current design or fallback to default
+  const designsTick = useCacheTick("designs");
+  const cachedDesign = useMemo(
+    () => (designsTick >= 0 ? peekDesignById(designId) : undefined),
+    [designsTick, designId]
+  );
+
+  const [fallbackState, setFallbackState] = useState<{
+    id: string;
+    data: StudioDesignItem | null;
+  } | null>(null);
+
   const activeDesign =
-    initialRecentDesigns.find((d) => d.id === designId) ||
-    initialRecentDesigns[0];
+    cachedDesign !== undefined
+      ? cachedDesign
+      : fallbackState?.id === designId
+      ? fallbackState.data
+      : null;
+  const isLoading = cachedDesign === undefined && fallbackState?.id !== designId;
 
   const [activeTool, setActiveTool] = useState<string>("Templates");
-  const [designTitle, setDesignTitle] = useState(activeDesign?.title || "Untitled Design");
+  const [titleOverride, setTitleOverride] = useState<string | null>(null);
+  const [savedStatusOverride, setSavedStatusOverride] = useState<string | null>(null);
   const [zoomLevel, setZoomLevel] = useState(100);
   const [rotationDeg, setRotationDeg] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [selectedAngleIndex, setSelectedAngleIndex] = useState(0);
 
-  const [selectedColor, setSelectedColor] = useState("#A8DADC");
-  const [selectedFabric, setSelectedFabric] = useState("Chanderi Silk");
+  const [colorOverride, setColorOverride] = useState<string | null>(null);
+  const [fabricOverride, setFabricOverride] = useState<string | null>(null);
   const [selectedEmbroidery, setSelectedEmbroidery] = useState("Floral Vine");
   const [showAiAssistant, setShowAiAssistant] = useState(true);
 
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // 3 Angle thumbnails for active design
+  const designTitle = titleOverride ?? activeDesign?.title ?? (isLoading ? "" : `Design ${designId}`);
+  const setDesignTitle = (val: string) => setTitleOverride(val);
+  const selectedColor = colorOverride ?? activeDesign?.colorPalette?.[0] ?? "#A8DADC";
+  const setSelectedColor = (val: string) => setColorOverride(val);
+  const selectedFabric = fabricOverride ?? activeDesign?.fabric ?? "Chanderi Silk";
+  const setSelectedFabric = (val: string) => setFabricOverride(val);
+  const savedStatus = savedStatusOverride ?? activeDesign?.editedAgo ?? "Synced with Studio";
+  const setSavedStatus = (val: string) => setSavedStatusOverride(val);
+
+  useEffect(() => {
+    if (cachedDesign !== undefined) return;
+    let isSubscribed = true;
+
+    fetchDesignByIdApi(designId)
+      .then((data) => {
+        if (!isSubscribed) return;
+        setFallbackState({ id: designId, data });
+      })
+      .catch((err) => {
+        console.error("[StudioEditor] Load failed:", err);
+        if (isSubscribed) {
+          setFallbackState({ id: designId, data: null });
+        }
+      });
+
+    return () => {
+      isSubscribed = false;
+    };
+  }, [designId, cachedDesign]);
+
+  // 3 Angle thumbnails prioritizing loaded DB design preview
+  const primaryImage =
+    activeDesign?.image || "/images/design-studio/editor/floral-anarkali-editor.png";
   const angleThumbnails = [
-    "/images/design-studio/editor/floral-anarkali-editor.png",
+    primaryImage,
     "/images/design-studio/recent/kurta-mint.jpg",
     "/images/design-studio/generated-mint-anarkali.jpg"
-  ];
+  ].filter((src, idx, arr) => idx === 0 || src !== primaryImage || arr.indexOf(src) === idx);
 
   const colorPalette = [
     { name: "Ivory Silk", hex: "#FAF5EA" },
@@ -121,7 +172,14 @@ export function StudioEditorPage({ designId = "DS67234" }: StudioEditorPageProps
     { id: "Layers", label: "Layers", icon: Layers }
   ];
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    const targetId = activeDesign?.id || designId;
+    await saveStudioDesignEditsApi(targetId, {
+      title: designTitle || "Custom Design",
+      fabric: selectedFabric,
+      colorPalette: [selectedColor, "#FAF8F5", "#D5B069", "#334155"]
+    });
+    setSavedStatus("Saved just now");
     setToastMessage("Design specifications saved successfully!");
     setTimeout(() => setToastMessage(null), 2500);
   };
@@ -167,13 +225,22 @@ export function StudioEditorPage({ designId = "DS67234" }: StudioEditorPageProps
                 Editor
               </Link>
               <span className="studio-editor-breadcrumb-sep">&gt;</span>
-              <span className="studio-editor-breadcrumb-active">{designId}</span>
+              <span className="studio-editor-breadcrumb-active">{activeDesign?.id || designId}</span>
             </nav>
 
             {/* Center Editable Title */}
             <div className="studio-editor-center-title-box">
-              <h1 className="studio-editor-title-heading">{designTitle}</h1>
-              <p className="studio-editor-saved-status">Last saved 2 mins ago</p>
+              {isLoading ? (
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "6px" }}>
+                  <Skeleton width="200px" height="24px" />
+                  <Skeleton width="120px" height="12px" />
+                </div>
+              ) : (
+                <>
+                  <h1 className="studio-editor-title-heading">{designTitle}</h1>
+                  <p className="studio-editor-saved-status">{savedStatus}</p>
+                </>
+              )}
             </div>
 
             {/* Top Right Action Controls */}
@@ -193,6 +260,7 @@ export function StudioEditorPage({ designId = "DS67234" }: StudioEditorPageProps
               <button
                 type="button"
                 onClick={handleSave}
+                disabled={isLoading}
                 className="studio-editor-save-btn"
               >
                 <Save size={15} />
@@ -200,7 +268,7 @@ export function StudioEditorPage({ designId = "DS67234" }: StudioEditorPageProps
               </button>
 
               <Link
-                href={`/design-studio/export/${designId}`}
+                href={`/design-studio/export/${activeDesign?.id || designId}`}
                 className="studio-editor-export-btn"
               >
                 <span>Export</span>
@@ -236,7 +304,10 @@ export function StudioEditorPage({ designId = "DS67234" }: StudioEditorPageProps
           )}
 
           {/* 3-Column Studio Editor Grid */}
-          <div className="studio-editor-3col-grid">
+          {isLoading ? (
+            <StudioEditorSkeleton />
+          ) : (
+            <div className="studio-editor-3col-grid">
             {/* Column 1: Left Studio Tool Sidebar */}
             <aside className="studio-editor-left-tools-bar">
               {tools.map((tool) => {
@@ -500,6 +571,7 @@ export function StudioEditorPage({ designId = "DS67234" }: StudioEditorPageProps
               </div>
             </aside>
           </div>
+          )}
         </div>
       </div>
     </PublicShell>

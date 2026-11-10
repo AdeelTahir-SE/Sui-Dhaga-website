@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import {
   Upload,
@@ -15,12 +15,25 @@ import {
   PenTool
 } from "lucide-react";
 import { PublicShell } from "@/components/common/site-shell";
+import { StudioGalleryResultSkeleton } from "@/components/common/shadow-skeleton";
+import { uploadService } from "@/lib/api/upload-service";
+import { getAuthToken } from "@/lib/api/client";
 import {
   generateDesignFromPromptApi,
+  peekStudioRecentDesigns,
+  fetchStudioRecentDesignsApi,
+  toggleFavoriteStudioDesignApi,
   StudioDesignItem
 } from "@/lib/design-studio-data";
+import { useCacheTick } from "@/lib/api/data-cache";
 
 export function StudioSketchToDesignPage() {
+  const designsTick = useCacheTick("designs");
+  const cachedDesigns = useMemo(
+    () => (designsTick >= 0 ? peekStudioRecentDesigns() : null),
+    [designsTick]
+  );
+
   const [sketchImg, setSketchImg] = useState<string>(
     "/images/design-studio/uploads/sketch-anarkali.png"
   );
@@ -28,17 +41,46 @@ export function StudioSketchToDesignPage() {
     "Add delicate thread work embroidery and make it in mint green color."
   );
 
+  const [generatedResults, setGeneratedResults] = useState<StudioDesignItem[] | null>(null);
+  const [fallbackResults, setFallbackResults] = useState<StudioDesignItem[] | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [isFav, setIsFav] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-
-  // Results gallery variations
-  const [results, setResults] = useState<string[]>([
-    "/images/design-studio/generated-mint-anarkali.jpg",
-    "/images/design-studio/recent/kurta-mint.jpg",
-    "/images/design-studio/recent/anarkali-gold.jpg"
-  ]);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+
+  const results =
+    generatedResults ?? (cachedDesigns ? cachedDesigns.slice(0, 3) : fallbackResults ?? []);
+  const setResults = (
+    next: StudioDesignItem[] | ((prev: StudioDesignItem[]) => StudioDesignItem[])
+  ) => {
+    setGeneratedResults((prev) => {
+      const base = prev ?? results;
+      return typeof next === "function" ? next(base) : next;
+    });
+  };
+  const isLoading =
+    generatedResults === null && cachedDesigns === null && fallbackResults === null;
+
+  useEffect(() => {
+    if (cachedDesigns !== null) return;
+    let isSubscribed = true;
+
+    fetchStudioRecentDesignsApi()
+      .then((list) => {
+        if (isSubscribed) {
+          setFallbackResults(list.slice(0, 3));
+        }
+      })
+      .catch((err) => {
+        console.error("[SketchToDesign] Failed loading studio concepts:", err);
+        if (isSubscribed) setFallbackResults([]);
+      });
+
+    return () => {
+      isSubscribed = false;
+    };
+  }, [cachedDesigns]);
+
+  const activeResult = results[activeImageIndex];
 
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,11 +96,8 @@ export function StudioSketchToDesignPage() {
         referenceImage: sketchImg
       });
 
-      if (result.image) {
-        setResults((prev) => [result.image, ...prev.slice(0, 2)]);
-        setActiveImageIndex(0);
-      }
-
+      setResults((prev) => [result, ...prev.slice(0, 2)]);
+      setActiveImageIndex(0);
       setToastMessage("AI rendered 3D model from your sketch!");
       setTimeout(() => setToastMessage(null), 3000);
     } catch (err) {
@@ -68,24 +107,51 @@ export function StudioSketchToDesignPage() {
     }
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        if (typeof reader.result === "string") {
-          setSketchImg(reader.result);
-          setToastMessage("Sketch drawing uploaded!");
-          setTimeout(() => setToastMessage(null), 2500);
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        setSketchImg(reader.result);
+      }
+    };
+    reader.readAsDataURL(file);
+
+    if (getAuthToken()) {
+      try {
+        const upRes = await uploadService.uploadImage(file, "sketches");
+        if (upRes?.success && upRes.data?.url) {
+          setSketchImg(upRes.data.url);
         }
-      };
-      reader.readAsDataURL(file);
+      } catch (err) {
+        console.warn("[SketchToDesign] Storage upload fallback to local preview:", err);
+      }
     }
+
+    setToastMessage("Sketch drawing uploaded!");
+    setTimeout(() => setToastMessage(null), 2500);
   };
 
   const handleRemoveSketch = (e: React.MouseEvent) => {
     e.stopPropagation();
     setSketchImg("");
+  };
+
+  const handleToggleFavorite = async () => {
+    if (!activeResult) return;
+    const nextStatus = await toggleFavoriteStudioDesignApi(
+      activeResult.id,
+      activeResult.isFavorite
+    );
+    setResults((prev) =>
+      prev.map((item) =>
+        item.id === activeResult.id ? { ...item, isFavorite: nextStatus } : item
+      )
+    );
+    setToastMessage(nextStatus ? "Added to favorites!" : "Removed from favorites");
+    setTimeout(() => setToastMessage(null), 2500);
   };
 
   return (
@@ -252,17 +318,14 @@ export function StudioSketchToDesignPage() {
                 <h2 className="studio-image-result-heading">AI Generated Results</h2>
                 <button
                   type="button"
-                  onClick={() => {
-                    setIsFav(!isFav);
-                    setToastMessage(isFav ? "Removed from favorites" : "Added to favorites!");
-                    setTimeout(() => setToastMessage(null), 2500);
-                  }}
+                  onClick={handleToggleFavorite}
+                  disabled={!activeResult || isLoading || isGenerating}
                   style={{
                     background: "none",
                     border: "none",
-                    cursor: "pointer",
+                    cursor: activeResult ? "pointer" : "default",
                     padding: "6px",
-                    color: isFav ? "#FF5B52" : "#6B7280",
+                    color: activeResult?.isFavorite ? "#FF5B52" : "#6B7280",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
@@ -272,43 +335,69 @@ export function StudioSketchToDesignPage() {
                 >
                   <Heart
                     size={20}
-                    fill={isFav ? "#FF5B52" : "none"}
-                    color={isFav ? "#FF5B52" : "#4B5563"}
+                    fill={activeResult?.isFavorite ? "#FF5B52" : "none"}
+                    color={activeResult?.isFavorite ? "#FF5B52" : "#4B5563"}
                   />
                 </button>
               </div>
 
-              <div className="studio-image-gallery-layout">
-                {/* Main Large Visual Frame */}
-                <div className="studio-image-main-frame">
-                  <img
-                    src={results[activeImageIndex]}
-                    alt="AI Generated Render from Sketch"
-                    className="studio-image-main-img"
-                  />
+              {isLoading || isGenerating ? (
+                <StudioGalleryResultSkeleton thumbs={2} layout="image" />
+              ) : results.length === 0 ? (
+                <div
+                  style={{
+                    background: "#FAF8F5",
+                    border: "1px dashed #D6D0C4",
+                    borderRadius: "14px",
+                    padding: "64px 24px",
+                    textAlign: "center",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: "10px"
+                  }}
+                >
+                  <PenTool size={32} color="#078B87" />
+                  <h3 style={{ fontSize: "1.05rem", fontWeight: 700, margin: 0, color: "#111827" }}>
+                    Render Your Hand Sketch
+                  </h3>
+                  <p style={{ fontSize: "0.85rem", color: "#6B7280", maxWidth: "320px", margin: 0 }}>
+                    Upload a sketch on the left and click &quot;Generate Design&quot; to transform it into a photorealistic outfit render.
+                  </p>
                 </div>
+              ) : (
+                <div className="studio-image-gallery-layout">
+                  {/* Main Large Visual Frame */}
+                  <div className="studio-image-main-frame">
+                    <img
+                      src={activeResult?.image || "/images/design-studio/generated-mint-anarkali.jpg"}
+                      alt={activeResult?.title || "AI Generated Render from Sketch"}
+                      className="studio-image-main-img"
+                    />
+                  </div>
 
-                {/* Vertical Thumbnail Strip (Right Thumbnails) */}
-                <div className="studio-image-thumbs-column">
-                  {results.slice(1, 3).map((imgSrc, idx) => {
-                    const actualIdx = idx + 1;
-                    return (
-                      <div
-                        key={idx}
-                        className={`studio-image-thumb-box ${activeImageIndex === actualIdx ? "active" : ""}`}
-                        onClick={() => setActiveImageIndex(actualIdx)}
-                        title="View Render Angle"
-                      >
-                        <img
-                          src={imgSrc}
-                          alt={`Variation ${actualIdx}`}
-                          className="studio-image-thumb-img"
-                        />
-                      </div>
-                    );
-                  })}
+                  {/* Vertical Thumbnail Strip (Right Thumbnails) */}
+                  <div className="studio-image-thumbs-column">
+                    {results.slice(1, 3).map((item, idx) => {
+                      const actualIdx = idx + 1;
+                      return (
+                        <div
+                          key={item.id || idx}
+                          className={`studio-image-thumb-box ${activeImageIndex === actualIdx ? "active" : ""}`}
+                          onClick={() => setActiveImageIndex(actualIdx)}
+                          title={item.title || "View Render Angle"}
+                        >
+                          <img
+                            src={item.image}
+                            alt={item.title || `Variation ${actualIdx}`}
+                            className="studio-image-thumb-img"
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>

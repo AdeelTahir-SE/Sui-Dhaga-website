@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import {
   Sparkles,
@@ -16,58 +16,93 @@ import {
 import { PublicShell } from "@/components/common/site-shell";
 import { StudioSidebar } from "@/components/design-studio/studio-sidebar";
 import {
+  StudioDesignsGridSkeleton,
+  StudioSuggestionsRowSkeleton
+} from "@/components/common/shadow-skeleton";
+import {
   StudioDetailModal,
   StudioPromptModal
 } from "@/components/design-studio/studio-modals";
 import {
   StudioDesignItem,
   AiSuggestionItem,
+  peekStudioRecentDesigns,
+  peekStudioAiSuggestions,
   fetchStudioRecentDesignsApi,
   fetchStudioAiSuggestionsApi,
-  toggleFavoriteStudioDesignApi,
-  initialRecentDesigns,
-  initialAiSuggestions
+  toggleFavoriteStudioDesignApi
 } from "@/lib/design-studio-data";
+import { useCacheTick } from "@/lib/api/data-cache";
 
 export function StudioHomePage() {
-  const [recentDesigns, setRecentDesigns] = useState<StudioDesignItem[]>(initialRecentDesigns);
-  const [aiSuggestions, setAiSuggestions] = useState<AiSuggestionItem[]>(initialAiSuggestions);
+  const designsTick = useCacheTick("designs");
+  const communityTick = useCacheTick("community");
+
+  const cachedDesigns = useMemo(
+    () => (designsTick >= 0 ? peekStudioRecentDesigns() : null),
+    [designsTick]
+  );
+  const cachedSuggestions = useMemo(
+    () => (communityTick >= 0 ? peekStudioAiSuggestions() : null),
+    [communityTick]
+  );
+
+  const [fallbackDesigns, setFallbackDesigns] = useState<StudioDesignItem[] | null>(null);
+  const [fallbackSuggestions, setFallbackSuggestions] = useState<AiSuggestionItem[] | null>(null);
   const [selectedDesign, setSelectedDesign] = useState<StudioDesignItem | null>(null);
   const [isPromptModalOpen, setIsPromptModalOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+
+  const recentDesigns = cachedDesigns ?? fallbackDesigns ?? [];
+  const aiSuggestions = cachedSuggestions ?? fallbackSuggestions ?? [];
+  const isLoading =
+    (cachedDesigns === null && fallbackDesigns === null) ||
+    (cachedSuggestions === null && fallbackSuggestions === null);
 
   useEffect(() => {
+    if (cachedDesigns !== null && cachedSuggestions !== null) return;
     let isSubscribed = true;
 
     Promise.all([
-      fetchStudioRecentDesignsApi(),
-      fetchStudioAiSuggestionsApi()
-    ]).then(([designs, suggestions]) => {
-      if (isSubscribed) {
-        if (designs.length > 0) setRecentDesigns(designs);
-        if (suggestions.length > 0) setAiSuggestions(suggestions);
-        setIsLoading(false);
-      }
-    });
+      cachedDesigns !== null ? Promise.resolve(cachedDesigns) : fetchStudioRecentDesignsApi(),
+      cachedSuggestions !== null ? Promise.resolve(cachedSuggestions) : fetchStudioAiSuggestionsApi()
+    ])
+      .then(([designs, suggestions]) => {
+        if (isSubscribed) {
+          if (cachedDesigns === null) setFallbackDesigns(designs);
+          if (cachedSuggestions === null) setFallbackSuggestions(suggestions);
+        }
+      })
+      .catch((err) => {
+        console.error("[StudioHome] Load failed:", err);
+        if (isSubscribed) {
+          if (cachedDesigns === null) setFallbackDesigns([]);
+          if (cachedSuggestions === null) setFallbackSuggestions([]);
+        }
+      });
 
     return () => {
       isSubscribed = false;
     };
-  }, []);
+  }, [cachedDesigns, cachedSuggestions]);
 
   const handleToggleFavorite = async (e: React.MouseEvent, designId: string) => {
     e.stopPropagation();
-    const newStatus = await toggleFavoriteStudioDesignApi(designId);
-    setRecentDesigns((prev) =>
-      prev.map((d) => (d.id === designId ? { ...d, isFavorite: newStatus } : d))
-    );
+    const currentItem = recentDesigns.find((d) => d.id === designId);
+    const newStatus = await toggleFavoriteStudioDesignApi(designId, currentItem?.isFavorite);
+    if (fallbackDesigns) {
+      setFallbackDesigns(
+        fallbackDesigns.map((d) => (d.id === designId ? { ...d, isFavorite: newStatus } : d))
+      );
+    }
     if (selectedDesign?.id === designId) {
       setSelectedDesign((prev) => (prev ? { ...prev, isFavorite: newStatus } : null));
     }
   };
 
   const handleDesignCreated = (newDesign: StudioDesignItem) => {
-    setRecentDesigns((prev) => [newDesign, ...prev]);
+    if (fallbackDesigns) {
+      setFallbackDesigns([newDesign, ...fallbackDesigns]);
+    }
     setSelectedDesign(newDesign);
   };
 
@@ -170,60 +205,95 @@ export function StudioHomePage() {
                   </Link>
                 </div>
 
-                <div className="studio-recent-grid">
-                  {recentDesigns.slice(0, 4).map((design) => (
-                    <article
-                      key={design.id}
-                      className="studio-design-card"
-                      onClick={() => setSelectedDesign(design)}
+                {isLoading ? (
+                  <StudioDesignsGridSkeleton count={4} variant="home" />
+                ) : recentDesigns.length === 0 ? (
+                  <div
+                    style={{
+                      background: "#FFFFFF",
+                      border: "1px dashed #D6D0C4",
+                      borderRadius: "16px",
+                      padding: "40px 24px",
+                      textAlign: "center",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      gap: "12px"
+                    }}
+                  >
+                    <Wand2 size={32} color="#078B87" />
+                    <h3 style={{ fontSize: "1.05rem", fontWeight: 700, margin: 0, color: "#111827" }}>
+                      No Studio Designs Yet
+                    </h3>
+                    <p style={{ fontSize: "0.88rem", color: "#6B7280", maxWidth: "400px", margin: 0 }}>
+                      Start creating bespoke ethnic outfits with text prompts, sketches, or reference images.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setIsPromptModalOpen(true)}
+                      className="studio-cta-btn"
+                      style={{ marginTop: "4px" }}
                     >
-                      {/* Image Thumbnail */}
-                      <div className="studio-design-thumb-wrap">
-                        <img
-                          src={design.image}
-                          alt={design.title}
-                          className="studio-design-img"
-                          loading="lazy"
-                        />
-
-                        {/* Favorite Button */}
-                        <button
-                          className={`studio-card-fav-btn ${design.isFavorite ? "is-fav" : ""}`}
-                          onClick={(e) => handleToggleFavorite(e, design.id)}
-                          aria-label="Toggle Favorite"
-                        >
-                          <Heart
-                            size={16}
-                            fill={design.isFavorite ? "#FF5B52" : "none"}
-                            color={design.isFavorite ? "#FF5B52" : "#6B7280"}
+                      <Plus size={15} />
+                      <span>Create First Design</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="studio-recent-grid">
+                    {recentDesigns.slice(0, 4).map((design) => (
+                      <article
+                        key={design.id}
+                        className="studio-design-card"
+                        onClick={() => setSelectedDesign(design)}
+                      >
+                        {/* Image Thumbnail */}
+                        <div className="studio-design-thumb-wrap">
+                          <img
+                            src={design.image}
+                            alt={design.title}
+                            className="studio-design-img"
+                            loading="lazy"
                           />
-                        </button>
 
-                        {/* Hover Quick Action Overlay */}
-                        <div className="studio-card-quick-actions">
+                          {/* Favorite Button */}
                           <button
-                            className="studio-quick-action-pill"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedDesign(design);
-                            }}
+                            className={`studio-card-fav-btn ${design.isFavorite ? "is-fav" : ""}`}
+                            onClick={(e) => handleToggleFavorite(e, design.id)}
+                            aria-label="Toggle Favorite"
                           >
-                            <Eye size={13} />
-                            <span>Quick View</span>
+                            <Heart
+                              size={16}
+                              fill={design.isFavorite ? "#FF5B52" : "none"}
+                              color={design.isFavorite ? "#FF5B52" : "#6B7280"}
+                            />
                           </button>
-                        </div>
-                      </div>
 
-                      {/* Card Meta */}
-                      <div className="studio-design-meta">
-                        <h4 className="studio-design-title" title={design.title}>
-                          {design.title}
-                        </h4>
-                        <p className="studio-design-edited">{design.editedAgo}</p>
-                      </div>
-                    </article>
-                  ))}
-                </div>
+                          {/* Hover Quick Action Overlay */}
+                          <div className="studio-card-quick-actions">
+                            <button
+                              className="studio-quick-action-pill"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedDesign(design);
+                              }}
+                            >
+                              <Eye size={13} />
+                              <span>Quick View</span>
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Card Meta */}
+                        <div className="studio-design-meta">
+                          <h4 className="studio-design-title" title={design.title}>
+                            {design.title}
+                          </h4>
+                          <p className="studio-design-edited">{design.editedAgo}</p>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                )}
               </section>
 
               {/* AI Suggestions for You Section */}
@@ -235,65 +305,69 @@ export function StudioHomePage() {
                   </div>
                 </div>
 
-                <div className="studio-suggestions-row">
-                  {aiSuggestions.slice(0, 5).map((sugg) => (
-                    <article
-                      key={sugg.id}
-                      className="studio-suggestion-card"
-                      onClick={() =>
-                        setSelectedDesign({
-                          id: `sugg-view-${sugg.id}`,
-                          title: sugg.title,
-                          category: sugg.category as any,
-                          editedAgo: "AI Concept",
-                          savedDate: "Today",
-                          image: sugg.image,
-                          prompt: sugg.prompt,
-                          fabric: sugg.fabric,
-                          colorPalette: ["#078B87", "#D5B069", "#FAF8F5", "#334155"],
-                          estimatedCost: "₹12,000 - ₹18,000",
-                          tags: sugg.tags,
-                          isFavorite: false
-                        })
-                      }
-                    >
-                      <div className="studio-suggestion-thumb">
-                        <img
-                          src={sugg.image}
-                          alt={sugg.title}
-                          className="studio-suggestion-img"
-                          loading="lazy"
-                        />
-                      </div>
-                      <div className="studio-suggestion-info">
-                        <h4 className="studio-suggestion-title" title={sugg.title}>
-                          {sugg.title}
-                        </h4>
-                        <p className="studio-suggestion-sub" title={sugg.subtitle}>
-                          {sugg.subtitle}
+                {isLoading ? (
+                  <StudioSuggestionsRowSkeleton count={5} />
+                ) : (
+                  <div className="studio-suggestions-row">
+                    {aiSuggestions.slice(0, 5).map((sugg) => (
+                      <article
+                        key={sugg.id}
+                        className="studio-suggestion-card"
+                        onClick={() =>
+                          setSelectedDesign({
+                            id: `sugg-view-${sugg.id}`,
+                            title: sugg.title,
+                            category: sugg.category as StudioDesignItem["category"],
+                            editedAgo: "AI Concept",
+                            savedDate: "Today",
+                            image: sugg.image,
+                            prompt: sugg.prompt,
+                            fabric: sugg.fabric,
+                            colorPalette: ["#078B87", "#D5B069", "#FAF8F5", "#334155"],
+                            estimatedCost: "₹12,000 - ₹18,000",
+                            tags: sugg.tags,
+                            isFavorite: false
+                          })
+                        }
+                      >
+                        <div className="studio-suggestion-thumb">
+                          <img
+                            src={sugg.image}
+                            alt={sugg.title}
+                            className="studio-suggestion-img"
+                            loading="lazy"
+                          />
+                        </div>
+                        <div className="studio-suggestion-info">
+                          <h4 className="studio-suggestion-title" title={sugg.title}>
+                            {sugg.title}
+                          </h4>
+                          <p className="studio-suggestion-sub" title={sugg.subtitle}>
+                            {sugg.subtitle}
+                          </p>
+                        </div>
+                      </article>
+                    ))}
+
+                    {/* "Try with your idea" CTA Card (Matches Reference Image) */}
+                    <div className="studio-cta-idea-card">
+                      <div className="studio-cta-top">
+                        <h3 className="studio-cta-title">Try with your idea</h3>
+                        <p className="studio-cta-desc">
+                          Describe your dream outfit and AI brings it for you.
                         </p>
                       </div>
-                    </article>
-                  ))}
 
-                  {/* "Try with your idea" CTA Card (Matches Reference Image) */}
-                  <div className="studio-cta-idea-card">
-                    <div className="studio-cta-top">
-                      <h3 className="studio-cta-title">Try with your idea</h3>
-                      <p className="studio-cta-desc">
-                        Describe your dream outfit and AI brings it for you.
-                      </p>
+                      <button
+                        onClick={() => setIsPromptModalOpen(true)}
+                        className="studio-cta-btn"
+                      >
+                        <Sparkles size={15} />
+                        <span>Try Now</span>
+                      </button>
                     </div>
-
-                    <button
-                      onClick={() => setIsPromptModalOpen(true)}
-                      className="studio-cta-btn"
-                    >
-                      <Sparkles size={15} />
-                      <span>Try Now</span>
-                    </button>
                   </div>
-                </div>
+                )}
               </section>
             </main>
           </div>
@@ -304,9 +378,11 @@ export function StudioHomePage() {
           design={selectedDesign}
           onClose={() => setSelectedDesign(null)}
           onFavoriteChange={(id, isFav) => {
-            setRecentDesigns((prev) =>
-              prev.map((d) => (d.id === id ? { ...d, isFavorite: isFav } : d))
-            );
+            if (fallbackDesigns) {
+              setFallbackDesigns(
+                fallbackDesigns.map((d) => (d.id === id ? { ...d, isFavorite: isFav } : d))
+              );
+            }
           }}
         />
 

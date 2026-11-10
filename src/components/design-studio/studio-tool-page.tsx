@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import {
   Sparkles,
@@ -18,17 +18,26 @@ import {
 import { PublicShell } from "@/components/common/site-shell";
 import { StudioSidebar } from "@/components/design-studio/studio-sidebar";
 import { StudioDetailModal } from "@/components/design-studio/studio-modals";
+import { NotificationListSkeleton } from "@/components/common/shadow-skeleton";
 import {
   StudioDesignItem,
-  generateDesignFromPromptApi,
-  initialRecentDesigns
+  peekStudioRecentDesigns,
+  fetchStudioRecentDesignsApi,
+  generateDesignFromPromptApi
 } from "@/lib/design-studio-data";
+import { useCacheTick } from "@/lib/api/data-cache";
 
 interface StudioToolPageProps {
   view: "text" | "image" | "sketch";
 }
 
 export function StudioToolPage({ view }: StudioToolPageProps) {
+  const designsTick = useCacheTick("designs");
+  const cachedDesigns = useMemo(
+    () => (designsTick >= 0 ? peekStudioRecentDesigns() : null),
+    [designsTick]
+  );
+
   const isImage = view === "image";
   const isSketch = view === "sketch";
 
@@ -44,8 +53,39 @@ export function StudioToolPage({ view }: StudioToolPageProps) {
   const [occasion, setOccasion] = useState("Wedding Reception");
   const [selectedColor, setSelectedColor] = useState("#078B87");
   const [isGenerating, setIsGenerating] = useState(false);
-  const [results, setResults] = useState<StudioDesignItem[]>(initialRecentDesigns.slice(0, 3));
+  const [generatedResults, setGeneratedResults] = useState<StudioDesignItem[] | null>(null);
+  const [fallbackResults, setFallbackResults] = useState<StudioDesignItem[] | null>(null);
   const [selectedDesign, setSelectedDesign] = useState<StudioDesignItem | null>(null);
+
+  const results =
+    generatedResults ?? (cachedDesigns ? cachedDesigns.slice(0, 3) : fallbackResults ?? []);
+  const setResults = (
+    next: StudioDesignItem[] | ((prev: StudioDesignItem[]) => StudioDesignItem[])
+  ) => {
+    setGeneratedResults((prev) => {
+      const base = prev ?? results;
+      return typeof next === "function" ? next(base) : next;
+    });
+  };
+  const isLoading =
+    generatedResults === null && cachedDesigns === null && fallbackResults === null;
+
+  useEffect(() => {
+    if (cachedDesigns !== null) return;
+    let isSubscribed = true;
+    fetchStudioRecentDesignsApi()
+      .then((list) => {
+        if (isSubscribed) {
+          setFallbackResults(list.slice(0, 3));
+        }
+      })
+      .catch(() => {
+        if (isSubscribed) setFallbackResults([]);
+      });
+    return () => {
+      isSubscribed = false;
+    };
+  }, [cachedDesigns]);
 
   const colors = ["#078B87", "#D5B069", "#F2BCBC", "#A8DADC", "#6652A8", "#84A85C"];
   const styles = ["Festive", "Royal Wedding", "Modern Chic", "Pastel Glow", "Minimal Ethnic"];
@@ -246,41 +286,58 @@ export function StudioToolPage({ view }: StudioToolPageProps) {
                     </span>
                   </div>
 
-                  <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                    {results.map((design) => (
-                      <div
-                        key={design.id}
-                        className="studio-design-card"
-                        style={{ flexDirection: "row", height: "130px" }}
-                        onClick={() => setSelectedDesign(design)}
-                      >
-                        <div style={{ width: "110px", height: "100%", background: "#F5F2EB", flexShrink: 0 }}>
-                          <img
-                            src={design.image}
-                            alt={design.title}
-                            style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                          />
-                        </div>
-                        <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", justifyContent: "space-between", flex: 1 }}>
-                          <div>
-                            <span style={{ fontSize: "0.72rem", color: "#078B87", fontWeight: 700, textTransform: "uppercase" }}>
-                              {design.category}
-                            </span>
-                            <h4 style={{ fontSize: "1rem", fontWeight: 750, color: "#111", margin: "2px 0 0" }}>
-                              {design.title}
-                            </h4>
+                  {isLoading || isGenerating ? (
+                    <NotificationListSkeleton count={3} />
+                  ) : results.length === 0 ? (
+                    <div
+                      style={{
+                        background: "#FFFFFF",
+                        border: "1px dashed #D6D0C4",
+                        borderRadius: "14px",
+                        padding: "40px 20px",
+                        textAlign: "center",
+                        color: "#6B7280"
+                      }}
+                    >
+                      No concepts generated yet. Fill out the prompt to render AI variations.
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                      {results.map((design) => (
+                        <div
+                          key={design.id}
+                          className="studio-design-card"
+                          style={{ flexDirection: "row", height: "130px" }}
+                          onClick={() => setSelectedDesign(design)}
+                        >
+                          <div style={{ width: "110px", height: "100%", background: "#F5F2EB", flexShrink: 0 }}>
+                            <img
+                              src={design.image}
+                              alt={design.title}
+                              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                            />
                           </div>
+                          <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", justifyContent: "space-between", flex: 1 }}>
+                            <div>
+                              <span style={{ fontSize: "0.72rem", color: "#078B87", fontWeight: 700, textTransform: "uppercase" }}>
+                                {design.category}
+                              </span>
+                              <h4 style={{ fontSize: "1rem", fontWeight: 750, color: "#111", margin: "2px 0 0" }}>
+                                {design.title}
+                              </h4>
+                            </div>
 
-                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                            <span style={{ fontSize: "0.82rem", color: "#6B7280" }}>{design.estimatedCost}</span>
-                            <span style={{ fontSize: "0.82rem", color: "#078B87", fontWeight: 700 }}>
-                              Quick View →
-                            </span>
+                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                              <span style={{ fontSize: "0.82rem", color: "#6B7280" }}>{design.estimatedCost}</span>
+                              <span style={{ fontSize: "0.82rem", color: "#078B87", fontWeight: 700 }}>
+                                Quick View →
+                              </span>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             </main>

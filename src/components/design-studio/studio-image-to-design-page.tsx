@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import {
   Upload,
@@ -14,12 +14,25 @@ import {
   RefreshCw
 } from "lucide-react";
 import { PublicShell } from "@/components/common/site-shell";
+import { StudioGalleryResultSkeleton } from "@/components/common/shadow-skeleton";
+import { uploadService } from "@/lib/api/upload-service";
+import { getAuthToken } from "@/lib/api/client";
 import {
   generateDesignFromPromptApi,
+  peekStudioRecentDesigns,
+  fetchStudioRecentDesignsApi,
+  saveStudioDesignItemApi,
   StudioDesignItem
 } from "@/lib/design-studio-data";
+import { useCacheTick } from "@/lib/api/data-cache";
 
 export function StudioImageToDesignPage() {
+  const designsTick = useCacheTick("designs");
+  const cachedDesigns = useMemo(
+    () => (designsTick >= 0 ? peekStudioRecentDesigns() : null),
+    [designsTick]
+  );
+
   const [referenceImg, setReferenceImg] = useState<string>(
     "/images/design-studio/reference-cream-anarkali.jpg"
   );
@@ -27,18 +40,45 @@ export function StudioImageToDesignPage() {
     "Make it in pastel blue with silver embroidery and add a matching dupatta."
   );
 
+  const [generatedResults, setGeneratedResults] = useState<StudioDesignItem[] | null>(null);
+  const [fallbackResults, setFallbackResults] = useState<StudioDesignItem[] | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSavedAll, setIsSavedAll] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-
-  // Results gallery variations
-  const [results, setResults] = useState<string[]>([
-    "/images/design-studio/generated-pastel-blue-anarkali.jpg",
-    "/images/design-studio/recent/anarkali-gold.jpg",
-    "/images/design-studio/recent/lehenga-rose.jpg",
-    "/images/design-studio/recent/indowestern-sage.jpg"
-  ]);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+
+  const results =
+    generatedResults ?? (cachedDesigns ? cachedDesigns.slice(0, 4) : fallbackResults ?? []);
+  const setResults = (
+    next: StudioDesignItem[] | ((prev: StudioDesignItem[]) => StudioDesignItem[])
+  ) => {
+    setGeneratedResults((prev) => {
+      const base = prev ?? results;
+      return typeof next === "function" ? next(base) : next;
+    });
+  };
+  const isLoading =
+    generatedResults === null && cachedDesigns === null && fallbackResults === null;
+
+  useEffect(() => {
+    if (cachedDesigns !== null) return;
+    let isSubscribed = true;
+
+    fetchStudioRecentDesignsApi()
+      .then((list) => {
+        if (isSubscribed) {
+          setFallbackResults(list.slice(0, 4));
+        }
+      })
+      .catch((err) => {
+        console.error("[ImageToDesign] Failed loading studio concepts:", err);
+        if (isSubscribed) setFallbackResults([]);
+      });
+
+    return () => {
+      isSubscribed = false;
+    };
+  }, [cachedDesigns]);
 
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,11 +94,8 @@ export function StudioImageToDesignPage() {
         referenceImage: referenceImg
       });
 
-      if (result.image) {
-        setResults((prev) => [result.image, ...prev.slice(0, 3)]);
-        setActiveImageIndex(0);
-      }
-
+      setResults((prev) => [result, ...prev.slice(0, 3)]);
+      setActiveImageIndex(0);
       setToastMessage("Generated similar outfit variations!");
       setTimeout(() => setToastMessage(null), 3000);
     } catch (err) {
@@ -68,28 +105,43 @@ export function StudioImageToDesignPage() {
     }
   };
 
-  const handleSaveAll = () => {
+  const handleSaveAll = async () => {
+    await Promise.all(results.map((item) => saveStudioDesignItemApi(item)));
     setIsSavedAll(true);
-    setToastMessage("All variations saved to your My Designs!");
+    setToastMessage("All variations saved to My Designs!");
     setTimeout(() => {
       setIsSavedAll(false);
       setToastMessage(null);
     }, 3000);
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        if (typeof reader.result === "string") {
-          setReferenceImg(reader.result);
-          setToastMessage("Reference image uploaded!");
-          setTimeout(() => setToastMessage(null), 2500);
+    if (!file) return;
+
+    // Immediate local preview
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        setReferenceImg(reader.result);
+      }
+    };
+    reader.readAsDataURL(file);
+
+    // Upload to backend storage if authenticated
+    if (getAuthToken()) {
+      try {
+        const upRes = await uploadService.uploadImage(file, "designs");
+        if (upRes?.success && upRes.data?.url) {
+          setReferenceImg(upRes.data.url);
         }
-      };
-      reader.readAsDataURL(file);
+      } catch (err) {
+        console.warn("[ImageToDesign] Storage upload fallback to local preview:", err);
+      }
     }
+
+    setToastMessage("Reference image uploaded!");
+    setTimeout(() => setToastMessage(null), 2500);
   };
 
   const handleRemoveReference = (e: React.MouseEvent) => {
@@ -258,43 +310,70 @@ export function StudioImageToDesignPage() {
                 <button
                   type="button"
                   onClick={handleSaveAll}
+                  disabled={results.length === 0 || isLoading || isGenerating}
                   className="studio-image-save-all-btn"
                 >
                   {isSavedAll ? "Saved!" : "Save All"}
                 </button>
               </div>
 
-              <div className="studio-image-gallery-layout">
-                {/* Main Large Visual Frame */}
-                <div className="studio-image-main-frame">
-                  <img
-                    src={results[activeImageIndex]}
-                    alt="AI Generated Outfit Result"
-                    className="studio-image-main-img"
-                  />
+              {isLoading || isGenerating ? (
+                <StudioGalleryResultSkeleton thumbs={3} layout="image" />
+              ) : results.length === 0 ? (
+                <div
+                  style={{
+                    background: "#FAF8F5",
+                    border: "1px dashed #D6D0C4",
+                    borderRadius: "14px",
+                    padding: "64px 24px",
+                    textAlign: "center",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: "10px"
+                  }}
+                >
+                  <Sparkles size={32} color="#078B87" />
+                  <h3 style={{ fontSize: "1.05rem", fontWeight: 700, margin: 0, color: "#111827" }}>
+                    Upload a Reference Photo
+                  </h3>
+                  <p style={{ fontSize: "0.85rem", color: "#6B7280", maxWidth: "320px", margin: 0 }}>
+                    Choose an inspiration image on the left and click &quot;Generate Similar Design&quot; to produce variations.
+                  </p>
                 </div>
+              ) : (
+                <div className="studio-image-gallery-layout">
+                  {/* Main Large Visual Frame */}
+                  <div className="studio-image-main-frame">
+                    <img
+                      src={results[activeImageIndex]?.image || "/images/design-studio/generated-pastel-blue-anarkali.jpg"}
+                      alt={results[activeImageIndex]?.title || "AI Generated Outfit Result"}
+                      className="studio-image-main-img"
+                    />
+                  </div>
 
-                {/* Vertical Thumbnail Strip (3 Right Thumbnails) */}
-                <div className="studio-image-thumbs-column">
-                  {results.slice(1, 4).map((imgSrc, idx) => {
-                    const actualIdx = idx + 1;
-                    return (
-                      <div
-                        key={idx}
-                        className={`studio-image-thumb-box ${activeImageIndex === actualIdx ? "active" : ""}`}
-                        onClick={() => setActiveImageIndex(actualIdx)}
-                        title="View Angle Variation"
-                      >
-                        <img
-                          src={imgSrc}
-                          alt={`Variation ${actualIdx}`}
-                          className="studio-image-thumb-img"
-                        />
-                      </div>
-                    );
-                  })}
+                  {/* Vertical Thumbnail Strip (3 Right Thumbnails) */}
+                  <div className="studio-image-thumbs-column">
+                    {results.slice(1, 4).map((item, idx) => {
+                      const actualIdx = idx + 1;
+                      return (
+                        <div
+                          key={item.id || idx}
+                          className={`studio-image-thumb-box ${activeImageIndex === actualIdx ? "active" : ""}`}
+                          onClick={() => setActiveImageIndex(actualIdx)}
+                          title={item.title || "View Angle Variation"}
+                        >
+                          <img
+                            src={item.image}
+                            alt={item.title || `Variation ${actualIdx}`}
+                            className="studio-image-thumb-img"
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>

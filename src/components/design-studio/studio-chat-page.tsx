@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import Link from "next/link";
 import {
   Send,
@@ -14,7 +14,14 @@ import {
 } from "lucide-react";
 import { PublicShell } from "@/components/common/site-shell";
 import { StudioDetailModal } from "@/components/design-studio/studio-modals";
-import { StudioDesignItem } from "@/lib/design-studio-data";
+import { StudioChatVariationsSkeleton } from "@/components/common/shadow-skeleton";
+import {
+  peekStudioRecentDesigns,
+  fetchStudioRecentDesignsApi,
+  generateDesignFromPromptApi,
+  StudioDesignItem
+} from "@/lib/design-studio-data";
+import { useCacheTick } from "@/lib/api/data-cache";
 
 interface ChatBubbleItem {
   id: string;
@@ -23,84 +30,60 @@ interface ChatBubbleItem {
 }
 
 export function StudioChatPage() {
+  const designsTick = useCacheTick("designs");
+  const cachedDesigns = useMemo(
+    () => (designsTick >= 0 ? peekStudioRecentDesigns() : null),
+    [designsTick]
+  );
+
   const [messages, setMessages] = useState<ChatBubbleItem[]>([
     {
       id: "msg-1",
       sender: "ai",
-      text: "Hello! I'm your AI fashion designer. Tell me what you have in mind."
-    },
-    {
-      id: "msg-2",
-      sender: "user",
-      text: "I want a modern ethnic outfit for my sister's sangeet."
-    },
-    {
-      id: "msg-3",
-      sender: "ai",
-      text: "Great! Do you prefer something like a lehenga, saree, anarkali or a fusion set?"
-    },
-    {
-      id: "msg-4",
-      sender: "user",
-      text: "A lehenga in royal blue with silver embroidery."
-    },
-    {
-      id: "msg-5",
-      sender: "ai",
-      text: "Here are some options I created based on your idea."
+      text: "Hello! I'm your AI fashion designer. Tell me what outfit style, color, or occasion you have in mind."
     }
   ]);
 
   const [inputVal, setInputVal] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [generatedVariations, setGeneratedVariations] = useState<StudioDesignItem[] | null>(null);
+  const [fallbackVariations, setFallbackVariations] = useState<StudioDesignItem[] | null>(null);
   const [selectedDesign, setSelectedDesign] = useState<StudioDesignItem | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const msgCounterRef = useRef(2);
 
-  // 3 Royal Blue Variations
-  const variations: StudioDesignItem[] = [
-    {
-      id: "var-royal-1",
-      title: "Royal Sapphire Lehenga (Sheer Sleeves)",
-      category: "Lehenga",
-      editedAgo: "AI Generated",
-      savedDate: "Today",
-      image: "/images/design-studio/chat-lehenga-var1.jpg",
-      prompt: "Royal blue flared bridal lehenga with sheer embroidered long sleeves, sweetheart crop top and silver metallic threadwork.",
-      fabric: "Pure Raw Silk & Net",
-      colorPalette: ["#164E80", "#E5E7EB", "#FAF8F5", "#D5B069"],
-      estimatedCost: "₹26,000 - ₹34,000",
-      tags: ["Sangeet", "Royal Blue", "Silver Work"],
-      isFavorite: true
-    },
-    {
-      id: "var-royal-2",
-      title: "Sapphire Floral Flare Lehenga",
-      category: "Lehenga",
-      editedAgo: "AI Generated",
-      savedDate: "Today",
-      image: "/images/design-studio/chat-lehenga-var2.jpg",
-      prompt: "Royal sapphire blue heavy flared lehenga with elbow-length blouse, draped dupatta across shoulders and silver zardozi kalis.",
-      fabric: "Banarasi Silk & Georgette",
-      colorPalette: ["#164E80", "#FFFFFF", "#CDEBE4", "#6652A8"],
-      estimatedCost: "₹28,000 - ₹38,000",
-      tags: ["Bridal", "Heavy Flare", "Dupatta Drape"],
-      isFavorite: false
-    },
-    {
-      id: "var-royal-3",
-      title: "Contemporary Sleeveless Royal Lehenga",
-      category: "Lehenga",
-      editedAgo: "AI Generated",
-      savedDate: "Today",
-      image: "/images/design-studio/chat-lehenga-var3.jpg",
-      prompt: "Deep sapphire blue sleeveless crop-top lehenga with heavy metallic silver gotta patti embellishments and belted waistline.",
-      fabric: "Micro Velvet & Net",
-      colorPalette: ["#164E80", "#D1D5DB", "#FAF8F5", "#111111"],
-      estimatedCost: "₹24,000 - ₹30,000",
-      tags: ["Modern Sangeet", "Sleeveless", "Gotta Patti"],
-      isFavorite: false
-    }
-  ];
+  const variations =
+    generatedVariations ?? (cachedDesigns ? cachedDesigns.slice(0, 3) : fallbackVariations ?? []);
+  const setVariations = (
+    next: StudioDesignItem[] | ((prev: StudioDesignItem[]) => StudioDesignItem[])
+  ) => {
+    setGeneratedVariations((prev) => {
+      const base = prev ?? variations;
+      return typeof next === "function" ? next(base) : next;
+    });
+  };
+  const isLoadingVariations =
+    generatedVariations === null && cachedDesigns === null && fallbackVariations === null;
+
+  useEffect(() => {
+    if (cachedDesigns !== null) return;
+    let isSubscribed = true;
+
+    fetchStudioRecentDesignsApi()
+      .then((designs) => {
+        if (isSubscribed) {
+          setFallbackVariations(designs.slice(0, 3));
+        }
+      })
+      .catch((err) => {
+        console.error("[StudioChat] Failed loading initial variations:", err);
+        if (isSubscribed) setFallbackVariations([]);
+      });
+
+    return () => {
+      isSubscribed = false;
+    };
+  }, [cachedDesigns]);
 
   const suggestedPrompts = [
     "Bridal lehenga for evening",
@@ -109,12 +92,12 @@ export function StudioChatPage() {
     "Indo western for men"
   ];
 
-  const handleSend = (textToSend?: string) => {
+  const handleSend = async (textToSend?: string) => {
     const text = textToSend || inputVal;
     if (!text.trim()) return;
 
     const userMsg: ChatBubbleItem = {
-      id: `msg-u-${Date.now()}`,
+      id: `msg-u-${++msgCounterRef.current}`,
       sender: "user",
       text
     };
@@ -123,25 +106,44 @@ export function StudioChatPage() {
     setInputVal("");
     setIsTyping(true);
 
-    setTimeout(() => {
-      let aiText = "Here are tailored design suggestions based on your request:";
-      if (text.toLowerCase().includes("summer") || text.toLowerCase().includes("kurta")) {
-        aiText = "I've drafted lightweight pastel breathable kurta silhouettes with subtle neck detailing.";
-      } else if (text.toLowerCase().includes("saree")) {
-        aiText = "Here are contemporary pre-stitched cocktail saree drapes with sequin borders.";
-      } else if (text.toLowerCase().includes("men") || text.toLowerCase().includes("indo")) {
-        aiText = "Here are asymmetric bandhgala sherwanis and fusion kurtas for men.";
+    try {
+      const lower = text.toLowerCase();
+      const garmentType = lower.includes("kurta")
+        ? "Pastel Kurta Set"
+        : lower.includes("saree")
+        ? "Banarasi Saree"
+        : lower.includes("sherwani") || lower.includes("men")
+        ? "Indo-Western Sherwani"
+        : lower.includes("anarkali")
+        ? "Anarkali Suit"
+        : "Festive Lehenga Set";
+
+      const generated = await generateDesignFromPromptApi({
+        prompt: text,
+        garmentType,
+        style: "Modern Ethnic",
+        occasion: lower.includes("wedding") || lower.includes("bridal") ? "Wedding" : "Festive"
+      });
+
+      let aiText = `I've generated a custom ${garmentType} concept matching "${text}" — check it out on the right panel!`;
+      if (lower.includes("summer") || lower.includes("kurta")) {
+        aiText = "I've drafted lightweight pastel breathable kurta silhouettes with subtle neck detailing and added the new variation.";
+      } else if (lower.includes("saree")) {
+        aiText = "Here are contemporary pre-stitched cocktail saree drapes with sequin borders based on your styling note.";
+      } else if (lower.includes("men") || lower.includes("indo")) {
+        aiText = "Here is a tailored bandhgala & fusion kurta concept added to your variations panel.";
       }
 
-      const aiMsg: ChatBubbleItem = {
-        id: `msg-ai-${Date.now()}`,
-        sender: "ai",
-        text: aiText
-      };
-
-      setMessages((prev) => [...prev, aiMsg]);
+      setVariations((prev) => [generated, ...prev.slice(0, 2)]);
+      setMessages((prev) => [
+        ...prev,
+        { id: `msg-ai-${++msgCounterRef.current}`, sender: "ai", text: aiText }
+      ]);
+    } catch (err) {
+      console.error("[StudioChat] Generation error:", err);
+    } finally {
       setIsTyping(false);
-    }, 900);
+    }
   };
 
   return (
@@ -248,22 +250,48 @@ export function StudioChatPage() {
             <div className="studio-chat-variations-card">
               <h2 className="studio-chat-variations-title">AI Generated Variations</h2>
 
-              <div className="studio-chat-variations-3col-grid">
-                {variations.map((v) => (
-                  <div
-                    key={v.id}
-                    className="studio-chat-variation-item"
-                    onClick={() => setSelectedDesign(v)}
-                    title={v.title}
-                  >
-                    <img
-                      src={v.image}
-                      alt={v.title}
-                      className="studio-chat-variation-img"
-                    />
-                  </div>
-                ))}
-              </div>
+              {isLoadingVariations || isTyping ? (
+                <StudioChatVariationsSkeleton count={3} />
+              ) : variations.length === 0 ? (
+                <div
+                  style={{
+                    background: "#FAF8F5",
+                    border: "1px dashed #D6D0C4",
+                    borderRadius: "14px",
+                    padding: "48px 20px",
+                    textAlign: "center",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: "10px"
+                  }}
+                >
+                  <Sparkles size={28} color="#078B87" />
+                  <h3 style={{ fontSize: "1rem", fontWeight: 700, margin: 0, color: "#111827" }}>
+                    No Variations Yet
+                  </h3>
+                  <p style={{ fontSize: "0.85rem", color: "#6B7280", maxWidth: "280px", margin: 0 }}>
+                    Send a message or click one of the suggested styling prompts below to generate bespoke AI looks.
+                  </p>
+                </div>
+              ) : (
+                <div className="studio-chat-variations-3col-grid">
+                  {variations.map((v) => (
+                    <div
+                      key={v.id}
+                      className="studio-chat-variation-item"
+                      onClick={() => setSelectedDesign(v)}
+                      title={v.title}
+                    >
+                      <img
+                        src={v.image}
+                        alt={v.title}
+                        className="studio-chat-variation-img"
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 

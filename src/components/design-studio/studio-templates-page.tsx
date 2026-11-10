@@ -1,15 +1,19 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Check } from "lucide-react";
 import { PublicShell } from "@/components/common/site-shell";
 import { StudioDetailModal } from "@/components/design-studio/studio-modals";
+import { StudioDesignsGridSkeleton } from "@/components/common/shadow-skeleton";
 import {
-  initialTemplates,
+  fetchStudioTemplatesApi,
+  peekStudioTemplates,
   StudioTemplate,
   StudioDesignItem
 } from "@/lib/design-studio-data";
+import { useCacheTick } from "@/lib/api/data-cache";
 
 type StudioDesignCategory = StudioDesignItem["category"];
 
@@ -29,10 +33,64 @@ function getTemplateDesignCategory(template: StudioTemplate): StudioDesignCatego
 }
 
 export function StudioTemplatesPage() {
+  const searchParams = useSearchParams();
+  const tabParam = searchParams?.get("tab");
+
+  const communityTick = useCacheTick("community");
   const [selectedCategory, setSelectedCategory] = useState("All Templates");
-  const [activeTab, setActiveTab] = useState<"Popular" | "Trending" | "New Arrivals">("Popular");
+  const [tabOverride, setTabOverride] = useState<{
+    param: string | null;
+    value: "Popular" | "Trending" | "New Arrivals";
+  } | null>(null);
+  const activeTab: "Popular" | "Trending" | "New Arrivals" =
+    tabOverride && tabOverride.param === tabParam
+      ? tabOverride.value
+      : tabParam === "inspiration"
+      ? "Trending"
+      : "Popular";
+  const setActiveTab = (val: "Popular" | "Trending" | "New Arrivals") =>
+    setTabOverride({ param: tabParam ?? null, value: val });
+
+  const cachedTemplates = useMemo(
+    () => (communityTick >= 0 ? peekStudioTemplates(selectedCategory, activeTab) : null),
+    [communityTick, selectedCategory, activeTab]
+  );
+  const [fallbackTemplates, setFallbackTemplates] = useState<{
+    key: string;
+    list: StudioTemplate[];
+  } | null>(null);
+
+  const currentQueryKey = `${selectedCategory}::${activeTab}`;
+  const templates =
+    cachedTemplates ??
+    (fallbackTemplates?.key === currentQueryKey ? fallbackTemplates.list : []);
+  const isLoading =
+    cachedTemplates === null && fallbackTemplates?.key !== currentQueryKey;
+
   const [templateForModal, setTemplateForModal] = useState<StudioDesignItem | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (cachedTemplates !== null) return;
+    let isSubscribed = true;
+
+    fetchStudioTemplatesApi(selectedCategory, activeTab)
+      .then((data) => {
+        if (isSubscribed) {
+          setFallbackTemplates({ key: `${selectedCategory}::${activeTab}`, list: data });
+        }
+      })
+      .catch((err) => {
+        console.error("[Templates] Fetch failed:", err);
+        if (isSubscribed) {
+          setFallbackTemplates({ key: `${selectedCategory}::${activeTab}`, list: [] });
+        }
+      });
+
+    return () => {
+      isSubscribed = false;
+    };
+  }, [cachedTemplates, selectedCategory, activeTab]);
 
   const categories = [
     "All Templates",
@@ -47,14 +105,7 @@ export function StudioTemplatesPage() {
     "Co-ord Sets"
   ];
 
-  const filteredTemplates = initialTemplates.filter((tmpl) => {
-    if (selectedCategory === "All Templates") return true;
-    if (selectedCategory === "Men's Wear") return tmpl.tags.includes("Men's Wear") || tmpl.category === "Men's";
-    return tmpl.tags.includes(selectedCategory) || tmpl.title.toLowerCase().includes(selectedCategory.toLowerCase());
-  });
-
   const handleUseTemplate = (tmpl: StudioTemplate) => {
-    // Open Prompt Modal or Quick View Modal
     const modalItem: StudioDesignItem = {
       id: tmpl.id,
       title: tmpl.title,
@@ -62,7 +113,7 @@ export function StudioTemplatesPage() {
       editedAgo: "Template",
       savedDate: "Verified Pattern",
       image: tmpl.image,
-      prompt: `${tmpl.title} with custom tailoring specifications and premium ethnic fabric.`,
+      prompt: tmpl.description || `${tmpl.title} with custom tailoring specifications and premium ethnic fabric.`,
       fabric: tmpl.fabric,
       colorPalette: ["#078B87", "#FAF8F5", "#D5B069", "#111111"],
       estimatedCost: tmpl.estimatedPrice,
@@ -176,29 +227,48 @@ export function StudioTemplatesPage() {
               </div>
 
               {/* 4-Column Templates Grid */}
-              <div className="studio-templates-4col-grid">
-                {filteredTemplates.map((tmpl) => (
-                  <article key={tmpl.id} className="studio-template-item-card">
-                    <div className="studio-template-img-frame">
-                      <img
-                        src={tmpl.image}
-                        alt={tmpl.title}
-                        className="studio-template-img"
-                      />
-                    </div>
-                    <div className="studio-template-card-body">
-                      <h3 className="studio-template-card-title">{tmpl.title}</h3>
-                      <button
-                        type="button"
-                        onClick={() => handleUseTemplate(tmpl)}
-                        className="studio-template-use-cta"
-                      >
-                        Use Template
-                      </button>
-                    </div>
-                  </article>
-                ))}
-              </div>
+              {isLoading ? (
+                <StudioDesignsGridSkeleton count={8} variant="templates" />
+              ) : templates.length === 0 ? (
+                <div
+                  style={{
+                    background: "#FFFFFF",
+                    borderRadius: "16px",
+                    border: "1px dashed #D6D0C4",
+                    padding: "48px 24px",
+                    textAlign: "center",
+                    color: "#6B7280"
+                  }}
+                >
+                  <p style={{ margin: 0, fontSize: "0.95rem" }}>
+                    No templates found in &quot;{selectedCategory}&quot;. Try another style category.
+                  </p>
+                </div>
+              ) : (
+                <div className="studio-templates-4col-grid">
+                  {templates.map((tmpl) => (
+                    <article key={tmpl.id} className="studio-template-item-card">
+                      <div className="studio-template-img-frame">
+                        <img
+                          src={tmpl.image}
+                          alt={tmpl.title}
+                          className="studio-template-img"
+                        />
+                      </div>
+                      <div className="studio-template-card-body">
+                        <h3 className="studio-template-card-title">{tmpl.title}</h3>
+                        <button
+                          type="button"
+                          onClick={() => handleUseTemplate(tmpl)}
+                          className="studio-template-use-cta"
+                        >
+                          Use Template
+                        </button>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              )}
 
               {/* View More Templates Link */}
               <div className="studio-templates-more-wrap">

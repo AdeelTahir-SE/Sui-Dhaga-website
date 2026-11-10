@@ -20,14 +20,19 @@ export function StudioDetailModal({
   onClose,
   onFavoriteChange
 }: StudioDetailModalProps) {
-  const [isFav, setIsFav] = useState(design?.isFavorite || false);
+  const [favOverride, setFavOverride] = useState<{ id: string; value: boolean } | null>(null);
 
   if (!design) return null;
 
+  const isFav =
+    favOverride && favOverride.id === design.id
+      ? favOverride.value
+      : Boolean(design.isFavorite);
+
   const handleToggleFav = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    const newStatus = await toggleFavoriteStudioDesignApi(design.id);
-    setIsFav(newStatus);
+    const newStatus = await toggleFavoriteStudioDesignApi(design.id, isFav);
+    setFavOverride({ id: design.id, value: newStatus });
     if (onFavoriteChange) {
       onFavoriteChange(design.id, newStatus);
     }
@@ -114,7 +119,7 @@ export function StudioDetailModal({
           {/* Action Buttons */}
           <div className="studio-modal-actions-row">
             <Link
-              href={`/book?designId=${encodeURIComponent(design.id)}&title=${encodeURIComponent(design.title)}`}
+              href={`/tailors?designId=${encodeURIComponent(design.id)}&title=${encodeURIComponent(design.title)}`}
               className="studio-cta-btn"
               style={{ flex: 1.2, textDecoration: "none" }}
             >

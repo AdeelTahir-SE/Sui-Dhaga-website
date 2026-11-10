@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import {
   Sparkles,
@@ -13,12 +13,23 @@ import {
   Scissors
 } from "lucide-react";
 import { PublicShell } from "@/components/common/site-shell";
+import { StudioGalleryResultSkeleton } from "@/components/common/shadow-skeleton";
 import {
   generateDesignFromPromptApi,
+  peekStudioRecentDesigns,
+  fetchStudioRecentDesignsApi,
+  saveStudioDesignItemApi,
   StudioDesignItem
 } from "@/lib/design-studio-data";
+import { useCacheTick } from "@/lib/api/data-cache";
 
 export function StudioTextToDesignPage() {
+  const designsTick = useCacheTick("designs");
+  const cachedDesigns = useMemo(
+    () => (designsTick >= 0 ? peekStudioRecentDesigns() : null),
+    [designsTick]
+  );
+
   const [prompt, setPrompt] = useState(
     "Elegant pastel pink Anarkali suit with floral embroidery and net dupatta"
   );
@@ -26,18 +37,45 @@ export function StudioTextToDesignPage() {
   const [styleType, setStyleType] = useState("Traditional");
   const [occasion, setOccasion] = useState("Wedding");
 
+  const [generatedConcepts, setGeneratedConcepts] = useState<StudioDesignItem[] | null>(null);
+  const [fallbackConcepts, setFallbackConcepts] = useState<StudioDesignItem[] | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-
-  // Gallery variations
-  const [variations, setVariations] = useState<string[]>([
-    "/images/design-studio/generated-pink-anarkali.jpg",
-    "/images/design-studio/recent/anarkali-gold.jpg",
-    "/images/design-studio/recent/lehenga-rose.jpg",
-    "/images/design-studio/recent/kurta-mint.jpg"
-  ]);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+
+  const concepts =
+    generatedConcepts ?? (cachedDesigns ? cachedDesigns.slice(0, 4) : fallbackConcepts ?? []);
+  const setConcepts = (
+    next: StudioDesignItem[] | ((prev: StudioDesignItem[]) => StudioDesignItem[])
+  ) => {
+    setGeneratedConcepts((prev) => {
+      const base = prev ?? concepts;
+      return typeof next === "function" ? next(base) : next;
+    });
+  };
+  const isLoading =
+    generatedConcepts === null && cachedDesigns === null && fallbackConcepts === null;
+
+  useEffect(() => {
+    if (cachedDesigns !== null) return;
+    let isSubscribed = true;
+
+    fetchStudioRecentDesignsApi()
+      .then((list) => {
+        if (isSubscribed) {
+          setFallbackConcepts(list.slice(0, 4));
+        }
+      })
+      .catch((err) => {
+        console.error("[TextToDesign] Failed loading studio concepts:", err);
+        if (isSubscribed) setFallbackConcepts([]);
+      });
+
+    return () => {
+      isSubscribed = false;
+    };
+  }, [cachedDesigns]);
 
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,12 +90,8 @@ export function StudioTextToDesignPage() {
         occasion
       });
 
-      // Update variations with newly generated image at the front
-      if (result.image) {
-        setVariations((prev) => [result.image, ...prev.slice(0, 3)]);
-        setActiveImageIndex(0);
-      }
-
+      setConcepts((prev) => [result, ...prev.slice(0, 3)]);
+      setActiveImageIndex(0);
       setToastMessage("AI design generated successfully!");
       setTimeout(() => setToastMessage(null), 3000);
     } catch (err) {
@@ -67,7 +101,11 @@ export function StudioTextToDesignPage() {
     }
   };
 
-  const handleSaveDesign = () => {
+  const handleSaveDesign = async () => {
+    const active = concepts[activeImageIndex];
+    if (active) {
+      await saveStudioDesignItemApi(active);
+    }
     setIsSaved(true);
     setToastMessage("Design saved to My Designs!");
     setTimeout(() => {
@@ -77,9 +115,10 @@ export function StudioTextToDesignPage() {
   };
 
   const handleDownload = () => {
-    const activeSrc = variations[activeImageIndex];
+    const active = concepts[activeImageIndex];
+    if (!active?.image) return;
     const link = document.createElement("a");
-    link.href = activeSrc;
+    link.href = active.image;
     link.download = `sui-dhaga-${garmentType.toLowerCase().replace(/\s+/g, "-")}.jpg`;
     document.body.appendChild(link);
     link.click();
@@ -258,43 +297,71 @@ export function StudioTextToDesignPage() {
             <div className="studio-text-result-card">
               <h2 className="studio-text-result-heading">AI Generated Result</h2>
 
-              <div className="studio-text-gallery-layout">
-                {/* Main Large Visual Frame */}
-                <div className="studio-text-main-frame">
-                  <img
-                    src={variations[activeImageIndex]}
-                    alt="AI Generated Outfit"
-                    className="studio-text-main-img"
-                  />
+              {isLoading || isGenerating ? (
+                <StudioGalleryResultSkeleton thumbs={3} layout="text" />
+              ) : concepts.length === 0 ? (
+                <div
+                  style={{
+                    background: "#FAF8F5",
+                    border: "1px dashed #D6D0C4",
+                    borderRadius: "14px",
+                    padding: "64px 24px",
+                    textAlign: "center",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: "10px",
+                    marginBottom: "16px"
+                  }}
+                >
+                  <Sparkles size={32} color="#078B87" />
+                  <h3 style={{ fontSize: "1.05rem", fontWeight: 700, margin: 0, color: "#111827" }}>
+                    Ready to Create Your Outfit
+                  </h3>
+                  <p style={{ fontSize: "0.85rem", color: "#6B7280", maxWidth: "320px", margin: 0 }}>
+                    Describe your outfit preferences on the left and click &quot;Generate Design&quot; to render AI variations.
+                  </p>
                 </div>
+              ) : (
+                <div className="studio-text-gallery-layout">
+                  {/* Main Large Visual Frame */}
+                  <div className="studio-text-main-frame">
+                    <img
+                      src={concepts[activeImageIndex]?.image || "/images/design-studio/generated-pink-anarkali.jpg"}
+                      alt={concepts[activeImageIndex]?.title || "AI Generated Outfit"}
+                      className="studio-text-main-img"
+                    />
+                  </div>
 
-                {/* Vertical Thumbnail Strip (3 Right Thumbnails) */}
-                <div className="studio-text-thumbs-column">
-                  {variations.slice(1, 4).map((imgSrc, idx) => {
-                    const actualIdx = idx + 1;
-                    return (
-                      <div
-                        key={idx}
-                        className={`studio-text-thumb-box ${activeImageIndex === actualIdx ? "active" : ""}`}
-                        onClick={() => setActiveImageIndex(actualIdx)}
-                        title="View Angle Variation"
-                      >
-                        <img
-                          src={imgSrc}
-                          alt={`Variation ${actualIdx}`}
-                          className="studio-text-thumb-img"
-                        />
-                      </div>
-                    );
-                  })}
+                  {/* Vertical Thumbnail Strip (3 Right Thumbnails) */}
+                  <div className="studio-text-thumbs-column">
+                    {concepts.slice(1, 4).map((item, idx) => {
+                      const actualIdx = idx + 1;
+                      return (
+                        <div
+                          key={item.id || idx}
+                          className={`studio-text-thumb-box ${activeImageIndex === actualIdx ? "active" : ""}`}
+                          onClick={() => setActiveImageIndex(actualIdx)}
+                          title={item.title || "View Angle Variation"}
+                        >
+                          <img
+                            src={item.image}
+                            alt={item.title || `Variation ${actualIdx}`}
+                            className="studio-text-thumb-img"
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Action Buttons Bar */}
               <div className="studio-text-actions-bar">
                 <button
                   type="button"
                   onClick={handleSaveDesign}
+                  disabled={concepts.length === 0 || isLoading || isGenerating}
                   className="studio-text-outline-action"
                 >
                   {isSaved ? <Check size={17} color="#0B7B6E" /> : <Bookmark size={17} />}
@@ -304,6 +371,7 @@ export function StudioTextToDesignPage() {
                 <button
                   type="button"
                   onClick={handleDownload}
+                  disabled={concepts.length === 0 || isLoading || isGenerating}
                   className="studio-text-outline-action"
                 >
                   <Download size={17} />

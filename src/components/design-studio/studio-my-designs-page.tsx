@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   Search,
   ChevronDown,
@@ -10,19 +11,39 @@ import {
   FileText,
   Scissors,
   Trash2,
+  RotateCcw,
   Check,
   Eye,
   Plus
 } from "lucide-react";
 import { PublicShell } from "@/components/common/site-shell";
 import { StudioDetailModal } from "@/components/design-studio/studio-modals";
+import { StudioDesignsGridSkeleton } from "@/components/common/shadow-skeleton";
 import {
-  initialRecentDesigns,
+  peekStudioRecentDesigns,
+  fetchStudioRecentDesignsApi,
+  toggleTrashStudioDesignApi,
   StudioDesignItem
 } from "@/lib/design-studio-data";
+import { useCacheTick } from "@/lib/api/data-cache";
 
 export function StudioMyDesignsPage() {
-  const [designs, setDesigns] = useState<StudioDesignItem[]>(initialRecentDesigns);
+  const searchParams = useSearchParams();
+  const paramTrashFilter = searchParams?.get("filter") === "trash";
+  const designsTick = useCacheTick("designs");
+
+  const cachedDesigns = useMemo(
+    () => (designsTick >= 0 ? peekStudioRecentDesigns({ includeTrash: true }) : null),
+    [designsTick]
+  );
+
+  const [fallbackDesigns, setFallbackDesigns] = useState<StudioDesignItem[] | null>(null);
+  const [trashOverride, setTrashOverride] = useState<{ param: boolean; value: boolean } | null>(null);
+  const viewTrash =
+    trashOverride && trashOverride.param === paramTrashFilter
+      ? trashOverride.value
+      : paramTrashFilter;
+  const setViewTrash = (val: boolean) => setTrashOverride({ param: paramTrashFilter, value: val });
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState("All Types");
   const [selectedStyle, setSelectedStyle] = useState("All Styles");
@@ -32,9 +53,32 @@ export function StudioMyDesignsPage() {
   const [selectedDesignForModal, setSelectedDesignForModal] = useState<StudioDesignItem | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  const designs = cachedDesigns ?? fallbackDesigns ?? [];
+  const isLoading = cachedDesigns === null && fallbackDesigns === null;
+
+  useEffect(() => {
+    if (cachedDesigns !== null) return;
+    let isSubscribed = true;
+
+    fetchStudioRecentDesignsApi({ includeTrash: true })
+      .then((list) => {
+        if (isSubscribed) {
+          setFallbackDesigns(list);
+        }
+      })
+      .catch((err) => {
+        console.error("[MyDesigns] Load failed:", err);
+        if (isSubscribed) setFallbackDesigns([]);
+      });
+
+    return () => {
+      isSubscribed = false;
+    };
+  }, [cachedDesigns]);
+
   // Filter & search computation
   const filteredDesigns = useMemo(() => {
-    let list = [...designs];
+    let list = designs.filter((d) => (viewTrash ? Boolean(d.isTrash) : !d.isTrash));
 
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -62,13 +106,18 @@ export function StudioMyDesignsPage() {
     }
 
     return list;
-  }, [designs, searchQuery, selectedType, selectedStyle, sortOrder]);
+  }, [designs, viewTrash, searchQuery, selectedType, selectedStyle, sortOrder]);
 
-  const handleDelete = (id: string, e: React.MouseEvent) => {
+  const handleToggleTrash = async (id: string, moveToTrash: boolean, e: React.MouseEvent) => {
     e.stopPropagation();
-    setDesigns((prev) => prev.filter((d) => d.id !== id));
+    await toggleTrashStudioDesignApi(id, moveToTrash);
+    if (fallbackDesigns) {
+      setFallbackDesigns(
+        fallbackDesigns.map((d) => (d.id === id ? { ...d, isTrash: moveToTrash } : d))
+      );
+    }
     setActiveMenuId(null);
-    setToastMessage("Design removed from My Designs.");
+    setToastMessage(moveToTrash ? "Design moved to Trash." : "Design restored to My Designs.");
     setTimeout(() => setToastMessage(null), 2500);
   };
 
@@ -96,18 +145,65 @@ export function StudioMyDesignsPage() {
           </nav>
 
           {/* Header Title Section */}
-          <div className="studio-my-designs-header-section">
-            <div className="studio-my-designs-flag-icon" aria-hidden="true">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                <path d="M0 0L14 12L0 24V0Z" fill="#FFD233" />
-                <path d="M0 0L14 12L0 24" stroke="#111111" strokeWidth="1.5" />
-              </svg>
+          <div className="studio-my-designs-header-section" style={{ justifyContent: "space-between", flexWrap: "wrap", gap: "16px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+              <div className="studio-my-designs-flag-icon" aria-hidden="true">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <path d="M0 0L14 12L0 24V0Z" fill="#FFD233" />
+                  <path d="M0 0L14 12L0 24" stroke="#111111" strokeWidth="1.5" />
+                </svg>
+              </div>
+              <div>
+                <h1 className="studio-my-designs-main-heading">
+                  {viewTrash ? "Trash" : "My Designs"}
+                </h1>
+                <p className="studio-my-designs-sub-heading">
+                  {viewTrash
+                    ? "Recover or manage removed AI studio designs."
+                    : "All your created designs in one place."}
+                </p>
+              </div>
             </div>
-            <div>
-              <h1 className="studio-my-designs-main-heading">My Designs</h1>
-              <p className="studio-my-designs-sub-heading">
-                All your created designs in one place.
-              </p>
+
+            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+              <button
+                type="button"
+                onClick={() => setViewTrash(false)}
+                style={{
+                  padding: "8px 16px",
+                  borderRadius: "10px",
+                  border: "1px solid",
+                  borderColor: !viewTrash ? "#078B87" : "#E5E7EB",
+                  background: !viewTrash ? "#078B87" : "#FFFFFF",
+                  color: !viewTrash ? "#FFFFFF" : "#374151",
+                  fontSize: "0.85rem",
+                  fontWeight: 650,
+                  cursor: "pointer"
+                }}
+              >
+                All Designs ({designs.filter((d) => !d.isTrash).length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewTrash(true)}
+                style={{
+                  padding: "8px 16px",
+                  borderRadius: "10px",
+                  border: "1px solid",
+                  borderColor: viewTrash ? "#EF4444" : "#E5E7EB",
+                  background: viewTrash ? "#FEF2F2" : "#FFFFFF",
+                  color: viewTrash ? "#DC2626" : "#374151",
+                  fontSize: "0.85rem",
+                  fontWeight: 650,
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px"
+                }}
+              >
+                <Trash2 size={14} />
+                <span>Trash ({designs.filter((d) => d.isTrash).length})</span>
+              </button>
             </div>
           </div>
 
@@ -166,7 +262,7 @@ export function StudioMyDesignsPage() {
                   <option value="Kurta Set">Kurta Set</option>
                   <option value="Indo-Western">Indo Western</option>
                   <option value="Saree">Saree</option>
-                  <option value="Sherwani">Men's Wear</option>
+                  <option value="Sherwani">Men&apos;s Wear</option>
                 </select>
                 <ChevronDown size={16} className="studio-my-designs-select-arrow" />
               </div>
@@ -192,7 +288,7 @@ export function StudioMyDesignsPage() {
               <div className="studio-my-designs-select-wrap">
                 <select
                   value={sortOrder}
-                  onChange={(e) => setSortOrder(e.target.value as any)}
+                  onChange={(e) => setSortOrder(e.target.value as "Latest" | "Oldest" | "A-Z")}
                   className="studio-my-designs-select"
                 >
                   <option value="Latest">Sort: Latest</option>
@@ -205,7 +301,9 @@ export function StudioMyDesignsPage() {
           </div>
 
           {/* 4-Column Design Cards Grid */}
-          {filteredDesigns.length === 0 ? (
+          {isLoading ? (
+            <StudioDesignsGridSkeleton count={8} variant="my-designs" />
+          ) : filteredDesigns.length === 0 ? (
             <div
               style={{
                 background: "#FFFFFF",
@@ -219,28 +317,36 @@ export function StudioMyDesignsPage() {
                 gap: "14px"
               }}
             >
-              <h3 style={{ fontSize: "1.2rem", fontWeight: 700, margin: 0 }}>No matching designs found</h3>
+              <h3 style={{ fontSize: "1.2rem", fontWeight: 700, margin: 0 }}>
+                {viewTrash ? "Trash is Empty" : "No Designs Found"}
+              </h3>
               <p style={{ color: "#6B7280", margin: 0, maxWidth: "400px" }}>
-                Try adjusting your search query or filters to find what you're looking for.
+                {viewTrash
+                  ? "Removed designs will appear here in case you want to restore them."
+                  : searchQuery
+                  ? "Try adjusting your search query or filters to find what you're looking for."
+                  : "You haven't generated or saved any studio designs yet. Launch AI Studio to create your first bespoke outfit."}
               </p>
-              <Link
-                href="/design-studio/new"
-                style={{
-                  background: "#0B7B6E",
-                  color: "#FFFFFF",
-                  padding: "10px 20px",
-                  borderRadius: "8px",
-                  fontWeight: 650,
-                  textDecoration: "none",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  marginTop: "8px"
-                }}
-              >
-                <Plus size={16} />
-                <span>Create New Design</span>
-              </Link>
+              {!viewTrash && (
+                <Link
+                  href="/design-studio/new"
+                  style={{
+                    background: "#0B7B6E",
+                    color: "#FFFFFF",
+                    padding: "10px 20px",
+                    borderRadius: "8px",
+                    fontWeight: 650,
+                    textDecoration: "none",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    marginTop: "8px"
+                  }}
+                >
+                  <Plus size={16} />
+                  <span>Create New Design</span>
+                </Link>
+              )}
             </div>
           ) : (
             <div className="studio-my-designs-4col-grid">
@@ -298,21 +404,32 @@ export function StudioMyDesignsPage() {
                           </Link>
 
                           <Link
-                            href={`/customer/find-tailor?designId=${design.id}`}
+                            href={`/tailors?designId=${design.id}`}
                             className="studio-my-design-menu-item"
                           >
                             <Scissors size={14} />
                             <span>Book a Tailor</span>
                           </Link>
 
-                          <button
-                            type="button"
-                            onClick={(e) => handleDelete(design.id, e)}
-                            className="studio-my-design-menu-item danger"
-                          >
-                            <Trash2 size={14} />
-                            <span>Delete Design</span>
-                          </button>
+                          {viewTrash ? (
+                            <button
+                              type="button"
+                              onClick={(e) => handleToggleTrash(design.id, false, e)}
+                              className="studio-my-design-menu-item"
+                            >
+                              <RotateCcw size={14} />
+                              <span>Restore Design</span>
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={(e) => handleToggleTrash(design.id, true, e)}
+                              className="studio-my-design-menu-item danger"
+                            >
+                              <Trash2 size={14} />
+                              <span>Move to Trash</span>
+                            </button>
+                          )}
                         </div>
                       )}
                     </div>

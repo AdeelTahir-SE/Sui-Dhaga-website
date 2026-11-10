@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import {
   LayoutDashboard,
@@ -29,34 +29,49 @@ import {
 import { PublicShell } from "@/components/common/site-shell";
 import { CardsGridSkeleton } from "@/components/common/shadow-skeleton";
 import {
+  peekCustomerSavedDesigns,
   fetchCustomerSavedDesignsApi,
   removeSavedDesignApi,
   toggleFavoriteDesignApi,
   initialSavedDesignsData,
   SavedDesignItem
 } from "@/lib/saved-designs-data";
+import { useCacheTick } from "@/lib/api/data-cache";
 
 export function CustomerSavedDesignsPage() {
+  const designsTick = useCacheTick("designs");
+  const cachedDesigns = useMemo(
+    () => (designsTick >= 0 ? peekCustomerSavedDesigns("All") : null),
+    [designsTick]
+  );
+
   const [activeCategory, setActiveCategory] = useState<string>("All");
-  const [designs, setDesigns] = useState<SavedDesignItem[]>([]);
+  const [localDesigns, setLocalDesigns] = useState<SavedDesignItem[] | null>(null);
+  const [fallbackDesigns, setFallbackDesigns] = useState<SavedDesignItem[] | null>(null);
   const [selectedDesign, setSelectedDesign] = useState<SavedDesignItem | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  const designs = localDesigns ?? cachedDesigns ?? fallbackDesigns ?? [];
+  const isLoading = localDesigns === null && cachedDesigns === null && fallbackDesigns === null;
+  const setDesigns = (next: SavedDesignItem[] | ((prev: SavedDesignItem[]) => SavedDesignItem[])) => {
+    const updated = typeof next === "function" ? next(designs) : next;
+    setLocalDesigns(updated);
+  };
+
   useEffect(() => {
+    if (cachedDesigns !== null) return;
     let isSubscribed = true;
 
     fetchCustomerSavedDesignsApi("All").then((data) => {
       if (isSubscribed) {
-        setDesigns(data);
-        setIsLoading(false);
+        setFallbackDesigns(data);
       }
     });
 
     return () => {
       isSubscribed = false;
     };
-  }, []);
+  }, [cachedDesigns]);
 
   const handleRemoveDesign = async (e: React.MouseEvent, designId: string) => {
     e.stopPropagation();
@@ -400,7 +415,7 @@ export function CustomerSavedDesignsPage() {
                     {selectedDesign.prompt && (
                       <div className="design-prompt-box">
                         <span className="prompt-label">AI Studio Prompt / Inspiration</span>
-                        <p className="prompt-text">"{selectedDesign.prompt}"</p>
+                        <p className="prompt-text">&ldquo;{selectedDesign.prompt}&rdquo;</p>
                       </div>
                     )}
 

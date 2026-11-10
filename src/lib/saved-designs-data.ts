@@ -117,14 +117,16 @@ export const initialSavedDesignsData: SavedDesignItem[] = [
 ];
 
 import { designService } from "./api/design-service";
-import { Design as ApiDesign } from "./api/types";
+import { getCachedValue, notifyCacheDomain } from "./api/data-cache";
+import { ApiResponse, Design as ApiDesign } from "./api/types";
 
 export function mapBackendDesignToItem(des: ApiDesign): SavedDesignItem {
-  const cat = (des.category as any) || "Outfits";
+  const validCategories: SavedDesignItem["category"][] = ["Outfits", "Blouses", "Lehengas", "Kurti", "Sarees"];
+  const cat = des.category as SavedDesignItem["category"] | undefined;
   return {
     id: des.id,
     title: des.title || "Custom AI Outfit",
-    category: ["Outfits", "Blouses", "Lehengas", "Kurti", "Sarees"].includes(cat) ? cat : "Outfits",
+    category: cat && validCategories.includes(cat) ? cat : "Outfits",
     savedDate: des.created_at
       ? new Date(des.created_at).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" })
       : "Recently",
@@ -135,6 +137,32 @@ export function mapBackendDesignToItem(des: ApiDesign): SavedDesignItem {
     tags: des.tags || ["Custom", "AI Studio"],
     isFavorite: false
   };
+}
+
+function mergeSavedDesigns(mapped: ApiDesign[], category: string): SavedDesignItem[] {
+  const fromApi = mapped.map(mapBackendDesignToItem);
+  let localList: SavedDesignItem[] = [];
+  if (typeof window !== "undefined") {
+    try {
+      const raw = localStorage.getItem("sui_dhaga_saved_designs");
+      if (raw) localList = JSON.parse(raw);
+    } catch {}
+  }
+  const combined = [...fromApi, ...localList.filter((l) => !fromApi.some((m) => m.id === l.id))];
+  if (category === "All") return combined;
+  return combined.filter((item) => item.category.toLowerCase() === category.toLowerCase());
+}
+
+/**
+ * Synchronously builds saved designs if raw /designs response is already cached.
+ */
+export function peekCustomerSavedDesigns(category: string = "All"): SavedDesignItem[] | null {
+  if (typeof window === "undefined") return null;
+  const cachedRes = getCachedValue<ApiResponse<ApiDesign[]>>("designs", "raw-list", {
+    scope: "auth",
+  });
+  if (!cachedRes || !Array.isArray(cachedRes.data)) return null;
+  return mergeSavedDesigns(cachedRes.data, category);
 }
 
 /**
@@ -148,18 +176,7 @@ export async function fetchCustomerSavedDesignsApi(
   try {
     const res = await designService.getDesigns();
     if (res?.success && Array.isArray(res.data)) {
-      const mapped = res.data.map(mapBackendDesignToItem);
-      // Merge with any locally created studio designs
-      let localList: SavedDesignItem[] = [];
-      if (typeof window !== "undefined") {
-        try {
-          const raw = localStorage.getItem("sui_dhaga_saved_designs");
-          if (raw) localList = JSON.parse(raw);
-        } catch {}
-      }
-      const combined = [...mapped, ...localList.filter((l) => !mapped.some((m) => m.id === l.id))];
-      if (category === "All") return combined;
-      return combined.filter((item) => item.category.toLowerCase() === category.toLowerCase());
+      return mergeSavedDesigns(res.data, category);
     }
   } catch (err) {
     console.warn("[Saved Designs API] Backend unavailable, using local store:", err);
@@ -185,7 +202,7 @@ export async function fetchCustomerSavedDesignsApi(
   }
 
   // Guest demo fallback
-  let demoList = list.length > 0 ? list : [...initialSavedDesignsData];
+  const demoList = list.length > 0 ? list : [...initialSavedDesignsData];
   if (category === "All") return demoList;
   return demoList.filter((item) => item.category.toLowerCase() === category.toLowerCase());
 }
@@ -201,10 +218,11 @@ export async function removeSavedDesignApi(designId: string): Promise<boolean> {
       list = list.filter((d) => d.id !== designId);
       localStorage.setItem("sui_dhaga_saved_designs", JSON.stringify(list));
     }
-  } catch (e) {
+  } catch {
     // ignore
   }
 
+  notifyCacheDomain("designs");
   return true;
 }
 
@@ -215,15 +233,16 @@ export async function toggleFavoriteDesignApi(designId: string): Promise<boolean
   try {
     if (typeof window !== "undefined") {
       const storedJson = localStorage.getItem("sui_dhaga_saved_designs");
-      let list: SavedDesignItem[] = storedJson ? JSON.parse(storedJson) : [...initialSavedDesignsData];
+      const list: SavedDesignItem[] = storedJson ? JSON.parse(storedJson) : [...initialSavedDesignsData];
       const target = list.find((d) => d.id === designId);
       if (target) {
         target.isFavorite = !target.isFavorite;
         localStorage.setItem("sui_dhaga_saved_designs", JSON.stringify(list));
+        notifyCacheDomain("designs");
         return target.isFavorite;
       }
     }
-  } catch (e) {
+  } catch {
     // ignore
   }
   return false;

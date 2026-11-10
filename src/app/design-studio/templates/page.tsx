@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { StudioTemplatesPage } from "@/components/design-studio/studio-templates-page";
 
 export const metadata = {
@@ -6,5 +7,9 @@ export const metadata = {
 };
 
 export default function Page() {
-  return <StudioTemplatesPage />;
+  return (
+    <Suspense fallback={<div style={{ minHeight: "100vh", background: "#FAF8F5" }} />}>
+      <StudioTemplatesPage />
+    </Suspense>
+  );
 }
