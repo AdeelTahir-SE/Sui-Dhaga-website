@@ -2,6 +2,7 @@
 
 ## 1. Visual Theme & Atmosphere
 
+
 The user experience of Sui Dhāga is designed to merge the time-honored artistry of traditional tailoring with the forward-looking capabilities of artificial intelligence. The interface evokes an elegant, premium, yet highly accessible boutique environment. Rather than utilizing stark tech-centric dark modes or uninspired corporate white spaces, the system relies on a warm, inviting light ivory base canvas paired with a sophisticated deep teal primary accent and playful, flowing coral organic geometry. 
 
 The aesthetic strikes a balance between professional utility and creative inspiration. Visual layouts across `home1.png`, `home2.png`, and user portals are softened by organic background waves, elegant line illustrations, and friendly, fashionable vector artwork. Elements are clean, highly approachable, and meticulously structured to guide customers, tailors, and admins alike through a seamless custom clothing journey.
