@@ -71,7 +71,8 @@ sui-dhaga-website/
 │   │   │       ├── login/page.tsx
 │   │   │       ├── register/page.tsx
 │   │   │       ├── forgot-password/page.tsx
-│   │   │       └── reset-password/page.tsx
+│   │   │       ├── reset-password/page.tsx
+│   │   │       └── callback/page.tsx
 │   │   │
 │   │   ├── (marketplace)/
 │   │   │   ├── layout.tsx
@@ -234,6 +235,7 @@ sui-dhaga-website/
 /auth/register            AUTH
 /auth/forgot-password     AUTH
 /auth/reset-password      AUTH
+/auth/callback            AUTH
 ```
 
 ---

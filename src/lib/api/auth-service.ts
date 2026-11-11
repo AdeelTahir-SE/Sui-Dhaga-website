@@ -13,19 +13,48 @@ import {
   UserProfile,
 } from "./types";
 
+function extractAuthTokens(
+  data?: AuthSessionData | null,
+  fallback?: { accessToken?: string; refreshToken?: string }
+): { accessToken?: string; refreshToken?: string } {
+  const accessToken =
+    data?.accessToken ||
+    data?.access_token ||
+    data?.token ||
+    data?.session?.access_token ||
+    fallback?.accessToken;
+  const refreshToken =
+    data?.refreshToken ||
+    data?.refresh_token ||
+    data?.session?.refresh_token ||
+    fallback?.refreshToken;
+  return { accessToken, refreshToken };
+}
+
+function persistAuthSession(
+  res: ApiResponse<AuthSessionData>,
+  fallback?: { accessToken?: string; refreshToken?: string }
+): void {
+  if (res?.success === false) return;
+  const { accessToken, refreshToken } = extractAuthTokens(res?.data, fallback);
+  if (accessToken) {
+    setAuthSession(accessToken, res?.data?.user, refreshToken);
+  }
+}
+
+export function getDashboardRouteForRole(role?: string): string {
+  if (role === "admin") return "/admin/dashboard";
+  if (role === "tailor") return "/tailor/dashboard";
+  return "/customer/dashboard";
+}
+
 export const authService = {
   /**
    * Register a new user account (customer or tailor)
    */
   register: async (payload: RegisterPayload): Promise<ApiResponse<AuthSessionData>> => {
     const res = await apiClient.post<ApiResponse<AuthSessionData>>("/auth/register", payload);
-    const token =
-      res?.data?.accessToken ||
-      res?.data?.token ||
-      res?.data?.session?.access_token;
-    if (token) {
-      setAuthSession(token, res.data.user);
-    }
+    persistAuthSession(res);
     return res;
   },
 
@@ -34,13 +63,7 @@ export const authService = {
    */
   login: async (payload: LoginPayload): Promise<ApiResponse<AuthSessionData>> => {
     const res = await apiClient.post<ApiResponse<AuthSessionData>>("/auth/login", payload);
-    const token =
-      res?.data?.accessToken ||
-      res?.data?.token ||
-      res?.data?.session?.access_token;
-    if (token) {
-      setAuthSession(token, res.data?.user);
-    }
+    persistAuthSession(res);
     return res;
   },
 
@@ -63,13 +86,7 @@ export const authService = {
    */
   refreshToken: async (refreshToken: string): Promise<ApiResponse<AuthSessionData>> => {
     const res = await apiClient.post<ApiResponse<AuthSessionData>>("/auth/refresh-token", { refreshToken });
-    const token =
-      res?.data?.accessToken ||
-      res?.data?.token ||
-      res?.data?.session?.access_token;
-    if (token) {
-      setAuthSession(token, res.data?.user);
-    }
+    persistAuthSession(res);
     return res;
   },
 
@@ -91,8 +108,11 @@ export const authService = {
    * Get OAuth URL for Google Sign-In
    */
   getGoogleAuthUrl: async (redirectUri?: string): Promise<string> => {
+    const effectiveRedirect =
+      redirectUri ||
+      (typeof window !== "undefined" ? `${window.location.origin}/auth/callback` : undefined);
     const res = await apiClient.get<ApiResponse<{ url: string }>>("/auth/google-url", {
-      params: redirectUri ? { redirectUri } : undefined,
+      params: effectiveRedirect ? { redirectUri: effectiveRedirect } : undefined,
     });
     return res?.data?.url || "";
   },
@@ -101,16 +121,26 @@ export const authService = {
    * Authenticate with Google payload / token
    */
   loginWithGoogle: async (
-    payload: { idToken?: string; accessToken?: string; code?: string } & Record<string, unknown>
+    payload: {
+      idToken?: string;
+      accessToken?: string;
+      access_token?: string;
+      refreshToken?: string;
+      refresh_token?: string;
+      code?: string;
+    } & Record<string, unknown>
   ): Promise<ApiResponse<AuthSessionData>> => {
-    const res = await apiClient.post<ApiResponse<AuthSessionData>>("/auth/google", payload);
-    const token =
-      res?.data?.accessToken ||
-      res?.data?.token ||
-      res?.data?.session?.access_token;
-    if (token) {
-      setAuthSession(token, res.data?.user);
-    }
+    const fallbackAccess = payload.accessToken || payload.access_token;
+    const fallbackRefresh = payload.refreshToken || payload.refresh_token;
+    const res = await apiClient.post<ApiResponse<AuthSessionData>>(
+      "/auth/google",
+      payload,
+      fallbackAccess ? { token: fallbackAccess } : undefined
+    );
+    persistAuthSession(res, {
+      accessToken: fallbackAccess,
+      refreshToken: fallbackRefresh,
+    });
     return res;
   },
 

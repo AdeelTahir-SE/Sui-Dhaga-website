@@ -60,7 +60,9 @@ export interface AuthSessionData {
     expires_in?: number;
   } | null;
   accessToken?: string;
+  access_token?: string;
   refreshToken?: string;
+  refresh_token?: string;
   token?: string;
 }
 

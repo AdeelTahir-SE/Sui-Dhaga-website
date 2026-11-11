@@ -47,11 +47,14 @@ export function getAuthToken(): string | null {
 /**
  * Sets the active auth token and user profile in storage.
  */
-export function setAuthSession(token: string, user?: unknown): void {
+export function setAuthSession(token: string, user?: unknown, refreshToken?: string): void {
   if (typeof window !== "undefined") {
     const prevToken = getAuthToken();
     localStorage.setItem("sui_dhaga_auth_token", token);
     localStorage.setItem("sui_dhaga_admin_token", token);
+    if (refreshToken) {
+      localStorage.setItem("sui_dhaga_refresh_token", refreshToken);
+    }
     if (user) {
       localStorage.setItem("sui_dhaga_user", JSON.stringify(user));
     }
@@ -70,6 +73,7 @@ export function clearAuthSession(): void {
     localStorage.removeItem("sui_dhaga_admin_token");
     localStorage.removeItem("sui_dhaga_user");
     localStorage.removeItem("supabase_auth_token");
+    localStorage.removeItem("sui_dhaga_refresh_token");
     invalidateAllCaches();
   }
 }

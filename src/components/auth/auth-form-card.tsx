@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Eye, EyeOff } from "lucide-react";
 import { AccountRoleChoice } from "@/components/common/account-role-choice";
 import { CountryCodeSelect } from "@/components/common/country-code-select";
-import { authService } from "@/lib/api";
+import { authService, getDashboardRouteForRole } from "@/lib/api";
 
 interface FormCardProps {
   title: string;
@@ -54,13 +54,7 @@ export function AuthFormCard({ title, intro, fields, button, mode = "login" }: F
           setSuccessMsg("Logged in successfully! Redirecting...");
           const userRole = res.data?.user?.role || "customer";
           setTimeout(() => {
-            if (userRole === "admin") {
-              router.push("/admin/dashboard");
-            } else if (userRole === "tailor") {
-              router.push("/tailor/dashboard");
-            } else {
-              router.push("/customer/dashboard");
-            }
+            router.push(getDashboardRouteForRole(userRole));
           }, 600);
         } else {
           setErrorMsg(res?.message || "Invalid credentials.");
@@ -129,11 +123,7 @@ export function AuthFormCard({ title, intro, fields, button, mode = "login" }: F
           if (hasActiveToken) {
             setSuccessMsg("Account created successfully! Redirecting...");
             setTimeout(() => {
-              if (role === "tailor") {
-                router.push("/tailor/dashboard");
-              } else {
-                router.push("/customer/dashboard");
-              }
+              router.push(getDashboardRouteForRole(role));
             }, 700);
           } else {
             setSuccessMsg("Account registered successfully! Please check your email to verify your account, then log in.");
@@ -182,12 +172,18 @@ export function AuthFormCard({ title, intro, fields, button, mode = "login" }: F
   };
 
   const handleGoogleAuth = async () => {
+    setErrorMsg(null);
+    setSuccessMsg(null);
     try {
       setLoading(true);
-      const url = await authService.getGoogleAuthUrl();
+      const redirectUri = `${window.location.origin}/auth/callback`;
+      const url = await authService.getGoogleAuthUrl(redirectUri);
       if (url) {
         window.location.href = url;
+        return;
       }
+      setErrorMsg("Unable to start Google authentication. Please try again.");
+      setLoading(false);
     } catch (err: unknown) {
       setErrorMsg(err instanceof Error ? err.message : "Google authentication is unavailable.");
       setLoading(false);
